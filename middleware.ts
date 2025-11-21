@@ -18,12 +18,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Permitir archivos estáticos
+  // Permitir archivos estáticos y PWA
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/static') ||
-    pathname.includes('.')
+    pathname.includes('.') ||
+    pathname === '/manifest.json' ||
+    pathname.startsWith('/icons/')
   ) {
     return NextResponse.next()
   }

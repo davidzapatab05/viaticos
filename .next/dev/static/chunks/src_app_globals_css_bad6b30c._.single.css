@@ -360,6 +360,10 @@ body {
   bottom: 0;
 }
 
+.bottom-4 {
+  bottom: 1rem;
+}
+
 .left-0 {
   left: 0;
 }
@@ -1501,12 +1505,16 @@ body {
   animation-duration: .15s;
 }
 
-.fade-in-0 {
+.fade-in, .fade-in-0 {
   --tw-enter-opacity: 0;
 }
 
 .zoom-in-95 {
   --tw-enter-scale: .95;
+}
+
+.slide-in-from-bottom-4 {
+  --tw-enter-translate-y: 1rem;
 }
 
 .duration-200 {

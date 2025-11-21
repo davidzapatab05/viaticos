@@ -4,6 +4,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { Toaster } from '@/components/ui/toaster'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
+import { InstallPWA } from '@/components/InstallPWA'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -40,18 +41,16 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Viáticos" />
       </head>
       <body className={inter.className}>
         <ServiceWorkerRegistration />
         <AuthProvider>
           {children}
           <Toaster />
+          <InstallPWA />
         </AuthProvider>
       </body>
     </html>
