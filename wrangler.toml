@@ -1,0 +1,25 @@
+name = "viaticos"
+main = "src/worker.js"
+compatibility_date = "2024-01-01"
+
+
+[[d1_databases]]
+binding = "DB"
+database_name = "viaticos-db"
+database_id = "1826e289-00d7-4d35-a891-509aad443360"
+
+[triggers]
+crons = ["0 0 * * *"]
+
+[vars]
+ONEDRIVE_CLIENT_ID = "4ffb1986-42d2-48ad-bd7c-eb7940f32e63"
+ONEDRIVE_DRIVE_ID = "BFF63EDC496195C8"
+ONEDRIVE_REDIRECT_URI = "https://viaticos-d5652.firebaseapp.com/__/auth/handler"
+ONEDRIVE_TENANT_ID = "add37f14-015d-4863-a906-1ac9df9bf88c"
+ONEDRIVE_VIATICOS_FOLDER_ID = "BFF63EDC496195C8!sce9cac49fb464028bd0cdc1d55f586bc"
+ALLOWED_ORIGINS = "https://viaticos.davidzapata-dz051099.workers.dev,http://localhost:3000,http://localhost:5173"
+SUPER_ADMIN_EMAIL = "davidzapata_051099@hotmail.com"
+
+NEXT_PUBLIC_FIREBASE_API_KEY = "AIzaSyDl0BvJnN3m2AVSZpCr6Dqbt3mIMa7ZITM"
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = "viaticos-d5652.firebaseapp.com"
+NEXT_PUBLIC_FIREBASE_PROJECT_ID = "viaticos-d5652"
