@@ -9,13 +9,13 @@ let auth: Auth | null = null
    FUNCIÓN 1 — OBTENER CONFIGURACIÓN DE FIREBASE
    ====================================================== */
 async function getFirebaseConfig() {
-  // 🚀 SSR — usar variables de entorno directamente
+  // 🚀 SSR — usar valores hardcoded para evitar problemas de espacios en Vercel
   if (typeof window === 'undefined') {
     return {
       firebase: {
-        apiKey: (process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '').trim(),
-        authDomain: (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '').trim(),
-        projectId: (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '').trim(),
+        apiKey: 'AIzaSyDl0BvJnN3m2AVSZpCr6Dqbt3mIMa7ZITM',
+        authDomain: 'viaticos-d5652.firebaseapp.com',
+        projectId: 'viaticos-d5652',
       },
       apiUrl:
         process.env.NEXT_PUBLIC_CLOUDFLARE_API_URL ??
