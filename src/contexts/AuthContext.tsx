@@ -1,8 +1,8 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect } from 'react'
-import { 
-  signInWithEmailAndPassword, 
+import {
+  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    let unsub = () => {}
+    let unsub = () => { }
 
     const setupAuth = async () => {
       // Asegurar que Firebase esté inicializado
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const token = await user.getIdToken()
             document.cookie = `firebase-token=${token}; path=/; max-age=604800; SameSite=Lax; Secure`
-            
+
             const myUser = await getMyUser()
             if (myUser) {
               setAppUser(myUser)
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setupAuth()
 
     return () => {
-      try { unsub() } catch (e) {}
+      try { unsub() } catch (e) { }
     }
   }, [])
 
@@ -167,10 +167,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider.addScope('email')
       provider.addScope('offline_access')
       // ELIMINAR: provider.addScope('Files.ReadWrite.All') - Esto requiere consentimiento del admin
-      
+
       // Usar signInWithPopup (funciona correctamente, los warnings de COOP no afectan funcionalidad)
       const result = await signInWithPopup(currentAuth, provider)
-      
+
       const { getAdditionalUserInfo } = await import('firebase/auth')
       const isNewUser = getAdditionalUserInfo(result)?.isNewUser
       if (isNewUser) {
@@ -181,9 +181,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.warn('No se pudo crear la carpeta para el nuevo usuario:', (e as Error).message || e)
         }
       }
-      
+
       return { success: true, user: result.user }
     } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user') {
+        console.log('Usuario cerró el popup de autenticación')
+        return { success: false, error: 'Inicio de sesión cancelado por el usuario' }
+      }
       console.error('Error en signInWithMicrosoft:', error)
       return { success: false, error: error.message || 'Error al iniciar sesión con Microsoft' }
     }
