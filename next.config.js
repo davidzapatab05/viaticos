@@ -1,8 +1,11 @@
 const path = require('path')
 
+// process.env.SERWIST_SUPPRESS_TURBOPACK_WARNING = "1";
+
 const withSerwist = require("@serwist/next").default({
   swSrc: "src/app/sw.ts",
   swDest: "public/sw.js",
+  disable: true,
 })
 
 /** @type {import('next').NextConfig} */
@@ -25,4 +28,3 @@ const nextConfig = {
 
 // module.exports = withSerwist(nextConfig)
 module.exports = nextConfig
-
