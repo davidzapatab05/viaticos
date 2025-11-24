@@ -1,0 +1,447 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { DatePicker } from '@/components/ui/date-picker'
+import { Badge } from '@/components/ui/badge'
+import { format, startOfDay, endOfDay, parseISO } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { Trash2, FileSpreadsheet, FileText, ArrowLeft, ChevronRight, User, List } from 'lucide-react'
+import * as XLSX from 'xlsx'
+import jsPDF from 'jspdf'
+import 'jspdf-autotable'
+
+declare module 'jspdf' {
+    interface jsPDF {
+        autoTable: (options: any) => jsPDF;
+    }
+}
+
+interface Viatico {
+    id: string
+    usuario_id: string
+    fecha: string
+    tipo: string
+    monto: number | string
+    descripcion: string
+    url_onedrive?: string
+    created_at: string
+}
+
+interface User {
+    uid: string
+    email: string
+    displayName?: string
+    role: string
+}
+
+interface ReportsViewProps {
+    viaticos: Viatico[]
+    users: User[]
+    onDelete: (id: string) => Promise<void>
+}
+
+export default function ReportsView({ viaticos, users, onDelete }: ReportsViewProps) {
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+    const [startDate, setStartDate] = useState<Date | undefined>()
+    const [endDate, setEndDate] = useState<Date | undefined>()
+
+    // Helper to get user name
+    const getUserName = (uid: string) => {
+        const u = users.find(user => user.uid === uid)
+        return u ? (u.displayName || u.email) : uid
+    }
+
+    // Aggregate viaticos by user
+    const userTotals = useMemo(() => {
+        const totals: Record<string, { userName: string, total: number, count: number, viaticos: Viatico[] }> = {}
+
+        viaticos.forEach(v => {
+            if (!totals[v.usuario_id]) {
+                totals[v.usuario_id] = {
+                    userName: getUserName(v.usuario_id),
+                    total: 0,
+                    count: 0,
+                    viaticos: []
+                }
+            }
+            const monto = typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto
+            totals[v.usuario_id].total += isNaN(monto) ? 0 : monto
+            totals[v.usuario_id].count += 1
+            totals[v.usuario_id].viaticos.push(v)
+        })
+
+        return Object.entries(totals)
+            .map(([userId, data]) => ({ userId, ...data }))
+            .sort((a, b) => b.total - a.total)
+    }, [viaticos, users])
+
+    // Filter viaticos by date range for "Por Registro" tab
+    const filteredViaticos = useMemo(() => {
+        return viaticos.filter(v => {
+            const vDate = parseISO(v.fecha)
+
+            if (startDate) {
+                const start = startOfDay(startDate)
+                if (vDate < start) return false
+            }
+            if (endDate) {
+                const end = endOfDay(endDate)
+                if (vDate > end) return false
+            }
+
+            return true
+        }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+    }, [viaticos, startDate, endDate])
+
+    // Get selected user data
+    const selectedUserData = useMemo(() => {
+        if (!selectedUserId) return null
+        return userTotals.find(u => u.userId === selectedUserId)
+    }, [selectedUserId, userTotals])
+
+    // Export to Excel
+    const exportToExcel = (data: any[], filename: string) => {
+        const ws = XLSX.utils.json_to_sheet(data)
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, 'Reporte')
+        XLSX.writeFile(wb, `${filename}_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`)
+    }
+
+    // Export to PDF
+    const exportToPDF = (headers: string[], data: any[][], title: string) => {
+        const doc = new jsPDF()
+        doc.text(title, 14, 15)
+        doc.setFontSize(10)
+        doc.text(`Generado: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, 22)
+
+        doc.autoTable({
+            head: [headers],
+            body: data,
+            startY: 30,
+        })
+
+        doc.save(`${title.replace(/ /g, '_')}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`)
+    }
+
+    return (
+        <div className="space-y-4">
+            <Tabs defaultValue="usuarios" className="w-full">
+                <TabsList className="grid w-full max-w-md grid-cols-2">
+                    <TabsTrigger value="usuarios">
+                        <User className="mr-2 h-4 w-4" />
+                        Por Usuarios
+                    </TabsTrigger>
+                    <TabsTrigger value="registros">
+                        <List className="mr-2 h-4 w-4" />
+                        Por Registro
+                    </TabsTrigger>
+                </TabsList>
+
+                {/* TAB: Por Usuarios */}
+                <TabsContent value="usuarios" className="mt-4">
+                    {!selectedUserId ? (
+                        <Card>
+                            <CardHeader>
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div>
+                                        <CardTitle>Totales por Usuario</CardTitle>
+                                        <CardDescription>Haz clic en un usuario para ver su detalle</CardDescription>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                const data = userTotals.map(u => ({
+                                                    Usuario: u.userName,
+                                                    'Cantidad Viáticos': u.count,
+                                                    'Total (S/)': u.total
+                                                }))
+                                                exportToExcel(data, 'Reporte_Por_Usuarios')
+                                            }}
+                                        >
+                                            <FileSpreadsheet className="h-4 w-4 sm:mr-2 text-green-600" />
+                                            <span className="hidden sm:inline">Excel</span>
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                const data = userTotals.map(u => [
+                                                    u.userName,
+                                                    u.count,
+                                                    `S/ ${u.total.toFixed(2)}`
+                                                ])
+                                                exportToPDF(['Usuario', 'Cant.', 'Total'], data, 'Reporte Por Usuarios')
+                                            }}
+                                        >
+                                            <FileText className="h-4 w-4 sm:mr-2 text-red-600" />
+                                            <span className="hidden sm:inline">PDF</span>
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="rounded-md border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Usuario</TableHead>
+                                                <TableHead className="text-right">Cantidad</TableHead>
+                                                <TableHead className="text-right">Total</TableHead>
+                                                <TableHead className="text-right w-16"></TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {userTotals.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                                        No hay datos para mostrar
+                                                    </TableCell>
+                                                </TableRow>
+                                            ) : (
+                                                userTotals.map(user => (
+                                                    <TableRow
+                                                        key={user.userId}
+                                                        className="cursor-pointer hover:bg-muted/50"
+                                                        onClick={() => setSelectedUserId(user.userId)}
+                                                    >
+                                                        <TableCell className="font-medium">{user.userName}</TableCell>
+                                                        <TableCell className="text-right">{user.count}</TableCell>
+                                                        <TableCell className="text-right font-bold">
+                                                            S/ {user.total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <ChevronRight className="h-4 w-4 inline text-muted-foreground" />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <Card>
+                            <CardHeader>
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div>
+                                        <CardTitle>Detalle de {selectedUserData?.userName}</CardTitle>
+                                        <CardDescription>
+                                            Total: S/ {selectedUserData?.total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </CardDescription>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => setSelectedUserId(null)}>
+                                            <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                                            <span className="hidden sm:inline">Volver</span>
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                const data = selectedUserData!.viaticos.map(v => ({
+                                                    Usuario: selectedUserData!.userName,
+                                                    Fecha: format(parseISO(v.fecha), 'dd/MM/yyyy'),
+                                                    Tipo: v.tipo,
+                                                    Monto: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
+                                                    Descripcion: v.descripcion
+                                                }))
+                                                exportToExcel(data, `Detalle_${selectedUserData!.userName}`)
+                                            }}
+                                        >
+                                            <FileSpreadsheet className="h-4 w-4 sm:mr-2 text-green-600" />
+                                            <span className="hidden sm:inline">Excel</span>
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                const data = selectedUserData!.viaticos.map(v => [
+                                                    format(parseISO(v.fecha), 'dd/MM/yyyy'),
+                                                    v.tipo,
+                                                    `S/ ${Number(v.monto).toFixed(2)}`,
+                                                    v.descripcion || '-'
+                                                ])
+                                                exportToPDF(['Fecha', 'Tipo', 'Monto', 'Desc.'], data, `Detalle ${selectedUserData!.userName}`)
+                                            }}
+                                        >
+                                            <FileText className="h-4 w-4 sm:mr-2 text-red-600" />
+                                            <span className="hidden sm:inline">PDF</span>
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="rounded-md border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Fecha</TableHead>
+                                                <TableHead>Tipo</TableHead>
+                                                <TableHead className="text-right">Monto</TableHead>
+                                                <TableHead className="hidden md:table-cell">Descripción</TableHead>
+                                                <TableHead className="text-right w-16"></TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {selectedUserData?.viaticos.map(viatico => (
+                                                <TableRow key={viatico.id}>
+                                                    <TableCell className="whitespace-nowrap">{format(parseISO(viatico.fecha), 'dd/MM/yyyy')}</TableCell>
+                                                    <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.tipo}</Badge></TableCell>
+                                                    <TableCell className="text-right whitespace-nowrap">
+                                                        S/ {Number(viatico.monto).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell max-w-xs truncate">{viatico.descripcion || '-'}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                onDelete(viatico.id)
+                                                            }}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                </TabsContent>
+
+                {/* TAB: Por Registro */}
+                <TabsContent value="registros" className="mt-4 space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex flex-col gap-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div>
+                                        <CardTitle>Filtros</CardTitle>
+                                        <CardDescription>Filtra los viáticos por rango de fechas</CardDescription>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                const data = filteredViaticos.map(v => ({
+                                                    Usuario: getUserName(v.usuario_id),
+                                                    Fecha: format(parseISO(v.fecha), 'dd/MM/yyyy'),
+                                                    Tipo: v.tipo,
+                                                    Monto: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
+                                                    Descripcion: v.descripcion
+                                                }))
+                                                exportToExcel(data, 'Reporte_Por_Registro')
+                                            }}
+                                        >
+                                            <FileSpreadsheet className="h-4 w-4 sm:mr-2 text-green-600" />
+                                            <span className="hidden sm:inline">Excel</span>
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                const data = filteredViaticos.map(v => [
+                                                    getUserName(v.usuario_id),
+                                                    format(parseISO(v.fecha), 'dd/MM/yyyy'),
+                                                    v.tipo,
+                                                    `S/ ${Number(v.monto).toFixed(2)}`,
+                                                    v.descripcion || '-'
+                                                ])
+                                                exportToPDF(['Usuario', 'Fecha', 'Tipo', 'Monto', 'Desc.'], data, 'Reporte Por Registro')
+                                            }}
+                                        >
+                                            <FileText className="h-4 w-4 sm:mr-2 text-red-600" />
+                                            <span className="hidden sm:inline">PDF</span>
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Desde</label>
+                                        <DatePicker
+                                            date={startDate}
+                                            onSelect={setStartDate}
+                                            placeholder="Selecciona fecha inicio"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Hasta</label>
+                                        <DatePicker
+                                            date={endDate}
+                                            onSelect={setEndDate}
+                                            placeholder="Selecciona fecha fin"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </CardHeader>
+                    </Card>
+
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Usuario</TableHead>
+                                            <TableHead>Fecha</TableHead>
+                                            <TableHead>Tipo</TableHead>
+                                            <TableHead className="text-right">Monto</TableHead>
+                                            <TableHead className="hidden md:table-cell">Descripción</TableHead>
+                                            <TableHead className="text-right w-16"></TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredViaticos.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                                    No hay datos para mostrar
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            filteredViaticos.map(viatico => (
+                                                <TableRow key={viatico.id}>
+                                                    <TableCell className="font-medium">{getUserName(viatico.usuario_id)}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">{format(parseISO(viatico.fecha), 'dd/MM/yyyy')}</TableCell>
+                                                    <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.tipo}</Badge></TableCell>
+                                                    <TableCell className="text-right whitespace-nowrap">
+                                                        S/ {Number(viatico.monto).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell max-w-xs truncate">{viatico.descripcion || '-'}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                            onClick={() => onDelete(viatico.id)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
+    )
+}

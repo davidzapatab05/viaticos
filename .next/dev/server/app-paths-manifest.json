@@ -1,5 +1,6 @@
 {
-  "/api/config/route": "app/api/config/route.js",
-  "/login/page": "app/login/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
   "/page": "app/page.js"
 }

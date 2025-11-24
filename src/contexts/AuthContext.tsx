@@ -98,31 +98,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       unsub = onAuthStateChanged(currentAuth, async (user) => {
         setUser(user)
+        // No bloquear la UI mientras se obtienen los datos del usuario
+        // Establecer loading a false inmediatamente para que la app pueda renderizar
         if (user) {
-          try {
-            const token = await user.getIdToken()
+          // Fetch en segundo plano
+          user.getIdToken().then(token => {
             document.cookie = `firebase-token=${token}; path=/; max-age=604800; SameSite=Lax; Secure`
-
-            const myUser = await getMyUser()
+            return getMyUser()
+          }).then(myUser => {
             if (myUser) {
               setAppUser(myUser)
             }
-
-            setInterval(async () => {
-              try {
-                const currentUser = currentAuth.currentUser
-                if (currentUser) {
-                  const newToken = await currentUser.getIdToken(true)
-                  document.cookie = `firebase-token=${newToken}; path=/; max-age=604800; SameSite=Lax; Secure`
-                }
-              } catch (e) {
-                console.warn('Error renovando token:', (e as Error).message || e)
-              }
-            }, 3600000)
-          } catch (e) {
-            console.warn('Error en onAuthStateChanged:', (e as Error).message || e)
+          }).catch(e => {
+            console.warn('Error fetching user data:', e)
             setAppUser(null)
-          }
+          })
+
+          // Setup token refresh interval
+          setInterval(async () => {
+            try {
+              const currentUser = currentAuth.currentUser
+              if (currentUser) {
+                const newToken = await currentUser.getIdToken(true)
+                document.cookie = `firebase-token=${newToken}; path=/; max-age=604800; SameSite=Lax; Secure`
+              }
+            } catch (e) {
+              console.warn('Error renovando token:', (e as Error).message || e)
+            }
+          }, 3600000)
         } else {
           document.cookie = 'firebase-token=; path=/; max-age=0'
           setAppUser(null)

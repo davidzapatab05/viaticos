@@ -30,7 +30,6 @@ export default function MisViaticosPage() {
   const [viaticos, setViaticos] = useState<Viatico[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
 
   const router = useRouter()
 
@@ -130,20 +129,6 @@ export default function MisViaticosPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setViewMode(viewMode === 'grid' ? 'table' : 'grid')}
-                    >
-                      {viewMode === 'grid' ? <Table2 className="h-4 w-4" /> : <Grid3x3 className="h-4 w-4" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Cambiar vista</p>
-                  </TooltipContent>
-                </Tooltip>
                 <Button
                   variant="outline"
                   size="icon"
@@ -214,91 +199,90 @@ export default function MisViaticosPage() {
                   </Button>
                 </CardContent>
               </Card>
-            ) : viewMode === 'table' ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Lista de Viáticos</CardTitle>
-                  <CardDescription>Vista detallada de todos tus viáticos</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Fecha</TableHead>
-                        <TableHead>Descripción</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead className="text-right">Monto</TableHead>
-                        <TableHead className="text-right">Acciones</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {viaticos.map((viatico) => (
-                        <TableRow key={viatico.id}>
-                          <TableCell className="font-medium">
-                            {format(new Date(viatico.fecha), 'dd MMM yyyy', { locale: es })}
-                          </TableCell>
-                          <TableCell>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="truncate block max-w-[300px]">{viatico.descripcion}</span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="max-w-xs">{viatico.descripcion}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{viatico.tipo || 'otro'}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            S/ {parseFloat(String(viatico.monto || 0)).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {/* Botón de ver eliminado a petición del usuario */}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
             ) : (
-              <div className="space-y-6">
-                {Object.entries(groupedByMonth).map(([month, monthViaticos]) => {
-                  const monthTotal = monthViaticos.reduce((sum, v) => sum + parseFloat(String(v.monto || 0)), 0)
-                  return (
-                    <Card key={month}>
-                      <CardHeader>
-                        <CardTitle className="capitalize">{month}</CardTitle>
-                        <CardDescription>
-                          {monthViaticos.length} viático{monthViaticos.length !== 1 ? 's' : ''} • Total: S/ {monthTotal.toFixed(2)}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <>
+                {/* Vista Desktop: Tabla */}
+                <div className="hidden md:block">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Lista de Viáticos</CardTitle>
+                      <CardDescription>Vista detallada de todos tus viáticos</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Fecha</TableHead>
+                            <TableHead>Descripción</TableHead>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead className="text-right">Monto</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {viaticos.map((viatico) => (
+                            <TableRow key={viatico.id}>
+                              <TableCell className="font-medium">
+                                {format(new Date(viatico.fecha), 'dd MMM yyyy', { locale: es })}
+                              </TableCell>
+                              <TableCell>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="truncate block max-w-[300px]">{viatico.descripcion}</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs">{viatico.descripcion}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{viatico.tipo || 'otro'}</Badge>
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                S/ {parseFloat(String(viatico.monto || 0)).toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Vista Mobile: Tarjetas Agrupadas */}
+                <div className="md:hidden space-y-6">
+                  {Object.entries(groupedByMonth).map(([month, monthViaticos]) => {
+                    const monthTotal = monthViaticos.reduce((sum, v) => sum + parseFloat(String(v.monto || 0)), 0)
+                    return (
+                      <div key={month} className="space-y-2">
+                        <div className="flex items-center justify-between px-1">
+                          <h3 className="font-semibold capitalize text-muted-foreground">{month}</h3>
+                          <Badge variant="secondary">S/ {monthTotal.toFixed(2)}</Badge>
+                        </div>
+                        <div className="grid gap-3">
                           {monthViaticos.map((viatico) => (
                             <Card key={viatico.id}>
-                              <CardHeader>
-                                <CardTitle className="text-base">{viatico.descripcion || 'Sin descripción'}</CardTitle>
-                                <div className="text-sm text-muted-foreground">
-                                  <Badge variant="outline" className="mr-2">{viatico.tipo || 'otro'}</Badge>
-                                  {format(new Date(viatico.fecha), 'dd MMM', { locale: es })}
-                                </div>
-                              </CardHeader>
-                              <CardContent>
-                                <div className="flex items-center justify-between">
-                                  <div className="text-2xl font-bold">S/ {parseFloat(String(viatico.monto || 0)).toFixed(2)}</div>
-                                  {/* Botón de ver eliminado */}
+                              <CardContent className="p-4">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="space-y-1">
+                                    <p className="font-medium line-clamp-2">{viatico.descripcion || 'Sin descripción'}</p>
+                                    <div className="flex items-center text-xs text-muted-foreground">
+                                      <Badge variant="outline" className="mr-2 text-[10px] px-1 py-0 h-5">{viatico.tipo || 'otro'}</Badge>
+                                      {format(new Date(viatico.fecha), 'dd MMM, HH:mm', { locale: es })}
+                                    </div>
+                                  </div>
+                                  <div className="text-lg font-bold whitespace-nowrap">
+                                    S/ {parseFloat(String(viatico.monto || 0)).toFixed(2)}
+                                  </div>
                                 </div>
                               </CardContent>
                             </Card>
                           ))}
                         </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
             )}
           </div>
         </TooltipProvider >

@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { FileCheck, Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, Info, FileText } from 'lucide-react'
+import { FileCheck, Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, Info, FileText, RefreshCcw } from 'lucide-react'
 import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
 
@@ -34,7 +34,10 @@ export default function NuevoViaticoPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
 
   useEffect(() => {
     if (!authLoading && appUser && !appUser.crear_carpeta) {
@@ -47,7 +50,7 @@ export default function NuevoViaticoPage() {
     if (!selectedFiles) return
 
     const newFiles = Array.from(selectedFiles)
-    
+
     let currentFiles = [...files];
     let currentPreviews = [...previews];
 
@@ -83,39 +86,78 @@ export default function NuevoViaticoPage() {
 
   const startCamera = () => {
     setShowCamera(true)
+    setFacingMode('environment')
+  }
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+    }
+  }
+
+  const switchCamera = () => {
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user')
   }
 
   useEffect(() => {
     if (showCamera) {
-      navigator.mediaDevices.getUserMedia({ video: true })
+      stopCamera()
+
+      const constraints = {
+        video: {
+          facingMode: facingMode
+        }
+      }
+
+      navigator.mediaDevices.getUserMedia(constraints)
         .then((stream) => {
-          const video = document.getElementById('video') as HTMLVideoElement
-          if (video) {
-            video.srcObject = stream
+          streamRef.current = stream
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream
           }
         })
         .catch((err) => {
           console.error('Error accediendo a la cámara:', err)
-          setError('No se pudo acceder a la cámara')
-          setShowCamera(false)
+          setError('No se pudo acceder a la cámara. Asegúrate de dar permisos.')
+
+          // Fallback if specific facingMode fails
+          if (err.name === 'OverconstrainedError') {
+            navigator.mediaDevices.getUserMedia({ video: true })
+              .then((stream) => {
+                streamRef.current = stream
+                if (videoRef.current) {
+                  videoRef.current.srcObject = stream
+                }
+              })
+              .catch(e => {
+                console.error('Fallback camera error:', e)
+                setShowCamera(false)
+              })
+          } else {
+            setShowCamera(false)
+          }
         })
     } else {
-      const video = document.getElementById('video') as HTMLVideoElement
-      if (video && video.srcObject) {
-        const stream = video.srcObject as MediaStream
-        stream.getTracks().forEach(track => track.stop())
-      }
+      stopCamera()
     }
-  }, [showCamera])
+
+    return () => {
+      stopCamera()
+    }
+  }, [showCamera, facingMode])
 
   const capturePhoto = () => {
-    const video = document.getElementById('video') as HTMLVideoElement
+    const video = videoRef.current
     const canvas = document.getElementById('canvas') as HTMLCanvasElement
     if (!video || !canvas) return
 
     const context = canvas.getContext('2d')
     if (!context) return
-    
+
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     context.drawImage(video, 0, 0)
@@ -152,9 +194,7 @@ export default function NuevoViaticoPage() {
       })
       formData.append('monto', monto)
       formData.append('descripcion', descripcion)
-      // La fecha se establecerá en el backend con la fecha y hora de registro
       formData.append('tipo', tipo)
-      // Siempre enviar createTxt para que el backend sepa la preferencia, que ahora es true por defecto
       formData.append('createTxt', createTxt ? '1' : '0')
 
       await uploadViatico(formData)
@@ -220,240 +260,256 @@ export default function NuevoViaticoPage() {
   return (
     <AuthGuard>
       <Layout>
-      <TooltipProvider>
-        <div className="max-w-5xl mx-auto space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Nuevo Viático</h1>
-            <p className="text-muted-foreground">
-              Registra un nuevo comprobante con su foto o PDF
-            </p>
-          </div>
+        <TooltipProvider>
+          <div className="max-w-5xl mx-auto space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Nuevo Viático</h1>
+              <p className="text-muted-foreground">
+                Registra un nuevo comprobante con su foto o PDF
+              </p>
+            </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Información del Comprobante</CardTitle>
-                <CardDescription>Sube tus comprobantes y completa los datos</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>Comprobantes</Label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="outline" className="text-xs">
-                          <Info className="h-3 w-3 mr-1" />
-                          Formatos: JPG, PNG, WEBP, PDF
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>El tamaño máximo es de 10MB por archivo</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,application/pdf"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    multiple
-                  />
-                  {previews.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                      {previews.map((preview, index) => (
-                        <div key={index} className="relative group w-full">
-                          <div className="rounded-lg border overflow-hidden aspect-square flex items-center justify-center bg-muted">
-                            {preview.isPdf ? (
-                              <div className="p-4 flex flex-col items-center justify-center text-center">
-                                <FileText className="w-10 h-10 text-primary" />
-                                <p className="mt-2 text-xs font-medium break-all max-w-xs">{preview.name}</p>
-                                <a href={preview.url} target="_blank" rel="noreferrer" className="mt-2">
-                                  <Button variant="outline" size="sm">Ver</Button>
-                                </a>
-                              </div>
-                            ) : (
-                              <img
-                                src={preview.url}
-                                alt={`Vista previa ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                          </div>
-                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button type="button" variant="destructive" size="icon" onClick={() => removeFile(index)}>
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Eliminar archivo</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </div>
-                      ))}
-                      <div
-                        className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors aspect-square"
-                        onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="w-8 h-8 text-primary" />
-                        <p className="mt-2 text-sm font-semibold">Añadir más</p>
-                      </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Información del Comprobante</CardTitle>
+                  <CardDescription>Sube tus comprobantes y completa los datos</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Comprobantes</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="text-xs">
+                            <Info className="h-3 w-3 mr-1" />
+                            Formatos: JPG, PNG, WEBP, PDF
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>El tamaño máximo es de 10MB por archivo</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
-                  ) : (
-                    <div
-                      className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-20 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => fileInputRef.current?.click()}>
-                      <div className="mx-auto w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                        <Upload className="w-8 h-8 text-primary" />
-                      </div>
-                      <p className="mt-4 font-semibold">Seleccionar Archivos</p>
-                      <p className="text-sm text-muted-foreground mt-2">o arrastra y suelta aquí</p>
-                      <div className="mt-6 flex items-center justify-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="text-xs">JPG</Badge>
-                        <Badge variant="outline" className="text-xs">PNG</Badge>
-                        <Badge variant="outline" className="text-xs">WEBP</Badge>
-                        <Badge variant="outline" className="text-xs">PDF</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-4">Máximo 10MB por archivo</p>
-                    </div>
-                  )}
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={startCamera}>
-                    <Camera className="h-4 w-4 mr-2" />
-                    Tomar y Añadir Foto
-                  </Button>
-                </div>
-
-                <div className="space-y-6 pt-6 border-t">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="monto">Monto (S/)</Label>
-                  <Input 
-                    id="monto" 
-                    type="number" 
-                    step="0.01" 
-                    min="0" 
-                    value={monto} 
-                    onChange={(e) => setMonto(e.target.value)} 
-                    required 
-                    placeholder="0.00" 
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="descripcion">Descripción</Label>
-                    <Textarea 
-                      id="descripcion" 
-                      value={descripcion} 
-                      onChange={(e) => setDescripcion(e.target.value)} 
-                      required 
-                      placeholder="Ej: Almuerzo con cliente, taxi al aeropuerto, etc." 
-                      rows={4}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      multiple
                     />
+                    {previews.length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        {previews.map((preview, index) => (
+                          <div key={index} className="relative group w-full">
+                            <div className="rounded-lg border overflow-hidden aspect-square flex items-center justify-center bg-muted">
+                              {preview.isPdf ? (
+                                <div className="p-4 flex flex-col items-center justify-center text-center">
+                                  <FileText className="w-10 h-10 text-primary" />
+                                  <p className="mt-2 text-xs font-medium break-all max-w-xs">{preview.name}</p>
+                                  <a href={preview.url} target="_blank" rel="noreferrer" className="mt-2">
+                                    <Button variant="outline" size="sm">Ver</Button>
+                                  </a>
+                                </div>
+                              ) : (
+                                <img
+                                  src={preview.url}
+                                  alt={`Vista previa ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              )}
+                            </div>
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button type="button" variant="destructive" size="icon" onClick={() => removeFile(index)}>
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Eliminar archivo</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </div>
+                        ))}
+                        <div
+                          className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors aspect-square"
+                          onClick={() => fileInputRef.current?.click()}>
+                          <Upload className="w-8 h-8 text-primary" />
+                          <p className="mt-2 text-sm font-semibold">Añadir más</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-20 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => fileInputRef.current?.click()}>
+                        <div className="mx-auto w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                          <Upload className="w-8 h-8 text-primary" />
+                        </div>
+                        <p className="mt-4 font-semibold">Seleccionar Archivos</p>
+                        <p className="text-sm text-muted-foreground mt-2">o arrastra y suelta aquí</p>
+                        <div className="mt-6 flex items-center justify-center gap-2 flex-wrap">
+                          <Badge variant="outline" className="text-xs">JPG</Badge>
+                          <Badge variant="outline" className="text-xs">PNG</Badge>
+                          <Badge variant="outline" className="text-xs">WEBP</Badge>
+                          <Badge variant="outline" className="text-xs">PDF</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-4">Máximo 10MB por archivo</p>
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={startCamera}>
+                      <Camera className="h-4 w-4 mr-2" />
+                      Tomar y Añadir Foto
+                    </Button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
-                    <div className="space-y-2">
-                      <Label htmlFor="tipo">Tipo de Gasto</Label>
-                      <Select value={tipo} onValueChange={setTipo}>
-                        <SelectTrigger id="tipo">
-                          <SelectValue placeholder="Selecciona un tipo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="desayuno">🌅 Desayuno</SelectItem>
-                          <SelectItem value="almuerzo">🍽️ Almuerzo</SelectItem>
-                          <SelectItem value="cena">🌙 Cena</SelectItem>
-                          <SelectItem value="otro">📝 Otro</SelectItem>
-                        </SelectContent>
-                      </Select>
+
+                  <div className="space-y-6 pt-6 border-t">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="monto">Monto (S/)</Label>
+                        <Input
+                          id="monto"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={monto}
+                          onChange={(e) => setMonto(e.target.value)}
+                          required
+                          placeholder="0.00"
+                        />
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <Switch id="createTxt" checked={createTxt} onCheckedChange={setCreateTxt} />
-                      <div className="flex flex-col">
-                        <Label htmlFor="createTxt" className="text-sm cursor-pointer">Crear .txt en OneDrive</Label>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="text-xs text-muted-foreground cursor-help">¿Qué es esto?</span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Crea un archivo de texto adicional con la información del viático en OneDrive</p>
-                          </TooltipContent>
-                        </Tooltip>
+                    <div className="space-y-2">
+                      <Label htmlFor="descripcion">Descripción</Label>
+                      <Textarea
+                        id="descripcion"
+                        value={descripcion}
+                        onChange={(e) => setDescripcion(e.target.value)}
+                        required
+                        placeholder="Ej: Almuerzo con cliente, taxi al aeropuerto, etc."
+                        rows={4}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
+                      <div className="space-y-2">
+                        <Label htmlFor="tipo">Tipo de Gasto</Label>
+                        <Select value={tipo} onValueChange={setTipo}>
+                          <SelectTrigger id="tipo">
+                            <SelectValue placeholder="Selecciona un tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="desayuno">🌅 Desayuno</SelectItem>
+                            <SelectItem value="almuerzo">🍽️ Almuerzo</SelectItem>
+                            <SelectItem value="cena">🌙 Cena</SelectItem>
+                            <SelectItem value="otro">📝 Otro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Switch id="createTxt" checked={createTxt} onCheckedChange={setCreateTxt} />
+                        <div className="flex flex-col">
+                          <Label htmlFor="createTxt" className="text-sm cursor-pointer">Crear .txt en OneDrive</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="text-xs text-muted-foreground cursor-help">¿Qué es esto?</span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Crea un archivo de texto adicional con la información del viático en OneDrive</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {success && (
-                  <Alert>
-                    <CheckCircle2 className="h-4 w-4" />
-                    <AlertTitle>Éxito</AlertTitle>
-                    <AlertDescription>
-                      Viático registrado correctamente. Redirigiendo...
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-              <CardFooter className="flex justify-end">
-                <Button 
-                  type="submit" 
-                  size="lg" 
-                  disabled={loading}
-                  className="min-w-[200px]">
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Registrando...
-                    </>
-                  ) : (
-                    <>
-                      <FileCheck className="mr-2 h-4 w-4" />
-                      Registrar Viático
-                    </>
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Error</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
                   )}
-                </Button>
-              </CardFooter>
-            </Card>
-          </form>
 
-          <Dialog open={showCamera} onOpenChange={setShowCamera}>
-            <DialogContent className="max-w-4xl">
-              <DialogHeader>
-                <DialogTitle>Tomar Foto</DialogTitle>
-                <DialogDescription>
-                  Captura una foto de tu comprobante usando la cámara
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <video id="video" autoPlay className="w-full rounded-lg" style={{ display: 'block' }} />
-                <canvas id="canvas" style={{ display: 'none' }} />
-                <div className="flex gap-3 justify-end">
-                  <Button variant="outline" onClick={() => setShowCamera(false)}>
-                    Cancelar
+                  {success && (
+                    <Alert>
+                      <CheckCircle2 className="h-4 w-4" />
+                      <AlertTitle>Éxito</AlertTitle>
+                      <AlertDescription>
+                        Viático registrado correctamente. Redirigiendo...
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+                <CardFooter className="flex justify-end">
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={loading}
+                    className="min-w-[200px]">
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Registrando...
+                      </>
+                    ) : (
+                      <>
+                        <FileCheck className="mr-2 h-4 w-4" />
+                        Registrar Viático
+                      </>
+                    )}
                   </Button>
-                  <Button onClick={capturePhoto}>
-                    <Camera className="h-4 w-4 mr-2" />
-                    Capturar Foto
-                  </Button>
+                </CardFooter>
+              </Card>
+            </form>
+
+            <Dialog open={showCamera} onOpenChange={setShowCamera}>
+              <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>Tomar Foto</DialogTitle>
+                  <DialogDescription>
+                    Captura una foto de tu comprobante usando la cámara
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="relative rounded-lg overflow-hidden bg-black">
+                    <video
+                      ref={videoRef}
+                      id="video"
+                      autoPlay
+                      playsInline
+                      className="w-full rounded-lg"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="absolute top-4 right-4 rounded-full bg-black/50 hover:bg-black/70 text-white border-none"
+                      onClick={switchCamera}
+                    >
+                      <RefreshCcw className="h-5 w-5" />
+                    </Button>
+                  </div>
+                  <canvas id="canvas" style={{ display: 'none' }} />
+                  <div className="flex gap-3 justify-end">
+                    <Button variant="outline" onClick={() => setShowCamera(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={capturePhoto}>
+                      <Camera className="h-4 w-4 mr-2" />
+                      Capturar Foto
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </TooltipProvider>
-    </Layout>
-    </AuthGuard>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </TooltipProvider >
+      </Layout >
+    </AuthGuard >
   )
 }

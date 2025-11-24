@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 46, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/David%20Zapata/Desktop/viaticos/src/app/api/config/route.ts"],"sourcesContent":["import { NextResponse } from 'next/server'\n\nexport async function GET() {\n  const apiUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_API_URL || ''\n  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || ''\n  const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || ''\n  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || ''\n\n  // Validación (opcional pero recomendado)\n  if (!apiUrl || !apiKey || !authDomain || !projectId) {\n    return NextResponse.json(\n      {\n        error: 'Missing environment variables',\n        received: {\n          apiUrl,\n          apiKey,\n          authDomain,\n          projectId,\n        },\n      },\n      { status: 500 }\n    )\n  }\n\n  // Respuesta correcta\n  return NextResponse.json({\n    firebase: {\n      apiKey,\n      authDomain,\n      projectId,\n    },\n    apiUrl,\n  })\n}\n"],"names":[],"mappings":";;;;AAAA;;AAEO,eAAe;IACpB,MAAM,SAAS,yFAA8C;IAC7D,MAAM,SAAS,+EAA4C;IAC3D,MAAM,aAAa,sEAAgD;IACnE,MAAM,YAAY,sDAA+C;IAEjE,yCAAyC;IACzC;;IAeA,qBAAqB;IACrB,OAAO,gJAAY,CAAC,IAAI,CAAC;QACvB,UAAU;YACR;YACA;YACA;QACF;QACA;IACF;AACF"}}]
-}

@@ -19,6 +19,25 @@ function handleCORS(request, env) {
   return new Response(null, { status: 403 })
 }
 
+function getPeruDateTime() {
+  const now = new Date();
+  const options = {
+    timeZone: 'America/Lima',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  };
+  const formatter = new Intl.DateTimeFormat('es-PE', options);
+  const parts = formatter.formatToParts(now);
+  const p = {};
+  parts.forEach(({ type, value }) => p[type] = value);
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second}`;
+}
+
 // ===================== Firebase =====================
 async function verifyFirebaseToken(token, env) {
   try {
@@ -104,16 +123,16 @@ async function isUserActive(env, uid, email = '') {
 async function setUserRole(env, uid, role, estado = 'activo', crearCarpeta = 1, email = null, displayName = null) {
   try {
     await env.DB.prepare(
-      `INSERT INTO user_roles (user_id, role, estado, crear_carpeta, email, displayName, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+      `INSERT INTO user_roles (user_id, role, estado, crear_carpeta, email, displayName, updated_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(user_id) DO UPDATE SET
          role = excluded.role,
          estado = COALESCE(excluded.estado, estado),
          crear_carpeta = COALESCE(excluded.crear_carpeta, crear_carpeta),
          email = excluded.email,
          displayName = excluded.displayName,
-         updated_at = datetime('now')`
-    ).bind(uid, role, estado, crearCarpeta, email, displayName).run()
+         updated_at = ?`
+    ).bind(uid, role, estado, crearCarpeta, email, displayName, getPeruDateTime(), getPeruDateTime(), getPeruDateTime()).run()
     return true
   } catch (e) {
     console.error('Error estableciendo rol:', e)
@@ -126,8 +145,8 @@ async function setUserRole(env, uid, role, estado = 'activo', crearCarpeta = 1, 
 async function setUserStatus(env, uid, estado) {
   try {
     await env.DB.prepare(
-      `UPDATE user_roles SET estado = ?, updated_at = datetime('now') WHERE user_id = ?`
-    ).bind(estado, uid).run()
+      `UPDATE user_roles SET estado = ?, updated_at = ? WHERE user_id = ?`
+    ).bind(estado, getPeruDateTime(), uid).run()
     return true
   } catch (e) { console.error('Error actualizando estado:', e); return false }
 }
@@ -136,8 +155,8 @@ async function setUserStatus(env, uid, estado) {
 async function setUserCreateFolder(env, uid, crearCarpeta) {
   try {
     await env.DB.prepare(
-      `UPDATE user_roles SET crear_carpeta = ?, updated_at = datetime('now') WHERE user_id = ?`
-    ).bind(crearCarpeta ? 1 : 0, uid).run()
+      `UPDATE user_roles SET crear_carpeta = ?, updated_at = ? WHERE user_id = ?`
+    ).bind(crearCarpeta ? 1 : 0, getPeruDateTime(), uid).run()
     return true
   } catch (e) { console.error('Error actualizando crear_carpeta:', e); return false }
 }
@@ -900,9 +919,9 @@ export default {
               `UPDATE user_roles SET 
                 email = ?,
                 displayName = ?,
-                updated_at = datetime('now')
+                updated_at = ?
                WHERE user_id = ?`
-            ).bind(user.email || null, user.displayName || null, user.uid).run()
+            ).bind(user.email || null, user.displayName || null, getPeruDateTime(), user.uid).run()
           }
 
           const accessToken = await getOneDriveAccessToken(env)
@@ -1190,7 +1209,7 @@ export default {
 
           // Insertar en la base de datos incluyendo folder_path
           await env.DB.prepare(`INSERT INTO viaticos (id, usuario_id, fecha, tipo, monto, descripcion, folder_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-            .bind(viaticoId, user.uid, dbFormattedDate, tipo, parseFloat(monto), descripcion || '', folderPath, registrationDateTime.toISOString(), registrationDateTime.toISOString())
+            .bind(viaticoId, user.uid, dbFormattedDate, tipo, parseFloat(monto), descripcion || '', folderPath, getPeruDateTime(), getPeruDateTime())
             .run()
 
           return new Response(JSON.stringify({
@@ -1404,15 +1423,23 @@ export default {
           }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
 
-        const role = await getUserRole(env, user.uid, user.email)
+        // Intentar obtener email de la BD si no viene en el token
         let userData = await env.DB.prepare('SELECT estado, crear_carpeta, email, displayName FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+
+        const effectiveEmail = (user.email && user.email !== 'unknown@example.com') ? user.email : (userData?.email || '')
+        const role = await getUserRole(env, user.uid, effectiveEmail)
 
         if (!userData) {
           await setUserRole(env, user.uid, role, 'activo', 1, user.email, user.displayName)
         } else {
-          await setUserRole(env, user.uid, role, userData.estado, userData.crear_carpeta, user.email, user.displayName)
+          // No sobrescribir email/displayName si ya existen y los del token son genéricos
+          const newEmail = (user.email && user.email !== 'unknown@example.com') ? user.email : userData.email
+          const newDisplayName = (user.displayName && user.displayName !== 'Anonimo') ? user.displayName : userData.displayName
+
+          await setUserRole(env, user.uid, role, userData.estado, userData.crear_carpeta, newEmail, newDisplayName)
         }
 
+        // Recargar datos actualizados
         userData = await env.DB.prepare('SELECT estado, crear_carpeta, email, displayName FROM user_roles WHERE user_id = ?').bind(user.uid).first()
 
         return new Response(JSON.stringify({

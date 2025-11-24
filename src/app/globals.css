@@ -37,3 +37,23 @@
   }
 }
 
+/* Fix react-day-picker header alignment */
+.rdp {
+  --rdp-cell-size: 36px;
+}
+
+.rdp-head_cell {
+  width: var(--rdp-cell-size);
+  text-align: center;
+}
+
+.rdp-cell {
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+}
+
+.rdp-day {
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+}
+

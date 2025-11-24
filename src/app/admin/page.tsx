@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch'
 import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, ExternalLink, Trash2, Ban, CheckCircle2 } from 'lucide-react'
 import Layout from '@/components/Layout'
 import RoleGuard from '@/components/RoleGuard'
+import ReportsView from '@/components/admin/ReportsView'
 import LoadingOverlay from '@/components/LoadingOverlay'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -353,70 +354,11 @@ export default function AdminPage() {
             </div>
 
             <TabsContent value="viaticos" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Todos los Viáticos</CardTitle>
-                  <CardDescription>
-                    Lista completa de viáticos registrados en el sistema
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {viaticos.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No hay viáticos registrados
-                    </div>
-                  ) : (
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Usuario</TableHead>
-                            <TableHead>Fecha</TableHead>
-                            <TableHead>Tipo</TableHead>
-                            <TableHead>Monto</TableHead>
-                            <TableHead>Descripción</TableHead>
-                            <TableHead className="text-right">Acciones</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {viaticos.map((viatico) => {
-                            const user = users.find(u => u.uid === viatico.usuario_id)
-                            const monto = typeof viatico.monto === 'string' ? parseFloat(viatico.monto) : viatico.monto
-                            return (
-                              <TableRow key={viatico.id}>
-                                <TableCell>
-                                  {user?.displayName || user?.email || viatico.usuario_id}
-                                </TableCell>
-                                <TableCell>
-                                  {format(new Date(viatico.fecha), 'dd/MM/yyyy', { locale: es })}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant="outline">{viatico.tipo}</Badge>
-                                </TableCell>
-                                <TableCell>
-                                  S/ {monto.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {/* CORREGIDO: Cambiar $ a S/ y es-MX a es-PE */}
-                                </TableCell>
-                                <TableCell className="max-w-xs truncate">
-                                  {viatico.descripcion || '-'}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => handleDeleteViatico(viatico.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            )
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <ReportsView
+                viaticos={viaticos}
+                users={users}
+                onDelete={handleDeleteViatico}
+              />
             </TabsContent>
 
             <TabsContent value="usuarios" className="space-y-4">

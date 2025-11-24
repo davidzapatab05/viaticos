@@ -22,30 +22,17 @@ let auth = null;
 /* ======================================================
    FUNCIÓN 1 — OBTENER CONFIGURACIÓN DE FIREBASE
    ====================================================== */ async function getFirebaseConfig() {
-    // 🚀 SSR — usar variables de entorno directamente
-    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
-    ;
-    // 🚀 Cliente — obtener desde /api/config
-    try {
-        const response = await fetch('/api/config');
-        if (!response.ok) throw new Error('Failed to fetch /api/config');
-        const json = await response.json();
-        // Validar
-        if (!json?.firebase?.apiKey) {
-            console.error('❌ /api/config: firebase.apiKey vacío');
-        }
-        return json;
-    } catch (err) {
-        console.error('❌ Error obteniendo configuración:', err);
-        return {
-            firebase: {
-                apiKey: '',
-                authDomain: '',
-                projectId: ''
-            },
-            apiUrl: 'https://viaticos.davidzapata-dz051099.workers.dev'
-        };
-    }
+    // 🚀 RETORNAR SIEMPRE VALORES HARDCODED
+    // Esto elimina la dependencia de /api/config y de process.env
+    // para evitar problemas de espacios en blanco en Vercel.
+    return {
+        firebase: {
+            apiKey: 'AIzaSyDl0BvJnN3m2AVSZpCr6Dqbt3mIMa7ZITM',
+            authDomain: 'viaticos-d5652.firebaseapp.com',
+            projectId: 'viaticos-d5652'
+        },
+        apiUrl: 'https://viaticos.davidzapata-dz051099.workers.dev'
+    };
 }
 async function initializeFirebase() {
     if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
@@ -57,7 +44,7 @@ async function initializeFirebase() {
     try {
         const { firebase: firebaseConfig } = await getFirebaseConfig();
         if (!firebaseConfig.apiKey) {
-            console.warn('⚠ Firebase no está configurado. Revisa tus variables NEXT_PUBLIC_FIREBASE_*');
+            console.warn('⚠ Firebase no está configurado.');
             return null;
         }
         if ((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$app$2f$dist$2f$esm$2f$index$2e$esm$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getApps"])().length === 0) {
@@ -695,31 +682,41 @@ function AuthProvider({ children }) {
                     unsub = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$firebase$2f$node_modules$2f40$firebase$2f$auth$2f$dist$2f$esm$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["onAuthStateChanged"])(currentAuth, {
                         "AuthProvider.useEffect.setupAuth": async (user)=>{
                             setUser(user);
+                            // No bloquear la UI mientras se obtienen los datos del usuario
+                            // Establecer loading a false inmediatamente para que la app pueda renderizar
                             if (user) {
-                                try {
-                                    const token = await user.getIdToken();
-                                    document.cookie = `firebase-token=${token}; path=/; max-age=604800; SameSite=Lax; Secure`;
-                                    const myUser = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getMyUser"])();
-                                    if (myUser) {
-                                        setAppUser(myUser);
+                                // Fetch en segundo plano
+                                user.getIdToken().then({
+                                    "AuthProvider.useEffect.setupAuth": (token)=>{
+                                        document.cookie = `firebase-token=${token}; path=/; max-age=604800; SameSite=Lax; Secure`;
+                                        return (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getMyUser"])();
                                     }
-                                    setInterval({
-                                        "AuthProvider.useEffect.setupAuth": async ()=>{
-                                            try {
-                                                const currentUser = currentAuth.currentUser;
-                                                if (currentUser) {
-                                                    const newToken = await currentUser.getIdToken(true);
-                                                    document.cookie = `firebase-token=${newToken}; path=/; max-age=604800; SameSite=Lax; Secure`;
-                                                }
-                                            } catch (e) {
-                                                console.warn('Error renovando token:', e.message || e);
-                                            }
+                                }["AuthProvider.useEffect.setupAuth"]).then({
+                                    "AuthProvider.useEffect.setupAuth": (myUser)=>{
+                                        if (myUser) {
+                                            setAppUser(myUser);
                                         }
-                                    }["AuthProvider.useEffect.setupAuth"], 3600000);
-                                } catch (e) {
-                                    console.warn('Error en onAuthStateChanged:', e.message || e);
-                                    setAppUser(null);
-                                }
+                                    }
+                                }["AuthProvider.useEffect.setupAuth"]).catch({
+                                    "AuthProvider.useEffect.setupAuth": (e)=>{
+                                        console.warn('Error fetching user data:', e);
+                                        setAppUser(null);
+                                    }
+                                }["AuthProvider.useEffect.setupAuth"]);
+                                // Setup token refresh interval
+                                setInterval({
+                                    "AuthProvider.useEffect.setupAuth": async ()=>{
+                                        try {
+                                            const currentUser = currentAuth.currentUser;
+                                            if (currentUser) {
+                                                const newToken = await currentUser.getIdToken(true);
+                                                document.cookie = `firebase-token=${newToken}; path=/; max-age=604800; SameSite=Lax; Secure`;
+                                            }
+                                        } catch (e) {
+                                            console.warn('Error renovando token:', e.message || e);
+                                        }
+                                    }
+                                }["AuthProvider.useEffect.setupAuth"], 3600000);
                             } else {
                                 document.cookie = 'firebase-token=; path=/; max-age=0';
                                 setAppUser(null);
@@ -796,6 +793,13 @@ function AuthProvider({ children }) {
                 user: result.user
             };
         } catch (error) {
+            if (error.code === 'auth/popup-closed-by-user') {
+                console.log('Usuario cerró el popup de autenticación');
+                return {
+                    success: false,
+                    error: 'Inicio de sesión cancelado por el usuario'
+                };
+            }
             console.error('Error en signInWithMicrosoft:', error);
             return {
                 success: false,
@@ -867,7 +871,7 @@ function AuthProvider({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/src/contexts/AuthContext.tsx",
-        lineNumber: 238,
+        lineNumber: 245,
         columnNumber: 5
     }, this);
 }

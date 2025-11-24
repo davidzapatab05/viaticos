@@ -9,42 +9,16 @@ let auth: Auth | null = null
    FUNCIÓN 1 — OBTENER CONFIGURACIÓN DE FIREBASE
    ====================================================== */
 async function getFirebaseConfig() {
-  // 🚀 SSR — usar valores hardcoded para evitar problemas de espacios en Vercel
-  if (typeof window === 'undefined') {
-    return {
-      firebase: {
-        apiKey: 'AIzaSyDl0BvJnN3m2AVSZpCr6Dqbt3mIMa7ZITM',
-        authDomain: 'viaticos-d5652.firebaseapp.com',
-        projectId: 'viaticos-d5652',
-      },
-      apiUrl:
-        process.env.NEXT_PUBLIC_CLOUDFLARE_API_URL ??
-        'https://viaticos.davidzapata-dz051099.workers.dev',
-    }
-  }
-
-  // 🚀 Cliente — obtener desde /api/config
-  try {
-    const response = await fetch('/api/config')
-    if (!response.ok) throw new Error('Failed to fetch /api/config')
-    const json = await response.json()
-
-    // Validar
-    if (!json?.firebase?.apiKey) {
-      console.error('❌ /api/config: firebase.apiKey vacío')
-    }
-
-    return json
-  } catch (err) {
-    console.error('❌ Error obteniendo configuración:', err)
-    return {
-      firebase: {
-        apiKey: '',
-        authDomain: '',
-        projectId: '',
-      },
-      apiUrl: 'https://viaticos.davidzapata-dz051099.workers.dev',
-    }
+  // 🚀 RETORNAR SIEMPRE VALORES HARDCODED
+  // Esto elimina la dependencia de /api/config y de process.env
+  // para evitar problemas de espacios en blanco en Vercel.
+  return {
+    firebase: {
+      apiKey: 'AIzaSyDl0BvJnN3m2AVSZpCr6Dqbt3mIMa7ZITM',
+      authDomain: 'viaticos-d5652.firebaseapp.com',
+      projectId: 'viaticos-d5652',
+    },
+    apiUrl: 'https://viaticos.davidzapata-dz051099.workers.dev',
   }
 }
 
@@ -60,7 +34,7 @@ export async function initializeFirebase() {
 
     if (!firebaseConfig.apiKey) {
       console.warn(
-        '⚠ Firebase no está configurado. Revisa tus variables NEXT_PUBLIC_FIREBASE_*'
+        '⚠ Firebase no está configurado.'
       )
       return null
     }

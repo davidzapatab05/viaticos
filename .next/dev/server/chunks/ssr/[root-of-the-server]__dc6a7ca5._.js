@@ -26,19 +26,17 @@ let auth = null;
 /* ======================================================
    FUNCIÓN 1 — OBTENER CONFIGURACIÓN DE FIREBASE
    ====================================================== */ async function getFirebaseConfig() {
-    // 🚀 SSR — usar variables de entorno directamente
-    if ("TURBOPACK compile-time truthy", 1) {
-        return {
-            firebase: {
-                apiKey: ("TURBOPACK compile-time value", "AIzaSyDl0BvJnN3m2AVSZpCr6Dqbt3mIMa7ZITM") ?? '',
-                authDomain: ("TURBOPACK compile-time value", "viaticos-d5652.firebaseapp.com") ?? '',
-                projectId: ("TURBOPACK compile-time value", "viaticos-d5652") ?? ''
-            },
-            apiUrl: ("TURBOPACK compile-time value", "https://viaticos.davidzapata-dz051099.workers.dev") ?? 'https://viaticos.davidzapata-dz051099.workers.dev'
-        };
-    }
-    //TURBOPACK unreachable
-    ;
+    // 🚀 RETORNAR SIEMPRE VALORES HARDCODED
+    // Esto elimina la dependencia de /api/config y de process.env
+    // para evitar problemas de espacios en blanco en Vercel.
+    return {
+        firebase: {
+            apiKey: 'AIzaSyDl0BvJnN3m2AVSZpCr6Dqbt3mIMa7ZITM',
+            authDomain: 'viaticos-d5652.firebaseapp.com',
+            projectId: 'viaticos-d5652'
+        },
+        apiUrl: 'https://viaticos.davidzapata-dz051099.workers.dev'
+    };
 }
 async function initializeFirebase() {
     if ("TURBOPACK compile-time truthy", 1) return null;
@@ -642,29 +640,33 @@ function AuthProvider({ children }) {
             }
             unsub = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$firebase$2f$node_modules$2f40$firebase$2f$auth$2f$dist$2f$node$2d$esm$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["onAuthStateChanged"])(currentAuth, async (user)=>{
                 setUser(user);
+                // No bloquear la UI mientras se obtienen los datos del usuario
+                // Establecer loading a false inmediatamente para que la app pueda renderizar
                 if (user) {
-                    try {
-                        const token = await user.getIdToken();
+                    // Fetch en segundo plano
+                    user.getIdToken().then((token)=>{
                         document.cookie = `firebase-token=${token}; path=/; max-age=604800; SameSite=Lax; Secure`;
-                        const myUser = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getMyUser"])();
+                        return (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getMyUser"])();
+                    }).then((myUser)=>{
                         if (myUser) {
                             setAppUser(myUser);
                         }
-                        setInterval(async ()=>{
-                            try {
-                                const currentUser = currentAuth.currentUser;
-                                if (currentUser) {
-                                    const newToken = await currentUser.getIdToken(true);
-                                    document.cookie = `firebase-token=${newToken}; path=/; max-age=604800; SameSite=Lax; Secure`;
-                                }
-                            } catch (e) {
-                                console.warn('Error renovando token:', e.message || e);
-                            }
-                        }, 3600000);
-                    } catch (e) {
-                        console.warn('Error en onAuthStateChanged:', e.message || e);
+                    }).catch((e)=>{
+                        console.warn('Error fetching user data:', e);
                         setAppUser(null);
-                    }
+                    });
+                    // Setup token refresh interval
+                    setInterval(async ()=>{
+                        try {
+                            const currentUser = currentAuth.currentUser;
+                            if (currentUser) {
+                                const newToken = await currentUser.getIdToken(true);
+                                document.cookie = `firebase-token=${newToken}; path=/; max-age=604800; SameSite=Lax; Secure`;
+                            }
+                        } catch (e) {
+                            console.warn('Error renovando token:', e.message || e);
+                        }
+                    }, 3600000);
                 } else {
                     document.cookie = 'firebase-token=; path=/; max-age=0';
                     setAppUser(null);
@@ -736,6 +738,13 @@ function AuthProvider({ children }) {
                 user: result.user
             };
         } catch (error) {
+            if (error.code === 'auth/popup-closed-by-user') {
+                console.log('Usuario cerró el popup de autenticación');
+                return {
+                    success: false,
+                    error: 'Inicio de sesión cancelado por el usuario'
+                };
+            }
             console.error('Error en signInWithMicrosoft:', error);
             return {
                 success: false,
@@ -807,7 +816,7 @@ function AuthProvider({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/src/contexts/AuthContext.tsx",
-        lineNumber: 238,
+        lineNumber: 245,
         columnNumber: 5
     }, this);
 }
