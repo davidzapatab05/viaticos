@@ -48,6 +48,9 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
 
       // Mejorar mensajes de error
       if (response.status === 401) {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login'
+        }
         throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.')
       }
 
@@ -69,8 +72,11 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
 
     return data
   } catch (error) {
-    // Si el error es de autenticación, propagarlo con mensaje claro
-    if (error instanceof Error && error.message.includes('Usuario no autenticado')) {
+    // Si el error es de autenticación, propagarlo con mensaje claro y redirigir
+    if (error instanceof Error && (error.message.includes('Usuario no autenticado') || error.message.includes('Sesión expirada'))) {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
       throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.')
     }
     throw error
@@ -261,6 +267,13 @@ export async function setUserCreateFolder(uid: string, crearCarpeta: boolean) {
   return apiRequest(`/api/users/${uid}/create-folder`, {
     method: 'PUT',
     body: JSON.stringify({ crear_carpeta: crearCarpeta }),
+  })
+}
+
+export async function closeDay(date: string) {
+  return apiRequest('/api/users/close-day', {
+    method: 'POST',
+    body: JSON.stringify({ date }),
   })
 }
 

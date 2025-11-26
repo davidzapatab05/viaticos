@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getCurrentUser } from '@/services/api'
+
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { Avatar, AvatarFallback } from './ui/avatar'
@@ -20,12 +20,13 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 
+import { CountdownBanner } from './CountdownBanner'
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, signOut, appUser } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [role, setRole] = useState<string | null>(null)
 
   const handleSignOut = async () => {
     const result = await signOut()
@@ -47,32 +48,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (role === 'admin' || role === 'super_admin') {
+  if (appUser?.role === 'admin' || appUser?.role === 'super_admin') {
     navItems.push({ path: '/admin', label: 'Admin', icon: Settings })
   }
 
-  useEffect(() => {
-    let mounted = true
-    async function fetchUser() {
-      try {
-        const res = await getCurrentUser()
-        if (mounted && res && res.user) {
-          setRole(res.user.role)
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
 
-    if (user) {
-      fetchUser()
-    }
-    return () => { mounted = false }
-  }, [user])
 
   const getRoleIcon = () => {
-    if (role === 'super_admin') return <Crown className="h-3.5 w-3.5 text-yellow-500" />
-    if (role === 'admin') return <Shield className="h-3.5 w-3.5 text-blue-500" />
+    if (appUser?.role === 'super_admin') return <Crown className="h-3.5 w-3.5 text-yellow-500" />
+    if (appUser?.role === 'admin') return <Shield className="h-3.5 w-3.5 text-blue-500" />
     return <User className="h-3.5 w-3.5 text-muted-foreground" />
   }
 
@@ -93,6 +77,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
+      <CountdownBanner />
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center">
           <Link href="/dashboard" className="mr-6 flex items-center space-x-2">
@@ -121,7 +106,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </nav>
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-2">
-              {role && (
+              {appUser?.role && (
                 <Badge variant={getRoleBadgeVariant()} className="text-xs">
                   {getRoleIcon()}
                   <span className="ml-1">{getRoleLabel()}</span>
@@ -170,7 +155,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <div>
                       <SheetTitle>{displayName}</SheetTitle>
                       <SheetDescription>{user?.email}</SheetDescription>
-                      {role && (
+                      {appUser?.role && (
                         <Badge variant={getRoleBadgeVariant()} className="mt-2 text-xs">
                           {getRoleIcon()}
                           <span className="ml-1">Rol: {getRoleLabel()}</span>

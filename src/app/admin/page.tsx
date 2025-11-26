@@ -346,8 +346,8 @@ export default function AdminPage() {
                 <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
               </TabsList>
               <div className="flex items-center gap-2">
-                <Button onClick={loadData} variant="outline" size="sm">
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                <Button onClick={loadData} variant="outline" size="sm" disabled={loading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                   Actualizar
                 </Button>
               </div>
@@ -371,10 +371,6 @@ export default function AdminPage() {
                         Limpiar Anonymous
                       </Button>
                     )}
-                    <Button onClick={loadData} disabled={loading} size="sm">
-                      <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                      Actualizar
-                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>

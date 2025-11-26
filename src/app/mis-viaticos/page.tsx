@@ -16,13 +16,18 @@ import Link from 'next/link'
 import { RefreshCw, Eye, Receipt, Loader2, FileText, DollarSign, Grid3x3, Table2, TrendingUp, ArrowRight } from 'lucide-react'
 import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
-
 interface Viatico {
   id: string
   fecha: string
   descripcion: string
   tipo: string
   monto: number | string
+  para?: string
+  que_sustenta?: string
+  tipo_comprobante?: string
+  numero_documento?: string
+  numero_comprobante?: string
+  usuario_id?: string
 }
 
 export default function MisViaticosPage() {
@@ -212,33 +217,47 @@ export default function MisViaticosPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead>Día</TableHead>
+                            <TableHead>Mes</TableHead>
+                            <TableHead>Año</TableHead>
                             <TableHead>Fecha</TableHead>
-                            <TableHead>Descripción</TableHead>
-                            <TableHead>Tipo</TableHead>
+                            <TableHead>Para</TableHead>
+                            <TableHead>Que Sustenta</TableHead>
+                            <TableHead>Trabajador</TableHead>
+                            <TableHead>Tipo Comp.</TableHead>
+                            <TableHead>N° Doc.</TableHead>
+                            <TableHead>N° Comp.</TableHead>
                             <TableHead className="text-right">Monto</TableHead>
+                            <TableHead>Descripción</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {viaticos.map((viatico) => (
                             <TableRow key={viatico.id}>
-                              <TableCell className="font-medium">
-                                {format(new Date(viatico.fecha), 'dd MMM yyyy', { locale: es })}
+                              <TableCell>{format(new Date(viatico.fecha), 'd')}</TableCell>
+                              <TableCell>{format(new Date(viatico.fecha), 'M')}</TableCell>
+                              <TableCell>{format(new Date(viatico.fecha), 'yyyy')}</TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                {format(new Date(viatico.fecha), 'dd/MM/yyyy')}
                               </TableCell>
-                              <TableCell>
+                              <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.para || '-'}</Badge></TableCell>
+                              <TableCell className="whitespace-nowrap">{viatico.que_sustenta || 'VIATICO'}</TableCell>
+                              <TableCell className="font-medium">{appUser?.displayName || user?.email}</TableCell>
+                              <TableCell><Badge variant="secondary" className="whitespace-nowrap">{viatico.tipo_comprobante || '-'}</Badge></TableCell>
+                              <TableCell className="whitespace-nowrap">{viatico.numero_documento || '-'}</TableCell>
+                              <TableCell className="whitespace-nowrap">{viatico.numero_comprobante || '-'}</TableCell>
+                              <TableCell className="text-right font-medium whitespace-nowrap">
+                                S/ {parseFloat(String(viatico.monto || 0)).toFixed(2)}
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate">
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className="truncate block max-w-[300px]">{viatico.descripcion}</span>
+                                    <span className="truncate block">{viatico.descripcion}</span>
                                   </TooltipTrigger>
                                   <TooltipContent>
                                     <p className="max-w-xs">{viatico.descripcion}</p>
                                   </TooltipContent>
                                 </Tooltip>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{viatico.tipo || 'otro'}</Badge>
-                              </TableCell>
-                              <TableCell className="text-right font-medium">
-                                S/ {parseFloat(String(viatico.monto || 0)).toFixed(2)}
                               </TableCell>
                             </TableRow>
                           ))}

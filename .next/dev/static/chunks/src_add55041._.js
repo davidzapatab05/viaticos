@@ -239,6 +239,8 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
 __turbopack_context__.s([
     "cleanupAnonymousUsers",
     ()=>cleanupAnonymousUsers,
+    "closeDay",
+    ()=>closeDay,
     "createUserFolder",
     ()=>createUserFolder,
     "deleteUser",
@@ -324,6 +326,9 @@ async function apiRequest(endpoint, options = {}) {
             }
             // Mejorar mensajes de error
             if (response.status === 401) {
+                if ("TURBOPACK compile-time truthy", 1) {
+                    window.location.href = '/login';
+                }
                 throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
             }
             throw new Error(data.message || data.error || 'Error en la solicitud');
@@ -341,8 +346,11 @@ async function apiRequest(endpoint, options = {}) {
         }
         return data;
     } catch (error) {
-        // Si el error es de autenticación, propagarlo con mensaje claro
-        if (error instanceof Error && error.message.includes('Usuario no autenticado')) {
+        // Si el error es de autenticación, propagarlo con mensaje claro y redirigir
+        if (error instanceof Error && (error.message.includes('Usuario no autenticado') || error.message.includes('Sesión expirada'))) {
+            if ("TURBOPACK compile-time truthy", 1) {
+                window.location.href = '/login';
+            }
             throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
         }
         throw error;
@@ -539,6 +547,14 @@ async function setUserCreateFolder(uid, crearCarpeta) {
         method: 'PUT',
         body: JSON.stringify({
             crear_carpeta: crearCarpeta
+        })
+    });
+}
+async function closeDay(date) {
+    return apiRequest('/api/users/close-day', {
+        method: 'POST',
+        body: JSON.stringify({
+            date
         })
     });
 }
@@ -871,7 +887,7 @@ function AuthProvider({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/src/contexts/AuthContext.tsx",
-        lineNumber: 245,
+        lineNumber: 246,
         columnNumber: 5
     }, this);
 }

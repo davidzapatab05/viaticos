@@ -660,7 +660,7 @@ async function uploadToOneDrive(imageBuffer, fileName, contentType, userId, fech
   return { success: true, url: shareUrl, fileId: uploadData.id, folderPath: fullPath }
 }
 
-// Eliminar funciÃ³n createAllUserFolders - no se necesita
+
 
 // ===================== Handler Principal =====================
 export default {
@@ -1003,6 +1003,39 @@ export default {
         }
       }
 
+      // PUT /api/users/:id/role (actualizar rol de usuario - solo super_admin)
+      if (path.match(/^\/api\/users\/[^\/]+\/role$/) && request.method === 'PUT') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        // Verificar si es super_admin
+        if (!(await isSuperAdmin(env, user.uid, user.email))) {
+          return new Response(JSON.stringify({ error: 'Acceso denegado: Solo super_admin puede cambiar roles' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        const targetUid = path.split('/')[3] // /api/users/:id/role
+
+        try {
+          const body = await request.json()
+          const { role } = body
+
+          if (!role || !['usuario', 'admin', 'super_admin'].includes(role)) {
+            return new Response(JSON.stringify({ error: 'Rol inválido' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          // Actualizar rol en la BD
+          await env.DB.prepare('UPDATE user_roles SET role = ?, updated_at = ? WHERE user_id = ?')
+            .bind(role, getPeruDateTime(), targetUid)
+            .run()
+
+          return new Response(JSON.stringify({
+            success: true,
+            message: `Rol actualizado a ${role}`
+          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (error) {
+          return new Response(JSON.stringify({ success: false, error: error.message || 'Error actualizando rol' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
       // GET /api/get-viaticos-id (obtener ID de carpeta viaticos si existe)
       if (path === '/api/get-viaticos-id' && request.method === 'GET') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -1021,6 +1054,53 @@ export default {
             id: 'no-existe-aun',
             message: 'Carpeta se crearÃ¡ automÃ¡ticamente al subir archivo'
           }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
+      // GET /api/users/me (obtener datos del usuario actual)
+      if (path === '/api/users/me' && request.method === 'GET') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        try {
+          // Obtener datos actualizados de la BD
+          const userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+
+          return new Response(JSON.stringify({
+            success: true,
+            user: {
+              ...user,
+              role: userData?.role || 'usuario',
+              estado: userData?.estado || 'activo',
+              crear_carpeta: userData?.crear_carpeta !== 0,
+              last_closed_date: userData?.last_closed_date // Retornar fecha de cierre
+            }
+          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (error) {
+          return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
+      // POST /api/users/close-day (cerrar el día manualmente)
+      if (path === '/api/users/close-day' && request.method === 'POST') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        try {
+          const body = await request.json().catch(() => ({}))
+          const dateToClose = body.date // Fecha a cerrar (YYYY-MM-DD)
+
+          if (!dateToClose) {
+            return new Response(JSON.stringify({ error: 'Fecha requerida' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          // Actualizar last_closed_date en la BD
+          await env.DB.prepare('UPDATE user_roles SET last_closed_date = ? WHERE user_id = ?').bind(dateToClose, user.uid).run()
+
+          return new Response(JSON.stringify({
+            success: true,
+            message: `Día ${dateToClose} cerrado exitosamente. Los nuevos viáticos irán al día siguiente.`
+          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (error) {
+          return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
       }
 
@@ -1048,17 +1128,57 @@ export default {
         // Por defecto, createTxt es true si no se especifica, o si el valor es '1'
         const createTxt = formData.get('createTxt') === null || formData.get('createTxt') === '1'
 
-        // La fecha se generarÃ¡ automÃ¡ticamente en el backend
-        const registrationDateTime = new Date();
-
-        // Formatear a la zona horaria de Lima, PerÃº (UTC-5)
+        // Lógica de FECHA ACTIVA (Cierre automático a las 10 AM y manual)
+        const now = new Date();
         const dateOptions = { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' };
         const timeOptions = { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
 
-        const formattedDate = new Intl.DateTimeFormat('es-PE', dateOptions).format(registrationDateTime);
-        const formattedTime = new Intl.DateTimeFormat('es-PE', timeOptions).format(registrationDateTime);
-        const formattedDateTime = `${formattedDate.split('/').reverse().join('-')}_${formattedTime.replace(/:/g, '-')}`;
-        const dbFormattedDate = formattedDate.split('/').reverse().join('-'); // Format for DB: YYYY-MM-DD
+        const peruDateParts = new Intl.DateTimeFormat('es-PE', dateOptions).formatToParts(now);
+        const peruTimeParts = new Intl.DateTimeFormat('es-PE', timeOptions).formatToParts(now);
+
+        const getPart = (parts, type) => parts.find(p => p.type === type).value;
+
+        const year = parseInt(getPart(peruDateParts, 'year'));
+        const month = parseInt(getPart(peruDateParts, 'month')); // 1-12
+        const day = parseInt(getPart(peruDateParts, 'day'));
+        const hour = parseInt(getPart(peruTimeParts, 'hour'));
+
+        // Fecha actual en Perú (YYYY-MM-DD)
+        const todayString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+        // Fecha de ayer en Perú
+        const yesterdayDate = new Date(year, month - 1, day - 1);
+        const yesterdayString = `${yesterdayDate.getFullYear()}-${(yesterdayDate.getMonth() + 1).toString().padStart(2, '0')}-${yesterdayDate.getDate().toString().padStart(2, '0')}`;
+
+        // Obtener last_closed_date del usuario
+        const userRoleData = await env.DB.prepare('SELECT last_closed_date FROM user_roles WHERE user_id = ?').bind(user.uid).first();
+        const lastClosedDate = userRoleData?.last_closed_date;
+
+        let activeDateString = todayString; // Por defecto hoy
+
+        // Regla: Si es antes de las 10 AM y NO se ha cerrado ayer manualmente, la fecha activa es ayer
+        if (hour < 10) {
+          if (lastClosedDate !== yesterdayString) {
+            activeDateString = yesterdayString;
+          } else {
+            // Si ya cerró ayer manualmente, entonces es hoy (aunque sea antes de las 10am)
+            activeDateString = todayString;
+          }
+        } else {
+          // Después de las 10 AM, siempre es hoy (el cierre automático ya ocurrió)
+          activeDateString = todayString;
+        }
+
+        // Usar activeDateString para la base de datos y carpetas
+        const dbFormattedDate = activeDateString; // YYYY-MM-DD
+
+        // Reconstruir formattedDate (DD/MM/YYYY) para el TXT y display
+        const [actYear, actMonth, actDay] = activeDateString.split('-');
+        const formattedDate = `${actDay}/${actMonth}/${actYear}`;
+
+        // formattedDateTime para nombre de archivos (usamos la fecha activa + hora actual)
+        const formattedTime = new Intl.DateTimeFormat('es-PE', timeOptions).format(now);
+        const formattedDateTime = `${activeDateString}_${formattedTime.replace(/:/g, '-')}`;
 
         if (!foto || !monto) {
           return new Response(JSON.stringify({ error: 'Datos incompletos: falta foto o monto.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -1133,12 +1253,18 @@ export default {
           const txtContent = `
           DETALLE DE VIATICO
           ==================
-          Usuario: ${userDisplayName || userEmail}
-          Fecha y Hora: ${viaticoData.fechaHora}
+          Día: ${viaticoData.dia}
+          Mes: ${viaticoData.mes}
+          Año: ${viaticoData.año}
+          Fecha: ${viaticoData.fecha}
+          Para: ${viaticoData.para || 'N/A'}
+          Que Sustenta: ${viaticoData.queSustenta}
+          Trabajador: ${userDisplayName || userEmail}
+          Tipo Comp.: ${viaticoData.tipoComprobante || 'N/A'}
+          N° Doc.: ${viaticoData.numeroDocumento || 'N/A'}
+          N° Comp.: ${viaticoData.numeroComprobante || 'N/A'}
           Monto: S/ ${parseFloat(viaticoData.monto).toFixed(2)}
-          Tipo de Gasto: ${viaticoData.tipo}
-          Descripcion: ${viaticoData.descripcion || '(Sin Descripcion)'}
-          ID Viatico: ${viaticoData.id}
+          Descripción: ${viaticoData.descripcion || '(Sin Descripción)'}
             `.trim();
 
           console.log(`Creando TXT en: ${fullPath}`);
@@ -1185,9 +1311,16 @@ export default {
           if (createTxt) {
             await createTxtFile(env, user.uid, user.email, user.displayName, uniqueFolderDate, {
               id: viaticoId,
-              fechaHora: formattedDateTime.replace(/_/g, ' '),
+              dia: formattedDate.split('/')[0],
+              mes: formattedDate.split('/')[1],
+              año: formattedDate.split('/')[2],
+              fecha: formattedDate,
+              para: formData.get('para'),
+              queSustenta: 'VIATICO',
+              tipoComprobante: formData.get('tipo_comprobante'),
+              numeroDocumento: formData.get('numero_documento'),
+              numeroComprobante: formData.get('numero_comprobante'),
               monto: monto,
-              tipo: tipo,
               descripcion: descripcion
             });
           }
@@ -1309,7 +1442,11 @@ export default {
               id,
               usuario_id,
               fecha,
-              tipo,
+              para,
+              que_sustenta,
+              tipo_comprobante,
+              numero_documento,
+              numero_comprobante,
               monto,
               descripcion,
               folder_path,
@@ -1370,7 +1507,8 @@ export default {
 
           const rows = await env.DB.prepare(`
             SELECT 
-              id, usuario_id, fecha, tipo, monto, descripcion, 
+              id, usuario_id, fecha, para, que_sustenta, tipo_comprobante, 
+              numero_documento, numero_comprobante, monto, descripcion, 
               folder_path, created_at, updated_at 
             FROM viaticos 
             WHERE usuario_id = ?
@@ -1380,7 +1518,11 @@ export default {
             id: v.id,
             usuario_id: v.usuario_id,
             fecha: v.fecha,
-            tipo: v.tipo,
+            para: v.para,
+            que_sustenta: v.que_sustenta,
+            tipo_comprobante: v.tipo_comprobante,
+            numero_documento: v.numero_documento,
+            numero_comprobante: v.numero_comprobante,
             monto: v.monto,
             descripcion: v.descripcion,
             folder_path: v.folder_path,
@@ -1618,8 +1760,8 @@ export default {
           }
 
           await env.DB.prepare(
-            'UPDATE config SET value = ?, updated_at = datetime(\'now\'), updated_by = ? WHERE key = ?'
-          ).bind(value, user.email, key).run()
+            'UPDATE config SET value = ?, updated_at = ?, updated_by = ? WHERE key = ?'
+          ).bind(value, getPeruDateTime(), user.email, key).run()
 
           return new Response(JSON.stringify({
             success: true,

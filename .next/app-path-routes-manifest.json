@@ -1,0 +1,12 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/admin/page": "/admin",
+  "/api/config/route": "/api/config",
+  "/dashboard/page": "/dashboard",
+  "/login/page": "/login",
+  "/manifest.webmanifest/route": "/manifest.webmanifest",
+  "/mis-viaticos/page": "/mis-viaticos",
+  "/nuevo-viatico/page": "/nuevo-viatico",
+  "/page": "/"
+}

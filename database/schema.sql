@@ -33,9 +33,13 @@ CREATE TABLE IF NOT EXISTS viaticos (
   id TEXT PRIMARY KEY,
   usuario_id TEXT NOT NULL,
   fecha TEXT NOT NULL,
-  tipo TEXT NOT NULL,
+  para TEXT,
+  que_sustenta TEXT DEFAULT 'VIATICO',
+  tipo_comprobante TEXT,
+  numero_documento TEXT,
+  numero_comprobante TEXT,
   monto REAL NOT NULL,
-  descripcion TEXT,
+  descripcion TEXT NOT NULL,
   folder_path TEXT,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
@@ -45,7 +49,8 @@ CREATE TABLE IF NOT EXISTS viaticos (
 -- Índices para viaticos
 CREATE INDEX IF NOT EXISTS idx_viaticos_usuario_id ON viaticos(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_viaticos_fecha ON viaticos(fecha);
-CREATE INDEX IF NOT EXISTS idx_viaticos_tipo ON viaticos(tipo);
+CREATE INDEX IF NOT EXISTS idx_viaticos_tipo_comprobante ON viaticos(tipo_comprobante);
+CREATE INDEX IF NOT EXISTS idx_viaticos_para ON viaticos(para);
 
 -- =====================================================
 -- ROLES Y PERMISOS
@@ -73,6 +78,17 @@ CREATE INDEX IF NOT EXISTS idx_viaticos_tipo ON viaticos(tipo);
 -- 5. Cuando se elimina un usuario, se eliminan automáticamente sus viáticos (CASCADE)
 -- 6. Las fechas se almacenan en formato ISO 8601 (YYYY-MM-DD)
 -- 7. Los montos se almacenan como REAL (números decimales)
+-- 8. Campos en viaticos (migraciones 0003, 0004, 0005):
+--    - para: EMPRESA o PERSONAL
+--    - que_sustenta: Siempre 'VIATICO'
+--    - tipo_comprobante: FACTURA, BOLETA, RECIBO POR HONORARIO, SIN COMPROBANTE
+--    - numero_documento: RUC o DNI (opcional, puede ser NULL)
+--    - numero_comprobante: Número del comprobante (opcional, puede ser NULL)
+-- 9. Campos eliminados:
+--    - tipo: Ya no se usa (eliminado en migración 0004)
+--    - trabajador: Redundante (eliminado en migración 0004)
+--    - dia, mes, año: Redundantes, se calculan desde fecha (eliminados en migración 0005)
+-- 10. Zona horaria: Todas las fechas usan Perú - Lima (America/Lima, UTC-5)
 
 -- =====================================================
 -- ESTRUCTURA DE CARPETAS EN ONEDRIVE

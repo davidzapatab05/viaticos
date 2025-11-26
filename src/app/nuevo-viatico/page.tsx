@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { uploadViatico } from '@/services/api'
+import { uploadViatico, getCurrentUser, closeDay } from '@/services/api'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,10 +12,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { FileCheck, Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, Info, FileText, RefreshCcw } from 'lucide-react'
+import { FileCheck, Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, Info, FileText, RefreshCcw, Clock, CalendarDays, Lock } from 'lucide-react'
 import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
 
@@ -26,10 +25,17 @@ export default function NuevoViaticoPage() {
   const [previews, setPreviews] = useState<{ url: string; isPdf: boolean; name: string }[]>([])
   const [monto, setMonto] = useState('')
   const [descripcion, setDescripcion] = useState('')
-  // La fecha se tomará automáticamente en el servidor
+
+  // Nuevos campos del formulario
+  const [para, setPara] = useState('')
+  const [tipoComprobante, setTipoComprobante] = useState('')
+  const [numeroDocumento, setNumeroDocumento] = useState('')
+  const [numeroComprobante, setNumeroComprobante] = useState('')
+  const queSustenta = 'VIATICO' // Siempre VIATICO (constante)
+
+  // Mantener tipo por compatibilidad con backend (puede ser removido después)
   const [tipo, setTipo] = useState('otro')
-  // Por defecto, crear .txt estará activado
-  const [createTxt, setCreateTxt] = useState(true)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -38,6 +44,127 @@ export default function NuevoViaticoPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+
+  // Estado para lógica de fechas
+  const [activeDate, setActiveDate] = useState<string>('')
+  const [activeDateDisplay, setActiveDateDisplay] = useState<string>('')
+  const [timeLeft, setTimeLeft] = useState<string>('')
+  const [isGracePeriod, setIsGracePeriod] = useState(false)
+  const [lastClosedDate, setLastClosedDate] = useState<string | null>(null)
+  const [closingDay, setClosingDay] = useState(false)
+  const [viaticosCount, setViaticosCount] = useState(0)
+
+  useEffect(() => {
+    // Cargar datos del usuario para obtener last_closed_date
+    getCurrentUser().then(data => {
+      if (data?.user?.last_closed_date) {
+        setLastClosedDate(data.user.last_closed_date)
+      }
+    }).catch(console.error)
+  }, [])
+
+  // Efecto para contar viáticos del día activo
+  useEffect(() => {
+    if (activeDate) {
+      // Usar la función del servicio que ya maneja la URL base y el token
+      import('@/services/api').then(({ getMisViaticos }) => {
+        getMisViaticos()
+          .then(data => {
+            if (data.success && Array.isArray(data.viaticos)) {
+              // Filtrar por fecha activa
+              const count = data.viaticos.filter((v: any) => v.fecha === activeDate).length
+              setViaticosCount(count)
+            }
+          })
+          .catch(console.error)
+      })
+    }
+  }, [activeDate, success]) // Recargar cuando cambie la fecha activa o se suba un nuevo viático
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      calculateActiveDate()
+    }, 1000)
+
+    calculateActiveDate() // Ejecutar inmediatamente
+
+    return () => clearInterval(timer)
+  }, [lastClosedDate])
+
+  const calculateActiveDate = () => {
+    const now = new Date()
+    const dateOptions = { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' } as const
+    const timeOptions = { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false } as const
+
+    const peruDateParts = new Intl.DateTimeFormat('es-PE', dateOptions).formatToParts(now)
+    const peruTimeParts = new Intl.DateTimeFormat('es-PE', timeOptions).formatToParts(now)
+
+    const getPart = (parts: Intl.DateTimeFormatPart[], type: string) => parts.find(p => p.type === type)?.value || ''
+
+    const year = parseInt(getPart(peruDateParts, 'year'))
+    const month = parseInt(getPart(peruDateParts, 'month'))
+    const day = parseInt(getPart(peruDateParts, 'day'))
+    const hour = parseInt(getPart(peruTimeParts, 'hour'))
+
+    const todayString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+
+    const yesterdayDate = new Date(year, month - 1, day - 1)
+    const yesterdayString = `${yesterdayDate.getFullYear()}-${(yesterdayDate.getMonth() + 1).toString().padStart(2, '0')}-${yesterdayDate.getDate().toString().padStart(2, '0')}`
+
+    // Lógica idéntica al backend
+    let currentActiveDate = todayString
+    let inGracePeriod = false
+
+    if (hour < 10) {
+      if (lastClosedDate !== yesterdayString) {
+        currentActiveDate = yesterdayString
+        inGracePeriod = true
+
+        // Calcular tiempo restante para las 10 AM
+        const cutoffTime = new Date(now)
+        cutoffTime.setHours(10, 0, 0, 0)
+        // Ajustar si cutoffTime ya pasó (no debería si hour < 10, pero por seguridad)
+
+        const diff = cutoffTime.getTime() - now.getTime()
+        if (diff > 0) {
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+          setTimeLeft(`${hours}h ${minutes}m ${seconds}s`)
+        } else {
+          setTimeLeft('00:00:00')
+        }
+      } else {
+        currentActiveDate = todayString
+      }
+    } else {
+      currentActiveDate = todayString
+    }
+
+    setActiveDate(currentActiveDate)
+    setIsGracePeriod(inGracePeriod)
+
+    // Formato para mostrar: DD/MM/YYYY
+    const [y, m, d] = currentActiveDate.split('-')
+    setActiveDateDisplay(`${d}/${m}/${y}`)
+  }
+
+  const handleCloseDay = async () => {
+    if (!confirm(`¿Estás seguro de cerrar el día ${activeDateDisplay}? Esta acción no se puede deshacer y los siguientes viáticos se registrarán con fecha de hoy.`)) {
+      return
+    }
+
+    setClosingDay(true)
+    try {
+      await closeDay(activeDate)
+      setLastClosedDate(activeDate) // Actualizar estado local para reflejar cambio inmediato
+      // El useEffect recalculará y cambiará la fecha activa a hoy
+    } catch (e) {
+      setError('Error al cerrar el día: ' + (e as Error).message)
+    } finally {
+      setClosingDay(false)
+    }
+  }
 
   useEffect(() => {
     if (!authLoading && appUser && !appUser.crear_carpeta) {
@@ -178,8 +305,10 @@ export default function NuevoViaticoPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (files.length === 0 || !monto || !descripcion) {
-      setError('Por favor completa todos los campos y sube al menos un archivo.')
+
+    // Validación: descripcion es obligatorio
+    if (files.length === 0 || !monto || !descripcion || descripcion.trim() === '') {
+      setError('Por favor completa todos los campos obligatorios: foto, monto y descripción.')
       return
     }
 
@@ -195,7 +324,14 @@ export default function NuevoViaticoPage() {
       formData.append('monto', monto)
       formData.append('descripcion', descripcion)
       formData.append('tipo', tipo)
-      formData.append('createTxt', createTxt ? '1' : '0')
+
+      // Nuevos campos
+      formData.append('para', para)
+      formData.append('tipo_comprobante', tipoComprobante)
+      if (numeroDocumento) formData.append('numero_documento', numeroDocumento)
+      if (numeroComprobante) formData.append('numero_comprobante', numeroComprobante)
+
+      formData.append('createTxt', '1')
 
       await uploadViatico(formData)
       setSuccess(true)
@@ -268,6 +404,29 @@ export default function NuevoViaticoPage() {
                 Registra un nuevo comprobante con su foto o PDF
               </p>
             </div>
+
+            {/* Panel de Fecha Activa y Cierre */}
+            <Card className={`border-2 ${isGracePeriod ? 'border-orange-500 bg-orange-50' : 'border-primary/20 bg-primary/5'}`}>
+              <CardContent className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-full ${isGracePeriod ? 'bg-orange-100' : 'bg-primary/10'}`}>
+                    <CalendarDays className={`h-8 w-8 ${isGracePeriod ? 'text-orange-600' : 'text-primary'}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Fecha de Registro Activa</p>
+                    <h2 className={`text-3xl font-bold ${isGracePeriod ? 'text-orange-700' : 'text-primary'}`}>{activeDateDisplay}</h2>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center sm:items-end gap-2 w-full sm:w-auto">
+                  {isGracePeriod && (
+                    <p className="text-xs text-orange-600 font-medium text-center sm:text-right max-w-[250px]">
+                      Tienes hasta las 10:00 AM para registrar viáticos de ayer.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <Card>
@@ -343,20 +502,20 @@ export default function NuevoViaticoPage() {
                       </div>
                     ) : (
                       <div
-                        className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-20 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                        className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-6 sm:p-10 text-center cursor-pointer hover:bg-muted/50 transition-colors"
                         onClick={() => fileInputRef.current?.click()}>
-                        <div className="mx-auto w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                          <Upload className="w-8 h-8 text-primary" />
+                        <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                          <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
                         </div>
-                        <p className="mt-4 font-semibold">Seleccionar Archivos</p>
-                        <p className="text-sm text-muted-foreground mt-2">o arrastra y suelta aquí</p>
-                        <div className="mt-6 flex items-center justify-center gap-2 flex-wrap">
-                          <Badge variant="outline" className="text-xs">JPG</Badge>
-                          <Badge variant="outline" className="text-xs">PNG</Badge>
-                          <Badge variant="outline" className="text-xs">WEBP</Badge>
-                          <Badge variant="outline" className="text-xs">PDF</Badge>
+                        <p className="mt-2 sm:mt-4 font-semibold text-sm sm:text-base">Seleccionar Archivos</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">o arrastra y suelta aquí</p>
+                        <div className="mt-4 sm:mt-6 flex items-center justify-center gap-2 flex-wrap">
+                          <Badge variant="outline" className="text-[10px] sm:text-xs">JPG</Badge>
+                          <Badge variant="outline" className="text-[10px] sm:text-xs">PNG</Badge>
+                          <Badge variant="outline" className="text-[10px] sm:text-xs">WEBP</Badge>
+                          <Badge variant="outline" className="text-[10px] sm:text-xs">PDF</Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-4">Máximo 10MB por archivo</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-4">Máximo 10MB por archivo</p>
                       </div>
                     )}
                     <Button
@@ -372,7 +531,77 @@ export default function NuevoViaticoPage() {
                   <div className="space-y-6 pt-6 border-t">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="monto">Monto (S/)</Label>
+                        <Label htmlFor="para">Para *</Label>
+                        <Select value={para} onValueChange={setPara} required>
+                          <SelectTrigger id="para">
+                            <SelectValue placeholder="Selecciona una opción" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="EMPRESA">🏢 Empresa</SelectItem>
+                            <SelectItem value="PERSONAL">👤 Personal</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="tipo_comprobante">Tipo de Comprobante *</Label>
+                        <Select value={tipoComprobante} onValueChange={setTipoComprobante} required>
+                          <SelectTrigger id="tipo_comprobante">
+                            <SelectValue placeholder="Selecciona un tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="FACTURA">🧾 Factura</SelectItem>
+                            <SelectItem value="BOLETA">🧾 Boleta</SelectItem>
+                            <SelectItem value="RECIBO POR HONORARIO">📄 Recibo por Honorario</SelectItem>
+                            <SelectItem value="SIN COMPROBANTE">❌ Sin Comprobante</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Campo condicional: Número de Documento (RUC/DNI) */}
+                    {tipoComprobante && tipoComprobante !== 'SIN COMPROBANTE' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="numero_documento">
+                          {tipoComprobante === 'BOLETA' ? 'Número de DNI' : 'Número de RUC'}
+                        </Label>
+                        <Input
+                          id="numero_documento"
+                          type="text"
+                          value={numeroDocumento}
+                          onChange={(e) => setNumeroDocumento(e.target.value)}
+                          placeholder={tipoComprobante === 'BOLETA' ? 'Ej: 12345678' : 'Ej: 20123456789'}
+                        />
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="que_sustenta">Qué Sustenta</Label>
+                        <Input
+                          id="que_sustenta"
+                          type="text"
+                          value={queSustenta}
+                          disabled
+                          className="bg-muted"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="numero_comprobante">Número de Comprobante</Label>
+                        <Input
+                          id="numero_comprobante"
+                          type="text"
+                          value={numeroComprobante}
+                          onChange={(e) => setNumeroComprobante(e.target.value)}
+                          placeholder="Ej: 001-12345"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="monto">Monto (S/) *</Label>
                         <Input
                           id="monto"
                           type="number"
@@ -385,8 +614,9 @@ export default function NuevoViaticoPage() {
                         />
                       </div>
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="descripcion">Descripción</Label>
+                      <Label htmlFor="descripcion">Descripción *</Label>
                       <Textarea
                         id="descripcion"
                         value={descripcion}
@@ -396,36 +626,8 @@ export default function NuevoViaticoPage() {
                         rows={4}
                       />
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
-                      <div className="space-y-2">
-                        <Label htmlFor="tipo">Tipo de Gasto</Label>
-                        <Select value={tipo} onValueChange={setTipo}>
-                          <SelectTrigger id="tipo">
-                            <SelectValue placeholder="Selecciona un tipo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="desayuno">🌅 Desayuno</SelectItem>
-                            <SelectItem value="almuerzo">🍽️ Almuerzo</SelectItem>
-                            <SelectItem value="cena">🌙 Cena</SelectItem>
-                            <SelectItem value="otro">📝 Otro</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Switch id="createTxt" checked={createTxt} onCheckedChange={setCreateTxt} />
-                        <div className="flex flex-col">
-                          <Label htmlFor="createTxt" className="text-sm cursor-pointer">Crear .txt en OneDrive</Label>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="text-xs text-muted-foreground cursor-help">¿Qué es esto?</span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Crea un archivo de texto adicional con la información del viático en OneDrive</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </div>
-                    </div>
+
+
                   </div>
 
                   {error && (

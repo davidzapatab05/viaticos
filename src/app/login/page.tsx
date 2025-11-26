@@ -23,16 +23,11 @@ export default function LoginPage() {
       if (res && res.success) {
         // NO llamar a ensureMyOneDriveFolder - las carpetas se crean automáticamente al subir archivos
         await new Promise(resolve => setTimeout(resolve, 500))
-        
+
         try {
           const userData = await getCurrentUser()
-          const role = userData?.user?.role
-          
-          if (role === 'super_admin' || role === 'admin') {
-            router.push('/admin')
-          } else {
-            router.push('/dashboard')
-          }
+          // Siempre redirigir al dashboard, los admins pueden ir al panel desde el menú
+          router.push('/dashboard')
         } catch (e) {
           router.push('/dashboard')
         }

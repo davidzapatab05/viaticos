@@ -24,7 +24,11 @@ interface Viatico {
     id: string
     usuario_id: string
     fecha: string
-    tipo: string
+    para?: string
+    que_sustenta?: string
+    tipo_comprobante?: string
+    numero_documento?: string
+    numero_comprobante?: string
     monto: number | string
     descripcion: string
     url_onedrive?: string
@@ -245,13 +249,23 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                             variant="outline"
                                             size="sm"
                                             onClick={() => {
-                                                const data = selectedUserData!.viaticos.map(v => ({
-                                                    Usuario: selectedUserData!.userName,
-                                                    Fecha: format(parseISO(v.fecha), 'dd/MM/yyyy'),
-                                                    Tipo: v.tipo,
-                                                    Monto: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
-                                                    Descripcion: v.descripcion
-                                                }))
+                                                const data = selectedUserData!.viaticos.map(v => {
+                                                    const fecha = parseISO(v.fecha)
+                                                    return {
+                                                        DIA: format(fecha, 'd'),
+                                                        MES: format(fecha, 'M'),
+                                                        AÑO: format(fecha, 'yyyy'),
+                                                        FECHA: format(fecha, 'dd/MM/yyyy'),
+                                                        PARA: v.para || '',
+                                                        'QUE SUSTENTA': v.que_sustenta || 'VIATICO',
+                                                        TRABAJADOR: selectedUserData!.userName,
+                                                        'TIPO COMPROBANTE': v.tipo_comprobante || '',
+                                                        RUC: v.numero_documento || '',
+                                                        'N° COMPROBANTE': v.numero_comprobante || '',
+                                                        MONTO: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
+                                                        DESCRIPCION: v.descripcion
+                                                    }
+                                                })
                                                 exportToExcel(data, `Detalle_${selectedUserData!.userName}`)
                                             }}
                                         >
@@ -262,13 +276,24 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                             variant="outline"
                                             size="sm"
                                             onClick={() => {
-                                                const data = selectedUserData!.viaticos.map(v => [
-                                                    format(parseISO(v.fecha), 'dd/MM/yyyy'),
-                                                    v.tipo,
-                                                    `S/ ${Number(v.monto).toFixed(2)}`,
-                                                    v.descripcion || '-'
-                                                ])
-                                                exportToPDF(['Fecha', 'Tipo', 'Monto', 'Desc.'], data, `Detalle ${selectedUserData!.userName}`)
+                                                const data = selectedUserData!.viaticos.map(v => {
+                                                    const fecha = parseISO(v.fecha)
+                                                    return [
+                                                        format(fecha, 'd'),
+                                                        format(fecha, 'M'),
+                                                        format(fecha, 'yyyy'),
+                                                        format(fecha, 'dd/MM/yyyy'),
+                                                        v.para || '',
+                                                        v.que_sustenta || 'VIATICO',
+                                                        selectedUserData!.userName,
+                                                        v.tipo_comprobante || '',
+                                                        v.numero_documento || '',
+                                                        v.numero_comprobante || '',
+                                                        `S/ ${Number(v.monto).toFixed(2)}`,
+                                                        v.descripcion || '-'
+                                                    ]
+                                                })
+                                                exportToPDF(['Dia', 'Mes', 'Año', 'Fecha', 'Para', 'Que Sustenta', 'Trabajador', 'Tipo Comprobante', 'N° Documento', 'N° Comprobante', 'Monto', 'Descripción'], data, `Detalle ${selectedUserData!.userName}`)
                                             }}
                                         >
                                             <FileText className="h-4 w-4 sm:mr-2 text-red-600" />
@@ -282,8 +307,16 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
+                                                <TableHead>Día</TableHead>
+                                                <TableHead>Mes</TableHead>
+                                                <TableHead>Año</TableHead>
                                                 <TableHead>Fecha</TableHead>
-                                                <TableHead>Tipo</TableHead>
+                                                <TableHead>Para</TableHead>
+                                                <TableHead>Que Sustenta</TableHead>
+                                                <TableHead>Trabajador</TableHead>
+                                                <TableHead>Tipo Comp.</TableHead>
+                                                <TableHead>N° Doc.</TableHead>
+                                                <TableHead>N° Comp.</TableHead>
                                                 <TableHead className="text-right">Monto</TableHead>
                                                 <TableHead className="hidden md:table-cell">Descripción</TableHead>
                                                 <TableHead className="text-right w-16"></TableHead>
@@ -292,8 +325,16 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                         <TableBody>
                                             {selectedUserData?.viaticos.map(viatico => (
                                                 <TableRow key={viatico.id}>
+                                                    <TableCell>{format(parseISO(viatico.fecha), 'd')}</TableCell>
+                                                    <TableCell>{format(parseISO(viatico.fecha), 'M')}</TableCell>
+                                                    <TableCell>{format(parseISO(viatico.fecha), 'yyyy')}</TableCell>
                                                     <TableCell className="whitespace-nowrap">{format(parseISO(viatico.fecha), 'dd/MM/yyyy')}</TableCell>
-                                                    <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.tipo}</Badge></TableCell>
+                                                    <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.para || '-'}</Badge></TableCell>
+                                                    <TableCell className="whitespace-nowrap">{viatico.que_sustenta || 'VIATICO'}</TableCell>
+                                                    <TableCell className="font-medium">{selectedUserData!.userName}</TableCell>
+                                                    <TableCell><Badge variant="secondary" className="whitespace-nowrap">{viatico.tipo_comprobante || '-'}</Badge></TableCell>
+                                                    <TableCell className="whitespace-nowrap">{viatico.numero_documento || '-'}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">{viatico.numero_comprobante || '-'}</TableCell>
                                                     <TableCell className="text-right whitespace-nowrap">
                                                         S/ {Number(viatico.monto).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </TableCell>
@@ -336,14 +377,32 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                             variant="outline"
                                             size="sm"
                                             onClick={() => {
-                                                const data = filteredViaticos.map(v => ({
-                                                    Usuario: getUserName(v.usuario_id),
-                                                    Fecha: format(parseISO(v.fecha), 'dd/MM/yyyy'),
-                                                    Tipo: v.tipo,
-                                                    Monto: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
-                                                    Descripcion: v.descripcion
-                                                }))
-                                                exportToExcel(data, 'Reporte_Por_Registro')
+                                                const data = filteredViaticos.map(v => {
+                                                    const fecha = parseISO(v.fecha)
+                                                    return {
+                                                        DIA: format(fecha, 'd'),
+                                                        MES: format(fecha, 'M'),
+                                                        AÑO: format(fecha, 'yyyy'),
+                                                        FECHA: format(fecha, 'dd/MM/yyyy'),
+                                                        PARA: v.para || '',
+                                                        'QUE SUSTENTA': v.que_sustenta || 'VIATICO',
+                                                        TRABAJADOR: getUserName(v.usuario_id),
+                                                        'TIPO COMPROBANTE': v.tipo_comprobante || '',
+                                                        RUC: v.numero_documento || '',
+                                                        'N° COMPROBANTE': v.numero_comprobante || '',
+                                                        MONTO: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
+                                                        DESCRIPCION: v.descripcion
+                                                    }
+                                                })
+                                                let filename = 'Reporte_Por_Registro'
+                                                if (startDate && endDate) {
+                                                    filename += `_${format(startDate, 'yyyyMMdd')}_al_${format(endDate, 'yyyyMMdd')}`
+                                                } else if (startDate) {
+                                                    filename += `_desde_${format(startDate, 'yyyyMMdd')}`
+                                                } else if (endDate) {
+                                                    filename += `_hasta_${format(endDate, 'yyyyMMdd')}`
+                                                }
+                                                exportToExcel(data, filename)
                                             }}
                                         >
                                             <FileSpreadsheet className="h-4 w-4 sm:mr-2 text-green-600" />
@@ -353,14 +412,24 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                             variant="outline"
                                             size="sm"
                                             onClick={() => {
-                                                const data = filteredViaticos.map(v => [
-                                                    getUserName(v.usuario_id),
-                                                    format(parseISO(v.fecha), 'dd/MM/yyyy'),
-                                                    v.tipo,
-                                                    `S/ ${Number(v.monto).toFixed(2)}`,
-                                                    v.descripcion || '-'
-                                                ])
-                                                exportToPDF(['Usuario', 'Fecha', 'Tipo', 'Monto', 'Desc.'], data, 'Reporte Por Registro')
+                                                const data = filteredViaticos.map(v => {
+                                                    const fecha = parseISO(v.fecha)
+                                                    return [
+                                                        format(fecha, 'd'),
+                                                        format(fecha, 'M'),
+                                                        format(fecha, 'yyyy'),
+                                                        format(fecha, 'dd/MM/yyyy'),
+                                                        v.para || '',
+                                                        v.que_sustenta || 'VIATICO',
+                                                        getUserName(v.usuario_id),
+                                                        v.tipo_comprobante || '',
+                                                        v.numero_documento || '',
+                                                        v.numero_comprobante || '',
+                                                        `S/ ${Number(v.monto).toFixed(2)}`,
+                                                        v.descripcion || '-'
+                                                    ]
+                                                })
+                                                exportToPDF(['Dia', 'Mes', 'Año', 'Fecha', 'Para', 'Que Sustenta', 'Trabajador', 'Tipo Comprobante', 'N° Documento', 'N° Comprobante', 'Monto', 'Descripción'], data, 'Reporte De viaticos')
                                             }}
                                         >
                                             <FileText className="h-4 w-4 sm:mr-2 text-red-600" />
@@ -397,9 +466,16 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Usuario</TableHead>
+                                            <TableHead>Día</TableHead>
+                                            <TableHead>Mes</TableHead>
+                                            <TableHead>Año</TableHead>
                                             <TableHead>Fecha</TableHead>
-                                            <TableHead>Tipo</TableHead>
+                                            <TableHead>Para</TableHead>
+                                            <TableHead>Que Sustenta</TableHead>
+                                            <TableHead>Trabajador</TableHead>
+                                            <TableHead>Tipo Comp.</TableHead>
+                                            <TableHead>N° Doc.</TableHead>
+                                            <TableHead>N° Comp.</TableHead>
                                             <TableHead className="text-right">Monto</TableHead>
                                             <TableHead className="hidden md:table-cell">Descripción</TableHead>
                                             <TableHead className="text-right w-16"></TableHead>
@@ -408,16 +484,23 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                     <TableBody>
                                         {filteredViaticos.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                                <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
                                                     No hay datos para mostrar
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
                                             filteredViaticos.map(viatico => (
                                                 <TableRow key={viatico.id}>
-                                                    <TableCell className="font-medium">{getUserName(viatico.usuario_id)}</TableCell>
+                                                    <TableCell>{format(parseISO(viatico.fecha), 'd')}</TableCell>
+                                                    <TableCell>{format(parseISO(viatico.fecha), 'M')}</TableCell>
+                                                    <TableCell>{format(parseISO(viatico.fecha), 'yyyy')}</TableCell>
                                                     <TableCell className="whitespace-nowrap">{format(parseISO(viatico.fecha), 'dd/MM/yyyy')}</TableCell>
-                                                    <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.tipo}</Badge></TableCell>
+                                                    <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.para || '-'}</Badge></TableCell>
+                                                    <TableCell className="whitespace-nowrap">{viatico.que_sustenta || 'VIATICO'}</TableCell>
+                                                    <TableCell className="font-medium">{getUserName(viatico.usuario_id)}</TableCell>
+                                                    <TableCell><Badge variant="secondary" className="whitespace-nowrap">{viatico.tipo_comprobante || '-'}</Badge></TableCell>
+                                                    <TableCell className="whitespace-nowrap">{viatico.numero_documento || '-'}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">{viatico.numero_comprobante || '-'}</TableCell>
                                                     <TableCell className="text-right whitespace-nowrap">
                                                         S/ {Number(viatico.monto).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </TableCell>

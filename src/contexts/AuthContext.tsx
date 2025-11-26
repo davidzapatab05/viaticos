@@ -23,6 +23,7 @@ interface AppUser {
   role: string
   estado: string
   crear_carpeta: boolean
+  last_closed_date?: string
 }
 
 interface AuthContextType {
