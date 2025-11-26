@@ -1080,55 +1080,7 @@ export default {
         }
       }
 
-      // POST /api/users/close-day (cerrar el día manualmente)
-      if (path === '/api/users/close-day' && request.method === 'POST') {
-        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-        try {
-          const body = await request.json().catch(() => ({}))
-          const dateToClose = body.date // Fecha a cerrar (YYYY-MM-DD)
-
-          if (!dateToClose) {
-            return new Response(JSON.stringify({ error: 'Fecha requerida' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-          }
-
-          // Actualizar last_closed_date en la BD
-          await env.DB.prepare('UPDATE user_roles SET last_closed_date = ? WHERE user_id = ?').bind(dateToClose, user.uid).run()
-
-          return new Response(JSON.stringify({
-            success: true,
-            message: `Día ${dateToClose} cerrado exitosamente. Los nuevos viáticos irán al día siguiente.`
-          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        } catch (error) {
-          return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-      }
-
-      // POST /api/users/reopen-day (reabrir el día manualmente - solo si es antes de las 10am)
-      if (path === '/api/users/reopen-day' && request.method === 'POST') {
-        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-        try {
-          // Verificar hora actual (solo permitir si es antes de las 10 AM)
-          const now = new Date();
-          const timeOptions = { timeZone: 'America/Lima', hour: 'numeric', hour12: false };
-          const hour = parseInt(new Intl.DateTimeFormat('es-PE', timeOptions).format(now));
-
-          if (hour >= 10) {
-            return new Response(JSON.stringify({ error: 'Ya no se puede reabrir el día. Ha pasado la hora límite (10:00 AM).' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-          }
-
-          // Resetear last_closed_date a NULL
-          await env.DB.prepare('UPDATE user_roles SET last_closed_date = NULL WHERE user_id = ?').bind(user.uid).run()
-
-          return new Response(JSON.stringify({
-            success: true,
-            message: 'Día reabierto exitosamente.'
-          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        } catch (error) {
-          return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-      }
 
       // POST /api/viaticos (verificar estado y crear_carpeta antes de permitir subir)
       if (path === '/api/viaticos' && request.method === 'POST') {
@@ -1154,7 +1106,7 @@ export default {
         // Por defecto, createTxt es true si no se especifica, o si el valor es '1'
         const createTxt = formData.get('createTxt') === null || formData.get('createTxt') === '1'
 
-        // Lógica de FECHA ACTIVA (Cierre automático a las 10 AM y manual)
+        // Lógica de FECHA ACTIVA (Cierre automático a las 10 AM)
         const now = new Date();
         const dateOptions = { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' };
         const timeOptions = { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
@@ -1176,22 +1128,13 @@ export default {
         const yesterdayDate = new Date(year, month - 1, day - 1);
         const yesterdayString = `${yesterdayDate.getFullYear()}-${(yesterdayDate.getMonth() + 1).toString().padStart(2, '0')}-${yesterdayDate.getDate().toString().padStart(2, '0')}`;
 
-        // Obtener last_closed_date del usuario
-        const userRoleData = await env.DB.prepare('SELECT last_closed_date FROM user_roles WHERE user_id = ?').bind(user.uid).first();
-        const lastClosedDate = userRoleData?.last_closed_date;
-
         let activeDateString = todayString; // Por defecto hoy
 
-        // Regla: Si es antes de las 10 AM y NO se ha cerrado ayer manualmente, la fecha activa es ayer
+        // Regla: Si es antes de las 10 AM, la fecha activa es AYER (automático)
         if (hour < 10) {
-          if (lastClosedDate !== yesterdayString) {
-            activeDateString = yesterdayString;
-          } else {
-            // Si ya cerró ayer manualmente, entonces es hoy (aunque sea antes de las 10am)
-            activeDateString = todayString;
-          }
+          activeDateString = yesterdayString;
         } else {
-          // Después de las 10 AM, siempre es hoy (el cierre automático ya ocurrió)
+          // Después de las 10 AM, es hoy
           activeDateString = todayString;
         }
 

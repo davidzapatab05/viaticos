@@ -9,14 +9,7 @@ export function useViaticoDeadline() {
     const [activeDateDisplay, setActiveDateDisplay] = useState<string>('')
     const [timeLeft, setTimeLeft] = useState<string>('')
     const [isGracePeriod, setIsGracePeriod] = useState<boolean>(false)
-    const [lastClosedDate, setLastClosedDate] = useState<string | null>(null)
     const [loading, setLoading] = useState<boolean>(true)
-
-    useEffect(() => {
-        if (appUser?.last_closed_date) {
-            setLastClosedDate(appUser.last_closed_date)
-        }
-    }, [appUser])
 
     // Función para disparar notificaciones
     const triggerNotification = (title: string, body: string) => {
@@ -31,8 +24,6 @@ export function useViaticoDeadline() {
             sessionStorage.setItem(key, 'true')
         }
     }
-
-    const [canReopen, setCanReopen] = useState<boolean>(false)
 
     useEffect(() => {
         const calculateActiveDate = () => {
@@ -51,26 +42,14 @@ export function useViaticoDeadline() {
 
             let effectiveDate = today
             let gracePeriodActive = false
-            let canReopenDay = false
 
             if (isBeforeCutoff) {
                 // Estamos antes de las 10 AM.
-                // Por defecto, la fecha activa es AYER, a menos que el usuario ya haya cerrado ayer.
-
-                const yesterdayString = format(yesterday, 'yyyy-MM-dd')
-
-                if (lastClosedDate === yesterdayString) {
-                    // El usuario ya cerró ayer manualmente, así que la fecha activa es HOY
-                    effectiveDate = today
-                    gracePeriodActive = false
-                    canReopenDay = true // Puede reabrir porque es antes de las 10 AM y ya cerró
-                } else {
-                    // El usuario NO ha cerrado ayer, así que sigue habilitado para ayer
-                    effectiveDate = yesterday
-                    gracePeriodActive = true
-                }
+                // La fecha activa es AYER (automático).
+                effectiveDate = yesterday
+                gracePeriodActive = true
             } else {
-                // Ya pasaron las 10 AM, la fecha activa es HOY
+                // Ya pasaron las 10 AM, la fecha activa es HOY (automático).
                 effectiveDate = today
                 gracePeriodActive = false
             }
@@ -78,7 +57,6 @@ export function useViaticoDeadline() {
             setActiveDate(effectiveDate)
             setActiveDateDisplay(format(effectiveDate, "EEEE d 'de' MMMM", { locale: es }))
             setIsGracePeriod(gracePeriodActive)
-            setCanReopen(canReopenDay)
 
             if (gracePeriodActive) {
                 // Caso 1: Periodo de gracia (antes de las 10 AM, registrando para ayer)
@@ -94,14 +72,14 @@ export function useViaticoDeadline() {
                     if (diff <= 3600 && diff > 3590) {
                         triggerNotification(
                             "⏳ Cierre de Viáticos en 1 hora",
-                            "Recuerda registrar tus viáticos pendientes de ayer antes de las 10:00 AM. Si ya terminaste, no olvides cerrar tu día."
+                            "Recuerda registrar tus viáticos pendientes de ayer antes de las 10:00 AM."
                         )
                     }
                 } else {
                     setTimeLeft('00:00:00')
                 }
             } else {
-                // Caso 2: Periodo normal (después de las 10 AM o ya cerrado ayer)
+                // Caso 2: Periodo normal (después de las 10 AM)
                 // Deadline: Mañana 10:00 AM
                 const tomorrowCutoff = addDays(cutoffTime, 1)
                 const diff = differenceInSeconds(tomorrowCutoff, now)
@@ -127,17 +105,13 @@ export function useViaticoDeadline() {
         }
 
         return () => clearInterval(interval)
-    }, [lastClosedDate])
+    }, [])
 
     return {
         activeDate,
         activeDateDisplay,
         timeLeft,
         isGracePeriod,
-        loading,
-        canReopen,
-        refreshLastClosedDate: async () => {
-            // Placeholder si se necesita refrescar manualmente
-        }
+        loading
     }
 }
