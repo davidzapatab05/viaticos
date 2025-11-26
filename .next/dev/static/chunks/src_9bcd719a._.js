@@ -1228,6 +1228,7 @@ function useViaticoDeadline() {
             sessionStorage.setItem(key, 'true');
         }
     };
+    const previousGracePeriod = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "useViaticoDeadline.useEffect": ()=>{
             const calculateActiveDate = {
@@ -1260,6 +1261,12 @@ function useViaticoDeadline() {
                         effectiveDate = today;
                         gracePeriodActive = false;
                     }
+                    // Detectar cambio de estado (cruce de las 10 AM) y recargar
+                    if (previousGracePeriod.current !== null && previousGracePeriod.current !== gracePeriodActive) {
+                        window.location.reload();
+                        return; // Detener ejecución para evitar actualizaciones de estado en componente desmontado
+                    }
+                    previousGracePeriod.current = gracePeriodActive;
                     setActiveDate(effectiveDate);
                     setActiveDateDisplay((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$format$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__format$3e$__["format"])(effectiveDate, "EEEE d 'de' MMMM", {
                         locale: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$locale$2f$es$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__es$3e$__["es"]
@@ -1317,7 +1324,7 @@ function useViaticoDeadline() {
         loading
     };
 }
-_s(useViaticoDeadline, "rCpvtjY45VFzmPhJbS48gwupJ7Y=", false, function() {
+_s(useViaticoDeadline, "Lv0TJNWsRvh55mrR7sUTVT1lDZY=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"]
     ];
@@ -1371,8 +1378,7 @@ function CountdownBanner() {
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                     className: "font-bold whitespace-nowrap",
                                     children: [
-                                        isGracePeriod ? 'CIERRE AYER:' : 'CIERRE:',
-                                        " ",
+                                        "Cierre en: ",
                                         timeLeft
                                     ]
                                 }, void 0, true, {
@@ -1397,13 +1403,13 @@ function CountdownBanner() {
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                             className: "opacity-90",
                             children: [
-                                "Reg. para: ",
+                                "Fecha: ",
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                     children: activeDateDisplay
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/CountdownBanner.tsx",
                                     lineNumber: 25,
-                                    columnNumber: 61
+                                    columnNumber: 57
                                 }, this)
                             ]
                         }, void 0, true, {

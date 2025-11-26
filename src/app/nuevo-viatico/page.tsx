@@ -18,9 +18,17 @@ import { FileCheck, Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, Info,
 import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
 
+import { useViaticoDeadline } from '@/hooks/useViaticoDeadline'
+
 export default function NuevoViaticoPage() {
   const { appUser, loading: authLoading } = useAuth()
   const router = useRouter()
+
+  // Usar el hook global para la lógica de fechas y deadline
+  const { activeDate: activeDateObj, activeDateDisplay, timeLeft, isGracePeriod } = useViaticoDeadline()
+  // Convertir activeDateObj a string YYYY-MM-DD para uso interno
+  const activeDate = activeDateObj ? activeDateObj.toISOString().split('T')[0] : ''
+
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<{ url: string; isPdf: boolean; name: string }[]>([])
   const [monto, setMonto] = useState('')
@@ -45,23 +53,7 @@ export default function NuevoViaticoPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
-  // Estado para lógica de fechas
-  const [activeDate, setActiveDate] = useState<string>('')
-  const [activeDateDisplay, setActiveDateDisplay] = useState<string>('')
-  const [timeLeft, setTimeLeft] = useState<string>('')
-  const [isGracePeriod, setIsGracePeriod] = useState(false)
-  const [lastClosedDate, setLastClosedDate] = useState<string | null>(null)
-  const [closingDay, setClosingDay] = useState(false)
   const [viaticosCount, setViaticosCount] = useState(0)
-
-  useEffect(() => {
-    // Cargar datos del usuario para obtener last_closed_date
-    getCurrentUser().then(data => {
-      if (data?.user?.last_closed_date) {
-        setLastClosedDate(data.user.last_closed_date)
-      }
-    }).catch(console.error)
-  }, [])
 
   // Efecto para contar viáticos del día activo
   useEffect(() => {
@@ -79,92 +71,7 @@ export default function NuevoViaticoPage() {
           .catch(console.error)
       })
     }
-  }, [activeDate, success]) // Recargar cuando cambie la fecha activa o se suba un nuevo viático
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      calculateActiveDate()
-    }, 1000)
-
-    calculateActiveDate() // Ejecutar inmediatamente
-
-    return () => clearInterval(timer)
-  }, [lastClosedDate])
-
-  const calculateActiveDate = () => {
-    const now = new Date()
-    const dateOptions = { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' } as const
-    const timeOptions = { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false } as const
-
-    const peruDateParts = new Intl.DateTimeFormat('es-PE', dateOptions).formatToParts(now)
-    const peruTimeParts = new Intl.DateTimeFormat('es-PE', timeOptions).formatToParts(now)
-
-    const getPart = (parts: Intl.DateTimeFormatPart[], type: string) => parts.find(p => p.type === type)?.value || ''
-
-    const year = parseInt(getPart(peruDateParts, 'year'))
-    const month = parseInt(getPart(peruDateParts, 'month'))
-    const day = parseInt(getPart(peruDateParts, 'day'))
-    const hour = parseInt(getPart(peruTimeParts, 'hour'))
-
-    const todayString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
-
-    const yesterdayDate = new Date(year, month - 1, day - 1)
-    const yesterdayString = `${yesterdayDate.getFullYear()}-${(yesterdayDate.getMonth() + 1).toString().padStart(2, '0')}-${yesterdayDate.getDate().toString().padStart(2, '0')}`
-
-    // Lógica idéntica al backend
-    let currentActiveDate = todayString
-    let inGracePeriod = false
-
-    if (hour < 10) {
-      if (lastClosedDate !== yesterdayString) {
-        currentActiveDate = yesterdayString
-        inGracePeriod = true
-
-        // Calcular tiempo restante para las 10 AM
-        const cutoffTime = new Date(now)
-        cutoffTime.setHours(10, 0, 0, 0)
-        // Ajustar si cutoffTime ya pasó (no debería si hour < 10, pero por seguridad)
-
-        const diff = cutoffTime.getTime() - now.getTime()
-        if (diff > 0) {
-          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-          const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-          setTimeLeft(`${hours}h ${minutes}m ${seconds}s`)
-        } else {
-          setTimeLeft('00:00:00')
-        }
-      } else {
-        currentActiveDate = todayString
-      }
-    } else {
-      currentActiveDate = todayString
-    }
-
-    setActiveDate(currentActiveDate)
-    setIsGracePeriod(inGracePeriod)
-
-    // Formato para mostrar: DD/MM/YYYY
-    const [y, m, d] = currentActiveDate.split('-')
-    setActiveDateDisplay(`${d}/${m}/${y}`)
-  }
-
-  const handleCloseDay = async () => {
-    if (!confirm(`¿Estás seguro de cerrar el día ${activeDateDisplay}? Esta acción no se puede deshacer y los siguientes viáticos se registrarán con fecha de hoy.`)) {
-      return
-    }
-
-    setClosingDay(true)
-    try {
-      await closeDay(activeDate)
-      setLastClosedDate(activeDate) // Actualizar estado local para reflejar cambio inmediato
-      // El useEffect recalculará y cambiará la fecha activa a hoy
-    } catch (e) {
-      setError('Error al cerrar el día: ' + (e as Error).message)
-    } finally {
-      setClosingDay(false)
-    }
-  }
+  }, [activeDate, success])
 
   useEffect(() => {
     if (!authLoading && appUser && !appUser.crear_carpeta) {

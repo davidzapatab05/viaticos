@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { format, subDays, isBefore, set, addDays, differenceInSeconds } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useAuth } from '@/contexts/AuthContext'
@@ -24,6 +24,8 @@ export function useViaticoDeadline() {
             sessionStorage.setItem(key, 'true')
         }
     }
+
+    const previousGracePeriod = useRef<boolean | null>(null)
 
     useEffect(() => {
         const calculateActiveDate = () => {
@@ -53,6 +55,13 @@ export function useViaticoDeadline() {
                 effectiveDate = today
                 gracePeriodActive = false
             }
+
+            // Detectar cambio de estado (cruce de las 10 AM) y recargar
+            if (previousGracePeriod.current !== null && previousGracePeriod.current !== gracePeriodActive) {
+                window.location.reload()
+                return // Detener ejecución para evitar actualizaciones de estado en componente desmontado
+            }
+            previousGracePeriod.current = gracePeriodActive
 
             setActiveDate(effectiveDate)
             setActiveDateDisplay(format(effectiveDate, "EEEE d 'de' MMMM", { locale: es }))

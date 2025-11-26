@@ -18,11 +18,11 @@ export function CountdownBanner() {
                     <div className="flex items-center gap-1.5">
                         <Clock className="h-3.5 w-3.5 animate-pulse" />
                         <span className="font-bold whitespace-nowrap">
-                            {isGracePeriod ? 'CIERRE AYER:' : 'CIERRE:'} {timeLeft}
+                            Cierre en: {timeLeft}
                         </span>
                     </div>
                     <span className="hidden sm:inline">|</span>
-                    <span className="opacity-90">Reg. para: <strong>{activeDateDisplay}</strong></span>
+                    <span className="opacity-90">Fecha: <strong>{activeDateDisplay}</strong></span>
                 </div>
                 <div className="flex items-center gap-2 mt-1 sm:mt-0">
                     <Button
