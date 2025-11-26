@@ -18,11 +18,14 @@ interface DatePickerProps {
     date?: Date
     onSelect?: (date: Date | undefined) => void
     placeholder?: string
+    disabled?: (date: Date) => boolean
 }
 
-export function DatePicker({ date, onSelect, placeholder = "Selecciona una fecha" }: DatePickerProps) {
+export function DatePicker({ date, onSelect, placeholder = "Selecciona una fecha", disabled }: DatePickerProps) {
+    const [open, setOpen] = React.useState(false)
+
     return (
-        <Popover>
+        <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 <Button
                     variant={"outline"}
@@ -39,8 +42,12 @@ export function DatePicker({ date, onSelect, placeholder = "Selecciona una fecha
                 <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={onSelect}
+                    onSelect={(selectedDate: Date | undefined) => {
+                        onSelect?.(selectedDate)
+                        setOpen(false)
+                    }}
                     initialFocus
+                    disabled={disabled}
                 />
             </PopoverContent>
         </Popover>

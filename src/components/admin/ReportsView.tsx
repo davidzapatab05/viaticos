@@ -453,6 +453,7 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                             date={endDate}
                                             onSelect={setEndDate}
                                             placeholder="Selecciona fecha fin"
+                                            disabled={(date) => startDate ? date < startDate : false}
                                         />
                                     </div>
                                 </div>

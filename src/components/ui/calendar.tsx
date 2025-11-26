@@ -12,6 +12,7 @@ export type CalendarProps = {
     onSelect?: (date: Date | undefined) => void
     className?: string
     initialFocus?: boolean
+    disabled?: (date: Date) => boolean
 }
 
 const DAYS = ["D", "L", "M", "M", "J", "V", "S"] // Domingo, Lunes, Martes, Miércoles, Jueves, Viernes, Sábado
@@ -92,6 +93,12 @@ function Calendar({
         )
     }
 
+    const isDisabled = (day: number) => {
+        if (!props.disabled) return false
+        const dateToCheck = new Date(year, month, day)
+        return props.disabled(dateToCheck)
+    }
+
     return (
         <div className={cn("p-4", className)}>
             {/* Header with month/year selectors */}
@@ -159,26 +166,30 @@ function Calendar({
 
                 {/* Days grid */}
                 <div className="grid grid-cols-7 gap-1">
-                    {days.map((day, index) => (
-                        <div key={index} className="h-10 flex items-center justify-center">
-                            {day ? (
-                                <button
-                                    onClick={() => handleDayClick(day)}
-                                    className={cn(
-                                        "h-9 w-9 rounded-full flex items-center justify-center text-sm transition-colors",
-                                        "hover:bg-accent hover:text-accent-foreground",
-                                        isSelected(day) && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-                                        isToday(day) && !isSelected(day) && "border border-primary",
-                                        !isSelected(day) && !isToday(day) && "text-foreground"
-                                    )}
-                                >
-                                    {day}
-                                </button>
-                            ) : (
-                                <div className="h-9 w-9" />
-                            )}
-                        </div>
-                    ))}
+                    {days.map((day, index) => {
+                        const disabled = day ? isDisabled(day) : false
+                        return (
+                            <div key={index} className="h-10 flex items-center justify-center">
+                                {day ? (
+                                    <button
+                                        onClick={() => !disabled && handleDayClick(day)}
+                                        disabled={disabled}
+                                        className={cn(
+                                            "h-9 w-9 rounded-full flex items-center justify-center text-sm transition-colors",
+                                            disabled ? "text-muted-foreground opacity-50 cursor-not-allowed" : "hover:bg-accent hover:text-accent-foreground",
+                                            isSelected(day) && !disabled && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                                            isToday(day) && !isSelected(day) && !disabled && "border border-primary",
+                                            !isSelected(day) && !isToday(day) && !disabled && "text-foreground"
+                                        )}
+                                    >
+                                        {day}
+                                    </button>
+                                ) : (
+                                    <div className="h-9 w-9" />
+                                )}
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
         </div>

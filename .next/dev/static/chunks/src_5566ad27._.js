@@ -1284,6 +1284,7 @@ function useViaticoDeadline() {
             sessionStorage.setItem(key, 'true');
         }
     };
+    const previousGracePeriod = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "useViaticoDeadline.useEffect": ()=>{
             const calculateActiveDate = {
@@ -1316,6 +1317,12 @@ function useViaticoDeadline() {
                         effectiveDate = today;
                         gracePeriodActive = false;
                     }
+                    // Detectar cambio de estado (cruce de las 10 AM) y recargar
+                    if (previousGracePeriod.current !== null && previousGracePeriod.current !== gracePeriodActive) {
+                        window.location.reload();
+                        return; // Detener ejecución para evitar actualizaciones de estado en componente desmontado
+                    }
+                    previousGracePeriod.current = gracePeriodActive;
                     setActiveDate(effectiveDate);
                     setActiveDateDisplay((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$format$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__format$3e$__["format"])(effectiveDate, "EEEE d 'de' MMMM", {
                         locale: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$locale$2f$es$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__es$3e$__["es"]
@@ -1373,7 +1380,7 @@ function useViaticoDeadline() {
         loading
     };
 }
-_s(useViaticoDeadline, "rCpvtjY45VFzmPhJbS48gwupJ7Y=", false, function() {
+_s(useViaticoDeadline, "Lv0TJNWsRvh55mrR7sUTVT1lDZY=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"]
     ];
@@ -2236,9 +2243,11 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2d$days$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__CalendarDays$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/calendar-days.js [app-client] (ecmascript) <export default as CalendarDays>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Layout$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/Layout.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$AuthGuard$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/AuthGuard.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$useViaticoDeadline$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/hooks/useViaticoDeadline.ts [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
 'use client';
+;
 ;
 ;
 ;
@@ -2260,6 +2269,10 @@ function NuevoViaticoPage() {
     _s();
     const { appUser, loading: authLoading } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"])();
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"])();
+    // Usar el hook global para la lógica de fechas y deadline
+    const { activeDate: activeDateObj, activeDateDisplay, timeLeft, isGracePeriod } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$useViaticoDeadline$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useViaticoDeadline"])();
+    // Convertir activeDateObj a string YYYY-MM-DD para uso interno
+    const activeDate = activeDateObj ? activeDateObj.toISOString().split('T')[0] : '';
     const [files, setFiles] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
     const [previews, setPreviews] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
     const [monto, setMonto] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
@@ -2281,26 +2294,7 @@ function NuevoViaticoPage() {
     const fileInputRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
     const videoRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
     const streamRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
-    // Estado para lógica de fechas
-    const [activeDate, setActiveDate] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
-    const [activeDateDisplay, setActiveDateDisplay] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
-    const [timeLeft, setTimeLeft] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
-    const [isGracePeriod, setIsGracePeriod] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
-    const [lastClosedDate, setLastClosedDate] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
-    const [closingDay, setClosingDay] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [viaticosCount, setViaticosCount] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(0);
-    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
-        "NuevoViaticoPage.useEffect": ()=>{
-            // Cargar datos del usuario para obtener last_closed_date
-            (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getCurrentUser"])().then({
-                "NuevoViaticoPage.useEffect": (data)=>{
-                    if (data?.user?.last_closed_date) {
-                        setLastClosedDate(data.user.last_closed_date);
-                    }
-                }
-            }["NuevoViaticoPage.useEffect"]).catch(console.error);
-        }
-    }["NuevoViaticoPage.useEffect"], []);
     // Efecto para contar viáticos del día activo
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "NuevoViaticoPage.useEffect": ()=>{
@@ -2326,94 +2320,7 @@ function NuevoViaticoPage() {
     }["NuevoViaticoPage.useEffect"], [
         activeDate,
         success
-    ]); // Recargar cuando cambie la fecha activa o se suba un nuevo viático
-    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
-        "NuevoViaticoPage.useEffect": ()=>{
-            const timer = setInterval({
-                "NuevoViaticoPage.useEffect.timer": ()=>{
-                    calculateActiveDate();
-                }
-            }["NuevoViaticoPage.useEffect.timer"], 1000);
-            calculateActiveDate(); // Ejecutar inmediatamente
-            return ({
-                "NuevoViaticoPage.useEffect": ()=>clearInterval(timer)
-            })["NuevoViaticoPage.useEffect"];
-        }
-    }["NuevoViaticoPage.useEffect"], [
-        lastClosedDate
     ]);
-    const calculateActiveDate = ()=>{
-        const now = new Date();
-        const dateOptions = {
-            timeZone: 'America/Lima',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        };
-        const timeOptions = {
-            timeZone: 'America/Lima',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        };
-        const peruDateParts = new Intl.DateTimeFormat('es-PE', dateOptions).formatToParts(now);
-        const peruTimeParts = new Intl.DateTimeFormat('es-PE', timeOptions).formatToParts(now);
-        const getPart = (parts, type)=>parts.find((p)=>p.type === type)?.value || '';
-        const year = parseInt(getPart(peruDateParts, 'year'));
-        const month = parseInt(getPart(peruDateParts, 'month'));
-        const day = parseInt(getPart(peruDateParts, 'day'));
-        const hour = parseInt(getPart(peruTimeParts, 'hour'));
-        const todayString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-        const yesterdayDate = new Date(year, month - 1, day - 1);
-        const yesterdayString = `${yesterdayDate.getFullYear()}-${(yesterdayDate.getMonth() + 1).toString().padStart(2, '0')}-${yesterdayDate.getDate().toString().padStart(2, '0')}`;
-        // Lógica idéntica al backend
-        let currentActiveDate = todayString;
-        let inGracePeriod = false;
-        if (hour < 10) {
-            if (lastClosedDate !== yesterdayString) {
-                currentActiveDate = yesterdayString;
-                inGracePeriod = true;
-                // Calcular tiempo restante para las 10 AM
-                const cutoffTime = new Date(now);
-                cutoffTime.setHours(10, 0, 0, 0);
-                // Ajustar si cutoffTime ya pasó (no debería si hour < 10, pero por seguridad)
-                const diff = cutoffTime.getTime() - now.getTime();
-                if (diff > 0) {
-                    const hours = Math.floor(diff % (1000 * 60 * 60 * 24) / (1000 * 60 * 60));
-                    const minutes = Math.floor(diff % (1000 * 60 * 60) / (1000 * 60));
-                    const seconds = Math.floor(diff % (1000 * 60) / 1000);
-                    setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
-                } else {
-                    setTimeLeft('00:00:00');
-                }
-            } else {
-                currentActiveDate = todayString;
-            }
-        } else {
-            currentActiveDate = todayString;
-        }
-        setActiveDate(currentActiveDate);
-        setIsGracePeriod(inGracePeriod);
-        // Formato para mostrar: DD/MM/YYYY
-        const [y, m, d] = currentActiveDate.split('-');
-        setActiveDateDisplay(`${d}/${m}/${y}`);
-    };
-    const handleCloseDay = async ()=>{
-        if (!confirm(`¿Estás seguro de cerrar el día ${activeDateDisplay}? Esta acción no se puede deshacer y los siguientes viáticos se registrarán con fecha de hoy.`)) {
-            return;
-        }
-        setClosingDay(true);
-        try {
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["closeDay"])(activeDate);
-            setLastClosedDate(activeDate); // Actualizar estado local para reflejar cambio inmediato
-        // El useEffect recalculará y cambiará la fecha activa a hoy
-        } catch (e) {
-            setError('Error al cerrar el día: ' + e.message);
-        } finally{
-            setClosingDay(false);
-        }
-    };
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "NuevoViaticoPage.useEffect": ()=>{
             if (!authLoading && appUser && !appUser.crear_carpeta) {
@@ -2618,7 +2525,7 @@ function NuevoViaticoPage() {
                                         className: "h-12 w-12 animate-spin text-primary"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                        lineNumber: 356,
+                                        lineNumber: 263,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2626,38 +2533,38 @@ function NuevoViaticoPage() {
                                         children: "Cargando..."
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                        lineNumber: 357,
+                                        lineNumber: 264,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                lineNumber: 355,
+                                lineNumber: 262,
                                 columnNumber: 17
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                            lineNumber: 354,
+                            lineNumber: 261,
                             columnNumber: 15
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                        lineNumber: 353,
+                        lineNumber: 260,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                    lineNumber: 352,
+                    lineNumber: 259,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                lineNumber: 351,
+                lineNumber: 258,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-            lineNumber: 350,
+            lineNumber: 257,
             columnNumber: 7
         }, this);
     }
@@ -2674,20 +2581,20 @@ function NuevoViaticoPage() {
                                         children: "Acceso Restringido"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                        lineNumber: 374,
+                                        lineNumber: 281,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardDescription"], {
                                         children: "No tienes permiso para acceder a esta página"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                        lineNumber: 375,
+                                        lineNumber: 282,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                lineNumber: 373,
+                                lineNumber: 280,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -2698,14 +2605,14 @@ function NuevoViaticoPage() {
                                             className: "h-4 w-4"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                            lineNumber: 379,
+                                            lineNumber: 286,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertTitle"], {
                                             children: "Sin Permiso"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                            lineNumber: 380,
+                                            lineNumber: 287,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDescription"], {
@@ -2713,51 +2620,51 @@ function NuevoViaticoPage() {
                                                 "Tu carpeta de OneDrive no está habilitada. No puedes subir viáticos en este momento. Por favor, contacta al administrador para habilitar tu cuenta.",
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                    lineNumber: 384,
+                                                    lineNumber: 291,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                    lineNumber: 384,
+                                                    lineNumber: 291,
                                                     columnNumber: 27
                                                 }, this),
                                                 "Serás redirigido al dashboard..."
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                            lineNumber: 381,
+                                            lineNumber: 288,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                    lineNumber: 378,
+                                    lineNumber: 285,
                                     columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                lineNumber: 377,
+                                lineNumber: 284,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                        lineNumber: 372,
+                        lineNumber: 279,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                    lineNumber: 371,
+                    lineNumber: 278,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                lineNumber: 370,
+                lineNumber: 277,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-            lineNumber: 369,
+            lineNumber: 276,
             columnNumber: 7
         }, this);
     }
@@ -2774,7 +2681,7 @@ function NuevoViaticoPage() {
                                     children: "Nuevo Viático"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                    lineNumber: 402,
+                                    lineNumber: 309,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2782,13 +2689,13 @@ function NuevoViaticoPage() {
                                     children: "Registra un nuevo comprobante con su foto o PDF"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                    lineNumber: 403,
+                                    lineNumber: 310,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                            lineNumber: 401,
+                            lineNumber: 308,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -2805,12 +2712,12 @@ function NuevoViaticoPage() {
                                                     className: `h-8 w-8 ${isGracePeriod ? 'text-orange-600' : 'text-primary'}`
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                    lineNumber: 413,
+                                                    lineNumber: 320,
                                                     columnNumber: 21
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 412,
+                                                lineNumber: 319,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2820,7 +2727,7 @@ function NuevoViaticoPage() {
                                                         children: "Fecha de Registro Activa"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 416,
+                                                        lineNumber: 323,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -2828,19 +2735,19 @@ function NuevoViaticoPage() {
                                                         children: activeDateDisplay
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 417,
+                                                        lineNumber: 324,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 415,
+                                                lineNumber: 322,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                        lineNumber: 411,
+                                        lineNumber: 318,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2850,23 +2757,23 @@ function NuevoViaticoPage() {
                                             children: "Tienes hasta las 10:00 AM para registrar viáticos de ayer."
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                            lineNumber: 423,
+                                            lineNumber: 330,
                                             columnNumber: 21
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                        lineNumber: 421,
+                                        lineNumber: 328,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                lineNumber: 410,
+                                lineNumber: 317,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                            lineNumber: 409,
+                            lineNumber: 316,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -2880,20 +2787,20 @@ function NuevoViaticoPage() {
                                                 children: "Información del Comprobante"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 434,
+                                                lineNumber: 341,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardDescription"], {
                                                 children: "Sube tus comprobantes y completa los datos"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 435,
+                                                lineNumber: 342,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                        lineNumber: 433,
+                                        lineNumber: 340,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -2909,7 +2816,7 @@ function NuevoViaticoPage() {
                                                                 children: "Comprobantes"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 440,
+                                                                lineNumber: 347,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$tooltip$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Tooltip"], {
@@ -2924,19 +2831,19 @@ function NuevoViaticoPage() {
                                                                                     className: "h-3 w-3 mr-1"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                    lineNumber: 444,
+                                                                                    lineNumber: 351,
                                                                                     columnNumber: 29
                                                                                 }, this),
                                                                                 "Formatos: JPG, PNG, WEBP, PDF"
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                            lineNumber: 443,
+                                                                            lineNumber: 350,
                                                                             columnNumber: 27
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 442,
+                                                                        lineNumber: 349,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$tooltip$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TooltipContent"], {
@@ -2944,24 +2851,24 @@ function NuevoViaticoPage() {
                                                                             children: "El tamaño máximo es de 10MB por archivo"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                            lineNumber: 449,
+                                                                            lineNumber: 356,
                                                                             columnNumber: 27
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 448,
+                                                                        lineNumber: 355,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 441,
+                                                                lineNumber: 348,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 439,
+                                                        lineNumber: 346,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2973,7 +2880,7 @@ function NuevoViaticoPage() {
                                                         multiple: true
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 453,
+                                                        lineNumber: 360,
                                                         columnNumber: 21
                                                     }, this),
                                                     previews.length > 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2991,7 +2898,7 @@ function NuevoViaticoPage() {
                                                                                         className: "w-10 h-10 text-primary"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                        lineNumber: 468,
+                                                                                        lineNumber: 375,
                                                                                         columnNumber: 35
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2999,7 +2906,7 @@ function NuevoViaticoPage() {
                                                                                         children: preview.name
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                        lineNumber: 469,
+                                                                                        lineNumber: 376,
                                                                                         columnNumber: 35
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -3013,18 +2920,18 @@ function NuevoViaticoPage() {
                                                                                             children: "Ver"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                            lineNumber: 471,
+                                                                                            lineNumber: 378,
                                                                                             columnNumber: 37
                                                                                         }, this)
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                        lineNumber: 470,
+                                                                                        lineNumber: 377,
                                                                                         columnNumber: 35
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                lineNumber: 467,
+                                                                                lineNumber: 374,
                                                                                 columnNumber: 33
                                                                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
                                                                                 src: preview.url,
@@ -3032,12 +2939,12 @@ function NuevoViaticoPage() {
                                                                                 className: "w-full h-full object-cover"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                lineNumber: 475,
+                                                                                lineNumber: 382,
                                                                                 columnNumber: 33
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                            lineNumber: 465,
+                                                                            lineNumber: 372,
                                                                             columnNumber: 29
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3055,17 +2962,17 @@ function NuevoViaticoPage() {
                                                                                                 className: "h-4 w-4"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                                lineNumber: 486,
+                                                                                                lineNumber: 393,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                            lineNumber: 485,
+                                                                                            lineNumber: 392,
                                                                                             columnNumber: 35
                                                                                         }, this)
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                        lineNumber: 484,
+                                                                                        lineNumber: 391,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$tooltip$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TooltipContent"], {
@@ -3073,29 +2980,29 @@ function NuevoViaticoPage() {
                                                                                             children: "Eliminar archivo"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                            lineNumber: 490,
+                                                                                            lineNumber: 397,
                                                                                             columnNumber: 35
                                                                                         }, this)
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                        lineNumber: 489,
+                                                                                        lineNumber: 396,
                                                                                         columnNumber: 33
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                lineNumber: 483,
+                                                                                lineNumber: 390,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                            lineNumber: 482,
+                                                                            lineNumber: 389,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     ]
                                                                 }, index, true, {
                                                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                    lineNumber: 464,
+                                                                    lineNumber: 371,
                                                                     columnNumber: 27
                                                                 }, this)),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3106,7 +3013,7 @@ function NuevoViaticoPage() {
                                                                         className: "w-8 h-8 text-primary"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 499,
+                                                                        lineNumber: 406,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3114,19 +3021,19 @@ function NuevoViaticoPage() {
                                                                         children: "Añadir más"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 500,
+                                                                        lineNumber: 407,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 496,
+                                                                lineNumber: 403,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 462,
+                                                        lineNumber: 369,
                                                         columnNumber: 23
                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                         className: "border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-6 sm:p-10 text-center cursor-pointer hover:bg-muted/50 transition-colors",
@@ -3138,12 +3045,12 @@ function NuevoViaticoPage() {
                                                                     className: "w-6 h-6 sm:w-8 sm:h-8 text-primary"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                    lineNumber: 508,
+                                                                    lineNumber: 415,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 507,
+                                                                lineNumber: 414,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3151,7 +3058,7 @@ function NuevoViaticoPage() {
                                                                 children: "Seleccionar Archivos"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 510,
+                                                                lineNumber: 417,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3159,7 +3066,7 @@ function NuevoViaticoPage() {
                                                                 children: "o arrastra y suelta aquí"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 511,
+                                                                lineNumber: 418,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3171,7 +3078,7 @@ function NuevoViaticoPage() {
                                                                         children: "JPG"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 513,
+                                                                        lineNumber: 420,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -3180,7 +3087,7 @@ function NuevoViaticoPage() {
                                                                         children: "PNG"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 514,
+                                                                        lineNumber: 421,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -3189,7 +3096,7 @@ function NuevoViaticoPage() {
                                                                         children: "WEBP"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 515,
+                                                                        lineNumber: 422,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -3198,13 +3105,13 @@ function NuevoViaticoPage() {
                                                                         children: "PDF"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 516,
+                                                                        lineNumber: 423,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 512,
+                                                                lineNumber: 419,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3212,13 +3119,13 @@ function NuevoViaticoPage() {
                                                                 children: "Máximo 10MB por archivo"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 518,
+                                                                lineNumber: 425,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 504,
+                                                        lineNumber: 411,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -3231,20 +3138,20 @@ function NuevoViaticoPage() {
                                                                 className: "h-4 w-4 mr-2"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 526,
+                                                                lineNumber: 433,
                                                                 columnNumber: 23
                                                             }, this),
                                                             "Tomar y Añadir Foto"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 521,
+                                                        lineNumber: 428,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 438,
+                                                lineNumber: 345,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3261,7 +3168,7 @@ function NuevoViaticoPage() {
                                                                         children: "Para *"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 534,
+                                                                        lineNumber: 441,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -3275,12 +3182,12 @@ function NuevoViaticoPage() {
                                                                                     placeholder: "Selecciona una opción"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                    lineNumber: 537,
+                                                                                    lineNumber: 444,
                                                                                     columnNumber: 29
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                lineNumber: 536,
+                                                                                lineNumber: 443,
                                                                                 columnNumber: 27
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -3290,7 +3197,7 @@ function NuevoViaticoPage() {
                                                                                         children: "🏢 Empresa"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                        lineNumber: 540,
+                                                                                        lineNumber: 447,
                                                                                         columnNumber: 29
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -3298,25 +3205,25 @@ function NuevoViaticoPage() {
                                                                                         children: "👤 Personal"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                        lineNumber: 541,
+                                                                                        lineNumber: 448,
                                                                                         columnNumber: 29
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                lineNumber: 539,
+                                                                                lineNumber: 446,
                                                                                 columnNumber: 27
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 535,
+                                                                        lineNumber: 442,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 533,
+                                                                lineNumber: 440,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3327,7 +3234,7 @@ function NuevoViaticoPage() {
                                                                         children: "Tipo de Comprobante *"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 547,
+                                                                        lineNumber: 454,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -3341,12 +3248,12 @@ function NuevoViaticoPage() {
                                                                                     placeholder: "Selecciona un tipo"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                    lineNumber: 550,
+                                                                                    lineNumber: 457,
                                                                                     columnNumber: 29
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                lineNumber: 549,
+                                                                                lineNumber: 456,
                                                                                 columnNumber: 27
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -3356,7 +3263,7 @@ function NuevoViaticoPage() {
                                                                                         children: "🧾 Factura"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                        lineNumber: 553,
+                                                                                        lineNumber: 460,
                                                                                         columnNumber: 29
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -3364,7 +3271,7 @@ function NuevoViaticoPage() {
                                                                                         children: "🧾 Boleta"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                        lineNumber: 554,
+                                                                                        lineNumber: 461,
                                                                                         columnNumber: 29
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -3372,7 +3279,7 @@ function NuevoViaticoPage() {
                                                                                         children: "📄 Recibo por Honorario"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                        lineNumber: 555,
+                                                                                        lineNumber: 462,
                                                                                         columnNumber: 29
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -3380,31 +3287,31 @@ function NuevoViaticoPage() {
                                                                                         children: "❌ Sin Comprobante"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                        lineNumber: 556,
+                                                                                        lineNumber: 463,
                                                                                         columnNumber: 29
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                                lineNumber: 552,
+                                                                                lineNumber: 459,
                                                                                 columnNumber: 27
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 548,
+                                                                        lineNumber: 455,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 546,
+                                                                lineNumber: 453,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 532,
+                                                        lineNumber: 439,
                                                         columnNumber: 21
                                                     }, this),
                                                     tipoComprobante && tipoComprobante !== 'SIN COMPROBANTE' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3415,7 +3322,7 @@ function NuevoViaticoPage() {
                                                                 children: tipoComprobante === 'BOLETA' ? 'Número de DNI' : 'Número de RUC'
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 565,
+                                                                lineNumber: 472,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -3426,13 +3333,13 @@ function NuevoViaticoPage() {
                                                                 placeholder: tipoComprobante === 'BOLETA' ? 'Ej: 12345678' : 'Ej: 20123456789'
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 568,
+                                                                lineNumber: 475,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 564,
+                                                        lineNumber: 471,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3446,7 +3353,7 @@ function NuevoViaticoPage() {
                                                                         children: "Qué Sustenta"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 580,
+                                                                        lineNumber: 487,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -3457,13 +3364,13 @@ function NuevoViaticoPage() {
                                                                         className: "bg-muted"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 581,
+                                                                        lineNumber: 488,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 579,
+                                                                lineNumber: 486,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3474,7 +3381,7 @@ function NuevoViaticoPage() {
                                                                         children: "Número de Comprobante"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 591,
+                                                                        lineNumber: 498,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -3485,19 +3392,19 @@ function NuevoViaticoPage() {
                                                                         placeholder: "Ej: 001-12345"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                        lineNumber: 592,
+                                                                        lineNumber: 499,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 590,
+                                                                lineNumber: 497,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 578,
+                                                        lineNumber: 485,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3510,7 +3417,7 @@ function NuevoViaticoPage() {
                                                                     children: "Monto (S/) *"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                    lineNumber: 604,
+                                                                    lineNumber: 511,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -3524,18 +3431,18 @@ function NuevoViaticoPage() {
                                                                     placeholder: "0.00"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                    lineNumber: 605,
+                                                                    lineNumber: 512,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                            lineNumber: 603,
+                                                            lineNumber: 510,
                                                             columnNumber: 23
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 602,
+                                                        lineNumber: 509,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3546,7 +3453,7 @@ function NuevoViaticoPage() {
                                                                 children: "Descripción *"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 619,
+                                                                lineNumber: 526,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$textarea$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Textarea"], {
@@ -3558,19 +3465,19 @@ function NuevoViaticoPage() {
                                                                 rows: 4
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 620,
+                                                                lineNumber: 527,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 618,
+                                                        lineNumber: 525,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 531,
+                                                lineNumber: 438,
                                                 columnNumber: 19
                                             }, this),
                                             error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Alert"], {
@@ -3580,27 +3487,27 @@ function NuevoViaticoPage() {
                                                         className: "h-4 w-4"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 635,
+                                                        lineNumber: 542,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertTitle"], {
                                                         children: "Error"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 636,
+                                                        lineNumber: 543,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDescription"], {
                                                         children: error
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 637,
+                                                        lineNumber: 544,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 634,
+                                                lineNumber: 541,
                                                 columnNumber: 21
                                             }, this),
                                             success && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Alert"], {
@@ -3609,33 +3516,33 @@ function NuevoViaticoPage() {
                                                         className: "h-4 w-4"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 643,
+                                                        lineNumber: 550,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertTitle"], {
                                                         children: "Éxito"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 644,
+                                                        lineNumber: 551,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDescription"], {
                                                         children: "Viático registrado correctamente. Redirigiendo..."
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 645,
+                                                        lineNumber: 552,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 642,
+                                                lineNumber: 549,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                        lineNumber: 437,
+                                        lineNumber: 344,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardFooter"], {
@@ -3651,7 +3558,7 @@ function NuevoViaticoPage() {
                                                         className: "mr-2 h-4 w-4 animate-spin"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 659,
+                                                        lineNumber: 566,
                                                         columnNumber: 25
                                                     }, this),
                                                     "Registrando..."
@@ -3662,7 +3569,7 @@ function NuevoViaticoPage() {
                                                         className: "mr-2 h-4 w-4"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 664,
+                                                        lineNumber: 571,
                                                         columnNumber: 25
                                                     }, this),
                                                     "Registrar Viático"
@@ -3670,23 +3577,23 @@ function NuevoViaticoPage() {
                                             }, void 0, true)
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                            lineNumber: 652,
+                                            lineNumber: 559,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                        lineNumber: 651,
+                                        lineNumber: 558,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                lineNumber: 432,
+                                lineNumber: 339,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                            lineNumber: 431,
+                            lineNumber: 338,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Dialog"], {
@@ -3701,20 +3608,20 @@ function NuevoViaticoPage() {
                                                 children: "Tomar Foto"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 676,
+                                                lineNumber: 583,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DialogDescription"], {
                                                 children: "Captura una foto de tu comprobante usando la cámara"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 677,
+                                                lineNumber: 584,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                        lineNumber: 675,
+                                        lineNumber: 582,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3731,7 +3638,7 @@ function NuevoViaticoPage() {
                                                         className: "w-full rounded-lg"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 683,
+                                                        lineNumber: 590,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -3743,18 +3650,18 @@ function NuevoViaticoPage() {
                                                             className: "h-5 w-5"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                            lineNumber: 696,
+                                                            lineNumber: 603,
                                                             columnNumber: 23
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 690,
+                                                        lineNumber: 597,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 682,
+                                                lineNumber: 589,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("canvas", {
@@ -3764,7 +3671,7 @@ function NuevoViaticoPage() {
                                                 }
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 699,
+                                                lineNumber: 606,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3776,7 +3683,7 @@ function NuevoViaticoPage() {
                                                         children: "Cancelar"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 701,
+                                                        lineNumber: 608,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -3786,65 +3693,66 @@ function NuevoViaticoPage() {
                                                                 className: "h-4 w-4 mr-2"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                                lineNumber: 705,
+                                                                lineNumber: 612,
                                                                 columnNumber: 23
                                                             }, this),
                                                             "Capturar Foto"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                        lineNumber: 704,
+                                                        lineNumber: 611,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                                lineNumber: 700,
+                                                lineNumber: 607,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                        lineNumber: 681,
+                                        lineNumber: 588,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                                lineNumber: 674,
+                                lineNumber: 581,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                            lineNumber: 673,
+                            lineNumber: 580,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                    lineNumber: 400,
+                    lineNumber: 307,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-                lineNumber: 399,
+                lineNumber: 306,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-            lineNumber: 398,
+            lineNumber: 305,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/app/nuevo-viatico/page.tsx",
-        lineNumber: 397,
+        lineNumber: 304,
         columnNumber: 5
     }, this);
 }
-_s(NuevoViaticoPage, "+w8xXySe2hGDabNcJKYbs268k14=", false, function() {
+_s(NuevoViaticoPage, "2PIeK0sWuX0yNLqQx4O7BY5ohmg=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"],
-        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"]
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"],
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$useViaticoDeadline$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useViaticoDeadline"]
     ];
 });
 _c = NuevoViaticoPage;
