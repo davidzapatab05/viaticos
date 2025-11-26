@@ -32,6 +32,8 @@ export function useViaticoDeadline() {
         }
     }
 
+    const [canReopen, setCanReopen] = useState<boolean>(false)
+
     useEffect(() => {
         const calculateActiveDate = () => {
             // Obtener hora actual en Perú explícitamente
@@ -49,6 +51,7 @@ export function useViaticoDeadline() {
 
             let effectiveDate = today
             let gracePeriodActive = false
+            let canReopenDay = false
 
             if (isBeforeCutoff) {
                 // Estamos antes de las 10 AM.
@@ -60,6 +63,7 @@ export function useViaticoDeadline() {
                     // El usuario ya cerró ayer manualmente, así que la fecha activa es HOY
                     effectiveDate = today
                     gracePeriodActive = false
+                    canReopenDay = true // Puede reabrir porque es antes de las 10 AM y ya cerró
                 } else {
                     // El usuario NO ha cerrado ayer, así que sigue habilitado para ayer
                     effectiveDate = yesterday
@@ -74,6 +78,7 @@ export function useViaticoDeadline() {
             setActiveDate(effectiveDate)
             setActiveDateDisplay(format(effectiveDate, "EEEE d 'de' MMMM", { locale: es }))
             setIsGracePeriod(gracePeriodActive)
+            setCanReopen(canReopenDay)
 
             if (gracePeriodActive) {
                 // Caso 1: Periodo de gracia (antes de las 10 AM, registrando para ayer)
@@ -130,6 +135,7 @@ export function useViaticoDeadline() {
         timeLeft,
         isGracePeriod,
         loading,
+        canReopen,
         refreshLastClosedDate: async () => {
             // Placeholder si se necesita refrescar manualmente
         }

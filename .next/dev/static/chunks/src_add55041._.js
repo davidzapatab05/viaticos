@@ -273,6 +273,8 @@ __turbopack_context__.s([
     ()=>getViaticosByDate,
     "getViaticosByUser",
     ()=>getViaticosByUser,
+    "reopenDay",
+    ()=>reopenDay,
     "setUserCreateFolder",
     ()=>setUserCreateFolder,
     "setUserRole",
@@ -556,6 +558,12 @@ async function closeDay(date) {
         body: JSON.stringify({
             date
         })
+    });
+}
+async function reopenDay() {
+    return apiRequest('/api/users/reopen-day', {
+        method: 'POST',
+        body: JSON.stringify({})
     });
 }
 async function deleteUser(uid) {

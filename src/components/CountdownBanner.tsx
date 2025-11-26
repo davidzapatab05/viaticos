@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 
 export function CountdownBanner() {
-    const { isGracePeriod, timeLeft, activeDateDisplay, activeDate } = useViaticoDeadline()
+    const { isGracePeriod, timeLeft, activeDateDisplay, activeDate, canReopen } = useViaticoDeadline()
     const router = useRouter()
     const [closing, setClosing] = useState(false)
 
@@ -31,6 +31,23 @@ export function CountdownBanner() {
         }
     }
 
+    const handleReopenDay = async () => {
+        if (!confirm(`¿Estás seguro de reabrir el día anterior? Volverás a registrar viáticos con fecha de ayer.`)) {
+            return
+        }
+
+        setClosing(true)
+        try {
+            const { reopenDay } = await import('@/services/api')
+            await reopenDay()
+            window.location.reload()
+        } catch (e) {
+            alert('Error al reabrir el día: ' + (e as Error).message)
+        } finally {
+            setClosing(false)
+        }
+    }
+
     return (
         <div className={`${isGracePeriod ? 'bg-orange-600' : 'bg-blue-600'} text-white px-3 py-1.5 shadow-md relative z-50`}>
             <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-2 text-xs sm:text-sm">
@@ -42,9 +59,20 @@ export function CountdownBanner() {
                         </span>
                     </div>
                     <span className="hidden sm:inline">|</span>
-                    <span className="opacity-90">Tiempo restante para viatico del dia: <strong>{activeDateDisplay}</strong></span>
+                    <span className="opacity-90">Reg. para: <strong>{activeDateDisplay}</strong></span>
                 </div>
                 <div className="flex items-center gap-2 mt-1 sm:mt-0">
+                    {canReopen && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            className="h-6 text-[10px] sm:text-xs px-2 bg-orange-100 text-orange-700 hover:bg-orange-200 border-none"
+                            onClick={handleReopenDay}
+                            disabled={closing}
+                        >
+                            {closing ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Reabrir día anterior'}
+                        </Button>
+                    )}
                     <Button
                         variant="secondary"
                         size="sm"

@@ -1104,6 +1104,32 @@ export default {
         }
       }
 
+      // POST /api/users/reopen-day (reabrir el día manualmente - solo si es antes de las 10am)
+      if (path === '/api/users/reopen-day' && request.method === 'POST') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        try {
+          // Verificar hora actual (solo permitir si es antes de las 10 AM)
+          const now = new Date();
+          const timeOptions = { timeZone: 'America/Lima', hour: 'numeric', hour12: false };
+          const hour = parseInt(new Intl.DateTimeFormat('es-PE', timeOptions).format(now));
+
+          if (hour >= 10) {
+            return new Response(JSON.stringify({ error: 'Ya no se puede reabrir el día. Ha pasado la hora límite (10:00 AM).' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          // Resetear last_closed_date a NULL
+          await env.DB.prepare('UPDATE user_roles SET last_closed_date = NULL WHERE user_id = ?').bind(user.uid).run()
+
+          return new Response(JSON.stringify({
+            success: true,
+            message: 'Día reabierto exitosamente.'
+          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (error) {
+          return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
       // POST /api/viaticos (verificar estado y crear_carpeta antes de permitir subir)
       if (path === '/api/viaticos' && request.method === 'POST') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })

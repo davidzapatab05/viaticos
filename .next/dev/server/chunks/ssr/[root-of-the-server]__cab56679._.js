@@ -1078,6 +1078,7 @@ function useViaticoDeadline() {
             sessionStorage.setItem(key, 'true');
         }
     };
+    const [canReopen, setCanReopen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         const calculateActiveDate = ()=>{
             // Obtener hora actual en Perú explícitamente
@@ -1098,6 +1099,7 @@ function useViaticoDeadline() {
             const isBeforeCutoff = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$isBefore$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__isBefore$3e$__["isBefore"])(now, cutoffTime);
             let effectiveDate = today;
             let gracePeriodActive = false;
+            let canReopenDay = false;
             if (isBeforeCutoff) {
                 // Estamos antes de las 10 AM.
                 // Por defecto, la fecha activa es AYER, a menos que el usuario ya haya cerrado ayer.
@@ -1106,6 +1108,7 @@ function useViaticoDeadline() {
                     // El usuario ya cerró ayer manualmente, así que la fecha activa es HOY
                     effectiveDate = today;
                     gracePeriodActive = false;
+                    canReopenDay = true; // Puede reabrir porque es antes de las 10 AM y ya cerró
                 } else {
                     // El usuario NO ha cerrado ayer, así que sigue habilitado para ayer
                     effectiveDate = yesterday;
@@ -1121,6 +1124,7 @@ function useViaticoDeadline() {
                 locale: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$locale$2f$es$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__es$3e$__["es"]
             }));
             setIsGracePeriod(gracePeriodActive);
+            setCanReopen(canReopenDay);
             if (gracePeriodActive) {
                 // Caso 1: Periodo de gracia (antes de las 10 AM, registrando para ayer)
                 // Deadline: Hoy 10:00 AM
@@ -1169,6 +1173,7 @@ function useViaticoDeadline() {
         timeLeft,
         isGracePeriod,
         loading,
+        canReopen,
         refreshLastClosedDate: async ()=>{
         // Placeholder si se necesita refrescar manualmente
         }
@@ -1196,7 +1201,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$b
 ;
 ;
 function CountdownBanner() {
-    const { isGracePeriod, timeLeft, activeDateDisplay, activeDate } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$useViaticoDeadline$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useViaticoDeadline"])();
+    const { isGracePeriod, timeLeft, activeDateDisplay, activeDate, canReopen } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$useViaticoDeadline$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useViaticoDeadline"])();
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRouter"])();
     const [closing, setClosing] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     // Si no hay tiempo restante (cargando o error), no mostrar
@@ -1218,6 +1223,21 @@ function CountdownBanner() {
             setClosing(false);
         }
     };
+    const handleReopenDay = async ()=>{
+        if (!confirm(`¿Estás seguro de reabrir el día anterior? Volverás a registrar viáticos con fecha de ayer.`)) {
+            return;
+        }
+        setClosing(true);
+        try {
+            const { reopenDay } = await __turbopack_context__.A("[project]/src/services/api.ts [app-ssr] (ecmascript, async loader)");
+            await reopenDay();
+            window.location.reload();
+        } catch (e) {
+            alert('Error al reabrir el día: ' + e.message);
+        } finally{
+            setClosing(false);
+        }
+    };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: `${isGracePeriod ? 'bg-orange-600' : 'bg-blue-600'} text-white px-3 py-1.5 shadow-md relative z-50`,
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1233,7 +1253,7 @@ function CountdownBanner() {
                                     className: "h-3.5 w-3.5 animate-pulse"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/CountdownBanner.tsx",
-                                    lineNumber: 39,
+                                    lineNumber: 56,
                                     columnNumber: 25
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1245,13 +1265,13 @@ function CountdownBanner() {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/CountdownBanner.tsx",
-                                    lineNumber: 40,
+                                    lineNumber: 57,
                                     columnNumber: 25
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/CountdownBanner.tsx",
-                            lineNumber: 38,
+                            lineNumber: 55,
                             columnNumber: 21
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1259,66 +1279,86 @@ function CountdownBanner() {
                             children: "|"
                         }, void 0, false, {
                             fileName: "[project]/src/components/CountdownBanner.tsx",
-                            lineNumber: 44,
+                            lineNumber: 61,
                             columnNumber: 21
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                             className: "opacity-90",
                             children: [
-                                "Tiempo restante para viatico del dia: ",
+                                "Reg. para: ",
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                     children: activeDateDisplay
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/CountdownBanner.tsx",
-                                    lineNumber: 45,
-                                    columnNumber: 88
+                                    lineNumber: 62,
+                                    columnNumber: 61
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/CountdownBanner.tsx",
-                            lineNumber: 45,
+                            lineNumber: 62,
                             columnNumber: 21
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/CountdownBanner.tsx",
-                    lineNumber: 37,
+                    lineNumber: 54,
                     columnNumber: 17
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "flex items-center gap-2 mt-1 sm:mt-0",
-                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
-                        variant: "secondary",
-                        size: "sm",
-                        className: `h-6 text-[10px] sm:text-xs px-2 bg-white border-none ${isGracePeriod ? 'text-orange-700 hover:bg-orange-50' : 'text-blue-700 hover:bg-blue-50'}`,
-                        onClick: isGracePeriod ? handleCloseDay : ()=>router.push('/nuevo-viatico'),
-                        disabled: closing,
-                        children: closing ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
-                            className: "h-3 w-3 animate-spin"
+                    children: [
+                        canReopen && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
+                            variant: "secondary",
+                            size: "sm",
+                            className: "h-6 text-[10px] sm:text-xs px-2 bg-orange-100 text-orange-700 hover:bg-orange-200 border-none",
+                            onClick: handleReopenDay,
+                            disabled: closing,
+                            children: closing ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
+                                className: "h-3 w-3 animate-spin"
+                            }, void 0, false, {
+                                fileName: "[project]/src/components/CountdownBanner.tsx",
+                                lineNumber: 73,
+                                columnNumber: 40
+                            }, this) : 'Reabrir día anterior'
                         }, void 0, false, {
                             fileName: "[project]/src/components/CountdownBanner.tsx",
-                            lineNumber: 56,
-                            columnNumber: 29
-                        }, this) : isGracePeriod ? 'Cerrar día' : 'Registrar viatico'
-                    }, void 0, false, {
-                        fileName: "[project]/src/components/CountdownBanner.tsx",
-                        lineNumber: 48,
-                        columnNumber: 21
-                    }, this)
-                }, void 0, false, {
+                            lineNumber: 66,
+                            columnNumber: 25
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
+                            variant: "secondary",
+                            size: "sm",
+                            className: `h-6 text-[10px] sm:text-xs px-2 bg-white border-none ${isGracePeriod ? 'text-orange-700 hover:bg-orange-50' : 'text-blue-700 hover:bg-blue-50'}`,
+                            onClick: isGracePeriod ? handleCloseDay : ()=>router.push('/nuevo-viatico'),
+                            disabled: closing,
+                            children: closing ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
+                                className: "h-3 w-3 animate-spin"
+                            }, void 0, false, {
+                                fileName: "[project]/src/components/CountdownBanner.tsx",
+                                lineNumber: 84,
+                                columnNumber: 29
+                            }, this) : isGracePeriod ? 'Cerrar día' : 'Registrar viatico'
+                        }, void 0, false, {
+                            fileName: "[project]/src/components/CountdownBanner.tsx",
+                            lineNumber: 76,
+                            columnNumber: 21
+                        }, this)
+                    ]
+                }, void 0, true, {
                     fileName: "[project]/src/components/CountdownBanner.tsx",
-                    lineNumber: 47,
+                    lineNumber: 64,
                     columnNumber: 17
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/components/CountdownBanner.tsx",
-            lineNumber: 36,
+            lineNumber: 53,
             columnNumber: 13
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/components/CountdownBanner.tsx",
-        lineNumber: 35,
+        lineNumber: 52,
         columnNumber: 9
     }, this);
 }

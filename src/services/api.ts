@@ -277,6 +277,13 @@ export async function closeDay(date: string) {
   })
 }
 
+export async function reopenDay() {
+  return apiRequest('/api/users/reopen-day', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}
+
 export async function deleteUser(uid: string) {
   const token = await getAuthToken()
   const response = await fetch(`${API_URL}/api/users/${uid}`, {
