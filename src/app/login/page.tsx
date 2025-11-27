@@ -25,6 +25,13 @@ export default function LoginPage() {
         await new Promise(resolve => setTimeout(resolve, 500))
 
         try {
+          // Auto-suscribir a notificaciones push (silenciosamente)
+          const { subscribeToPush } = await import('@/utils/push')
+          await subscribeToPush().catch(err => {
+            // Ignorar errores de suscripción para no bloquear el flujo
+            console.warn('No se pudo suscribir a notificaciones:', err)
+          })
+
           const userData = await getCurrentUser()
           // Siempre redirigir al dashboard, los admins pueden ir al panel desde el menú
           router.push('/dashboard')
@@ -45,9 +52,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl">Login to your account</CardTitle>
+          <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Ingresa con tu cuenta de Microsoft para continuar
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -65,12 +72,12 @@ export default function LoginPage() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                Iniciando sesión...
               </>
             ) : (
               <>
                 <LogIn className="mr-2 h-4 w-4" />
-                Login with Microsoft
+                Iniciar con Microsoft
               </>
             )}
           </Button>

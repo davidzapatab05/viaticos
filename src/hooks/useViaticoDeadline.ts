@@ -9,6 +9,7 @@ export function useViaticoDeadline() {
     const [activeDateDisplay, setActiveDateDisplay] = useState<string>('')
     const [timeLeft, setTimeLeft] = useState<string>('')
     const [isGracePeriod, setIsGracePeriod] = useState<boolean>(false)
+    const [isLastHour, setIsLastHour] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(true)
 
     // Función para disparar notificaciones
@@ -92,6 +93,9 @@ export function useViaticoDeadline() {
                     const seconds = diff % 60
                     setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
 
+                    // Activar estado de última hora
+                    setIsLastHour(diff <= 3600)
+
                     // Notificación cuando falte 1 hora (3600 segundos) o menos
                     if (diff <= 3600 && diff > 3590) {
                         triggerNotification(
@@ -101,6 +105,7 @@ export function useViaticoDeadline() {
                     }
                 } else {
                     setTimeLeft('00:00:00')
+                    setIsLastHour(false)
                 }
             } else {
                 // Caso 2: Periodo normal (después de las 10 AM)
@@ -113,8 +118,12 @@ export function useViaticoDeadline() {
                     const minutes = Math.floor((diff % 3600) / 60)
                     const seconds = diff % 60
                     setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
+
+                    // También activar última hora si estamos cerca del deadline de mañana (aunque es raro estar conectado 24h)
+                    setIsLastHour(diff <= 3600)
                 } else {
                     setTimeLeft('00:00:00')
+                    setIsLastHour(false)
                 }
             }
             setLoading(false)
@@ -136,6 +145,7 @@ export function useViaticoDeadline() {
         activeDateDisplay,
         timeLeft,
         isGracePeriod,
+        isLastHour,
         loading
     }
 }

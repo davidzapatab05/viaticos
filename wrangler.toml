@@ -1,6 +1,7 @@
 name = "viaticos"
 main = "src/worker.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
 
 
 [[d1_databases]]
@@ -9,7 +10,7 @@ database_name = "viaticos-db"
 database_id = "1826e289-00d7-4d35-a891-509aad443360"
 
 [triggers]
-crons = ["0 0 * * *"]
+crons = ["0 0 * * *", "0 14 * * *"]
 
 [vars]
 ONEDRIVE_CLIENT_ID = "4ffb1986-42d2-48ad-bd7c-eb7940f32e63"
@@ -23,3 +24,8 @@ SUPER_ADMIN_EMAIL = "davidzapata_051099@hotmail.com"
 NEXT_PUBLIC_FIREBASE_API_KEY = "AIzaSyDl0BvJnN3m2AVSZpCr6Dqbt3mIMa7ZITM"
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = "viaticos-d5652.firebaseapp.com"
 NEXT_PUBLIC_FIREBASE_PROJECT_ID = "viaticos-d5652"
+
+# Push Notifications
+NEXT_PUBLIC_VAPID_PUBLIC_KEY = "BHThzL6WagjVlnINmQQ_6GljUnra2JSs6GAQb-oWjuT5-018t86R44V8zx5qMbQSaci2kdVea4uwR8OoAHouWW0"
+VAPID_PRIVATE_KEY = "RE1_OBXvxCZv34uIWsAB2uSmGwAlyXTUmBPQuVkCXsw"
+VAPID_SUBJECT = "mailto:davidzapata_051099@hotmail.com"

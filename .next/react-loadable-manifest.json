@@ -1,0 +1,63 @@
+{
+  "..\\node_modules\\jspdf\\dist\\jspdf.es.min.js -> canvg": {
+    "id": 3167,
+    "files": [
+      "static/chunks/bc98253f.217e80b363438397.js",
+      "static/chunks/902.42a758df3071288b.js"
+    ]
+  },
+  "..\\node_modules\\jspdf\\dist\\jspdf.es.min.js -> dompurify": {
+    "id": 91992,
+    "files": [
+      "static/chunks/992.728e90262bd063cf.js"
+    ]
+  },
+  "..\\node_modules\\jspdf\\dist\\jspdf.es.min.js -> html2canvas": {
+    "id": 82201,
+    "files": [
+      "static/chunks/ad2866b8.288ea3ea1b3dbf10.js"
+    ]
+  },
+  "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
+    "id": 41966,
+    "files": [
+      "static/chunks/966.83c76036c0a8ff77.js"
+    ]
+  },
+  "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
+    "id": 3899,
+    "files": [
+      "static/chunks/899.9de990650a7ba81f.js"
+    ]
+  },
+  "app\\nuevo-viatico\\page.tsx -> @/services/api": {
+    "id": 60668,
+    "files": []
+  },
+  "contexts\\AuthContext.tsx -> ../config/firebase": {
+    "id": 50007,
+    "files": []
+  },
+  "contexts\\AuthContext.tsx -> @/services/api": {
+    "id": 60668,
+    "files": []
+  },
+  "contexts\\AuthContext.tsx -> @/utils/push": {
+    "id": 66877,
+    "files": []
+  },
+  "contexts\\AuthContext.tsx -> firebase/auth": {
+    "id": 96905,
+    "files": []
+  },
+  "contexts\\AuthContext.tsx -> sweetalert2": {
+    "id": 37042,
+    "files": [
+      "static/chunks/41ade5dc-2e382b95e7a3cc0a.js"
+    ]
+  },
+  "services\\api.ts -> ../config/firebase": {
+    "id": 50007,
+    "files": []
+  }
+}

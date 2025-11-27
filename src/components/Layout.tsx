@@ -40,8 +40,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { path: '/dashboard', label: 'Inicio', icon: Home },
   ]
 
-  // Solo mostrar opciones de viáticos si tiene permiso de crear carpeta
-  if (appUser?.crear_carpeta) {
+  // Mostrar opciones de viáticos si el usuario está autenticado
+  if (appUser) {
     navItems.push(
       { path: '/nuevo-viatico', label: 'Nuevo Viático', icon: Plus },
       { path: '/mis-viaticos', label: 'Mis Viáticos', icon: List }
@@ -51,8 +51,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   if (appUser?.role === 'admin' || appUser?.role === 'super_admin') {
     navItems.push({ path: '/admin', label: 'Admin', icon: Settings })
   }
-
-
 
   const getRoleIcon = () => {
     if (appUser?.role === 'super_admin') return <Crown className="h-3.5 w-3.5 text-yellow-500" />
@@ -86,7 +84,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
             <span className="hidden font-bold sm:inline-block">Gestión de Viáticos</span>
           </Link>
-          <nav className="flex flex-1 items-center space-x-6 text-sm font-medium">
+          <nav className="hidden md:flex flex-1 items-center space-x-6 text-sm font-medium">
             {navItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.path
@@ -112,6 +110,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <span className="ml-1">{getRoleLabel()}</span>
                 </Badge>
               )}
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -135,36 +134,37 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Cerrar Sesión</span>
+                    <span>Cerrar sesión</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" className="md:hidden" size="icon">
+                <Button variant="ghost" size="icon" className="md:hidden">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="right">
                 <SheetHeader>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <Avatar className="h-10 w-10">
                       <AvatarFallback>{userInitials}</AvatarFallback>
                     </Avatar>
-                    <div>
-                      <SheetTitle>{displayName}</SheetTitle>
-                      <SheetDescription>{user?.email}</SheetDescription>
-                      {appUser?.role && (
-                        <Badge variant={getRoleBadgeVariant()} className="mt-2 text-xs">
-                          {getRoleIcon()}
-                          <span className="ml-1">Rol: {getRoleLabel()}</span>
-                        </Badge>
-                      )}
+                    <div className="flex flex-col items-start">
+                      <SheetTitle className="text-sm">{displayName}</SheetTitle>
+                      <SheetDescription className="text-xs">{user?.email}</SheetDescription>
                     </div>
                   </div>
+                  {appUser?.role && (
+                    <Badge variant={getRoleBadgeVariant()} className="text-xs w-fit mt-2">
+                      {getRoleIcon()}
+                      <span className="ml-1">{getRoleLabel()}</span>
+                    </Badge>
+                  )}
                 </SheetHeader>
-                <div className="mt-6 space-y-1">
+                <nav className="flex flex-col gap-4 mt-8">
                   {navItems.map((item) => {
                     const Icon = item.icon
                     const isActive = pathname === item.path
@@ -174,22 +174,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         href={item.path}
                         onClick={() => setMobileMenuOpen(false)}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                          isActive ? "bg-accent text-accent-foreground" : "hover:bg-accent hover:text-accent-foreground"
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                         )}
                       >
                         <Icon className="h-4 w-4" />
-                        <span>{item.label}</span>
+                        {item.label}
                       </Link>
                     )
                   })}
-                </div>
-                <div className="mt-6 pt-6 border-t">
-                  <Button variant="destructive" className="w-full" onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Cerrar Sesión
+                  <Button
+                    variant="outline"
+                    className="justify-start gap-3"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Cerrar sesión
                   </Button>
-                </div>
+                </nav>
               </SheetContent>
             </Sheet>
           </div>

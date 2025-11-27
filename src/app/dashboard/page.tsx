@@ -13,7 +13,7 @@ export default function DashboardPage() {
 
   const cards = []
 
-  if (appUser?.crear_carpeta) {
+  if (appUser) {
     cards.push({
       title: 'Nuevo Viático',
       description: 'Registra un nuevo comprobante con foto o PDF',

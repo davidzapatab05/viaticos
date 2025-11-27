@@ -1,4 +1,6 @@
-﻿/**
+﻿import webpush from 'web-push'
+
+/**
  * Cloudflare Worker completo de viÃ¡ticos
  * Incluye: Firebase Auth, roles, CRUD viÃ¡ticos, OneDrive (seguro para cuentas personales)
  */
@@ -36,6 +38,28 @@ function getPeruDateTime() {
   const p = {};
   parts.forEach(({ type, value }) => p[type] = value);
   return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second}`;
+}
+
+function calculateActiveDate() {
+  const now = new Date();
+  const peruTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Lima" }));
+  const hours = peruTime.getHours();
+
+  // Si es antes de las 10 AM, usamos la fecha de ayer
+  if (hours < 10) {
+    const yesterday = new Date(peruTime);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const y = yesterday.getFullYear();
+    const m = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const d = String(yesterday.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  // Si es 10 AM o después, usamos la fecha de hoy
+  const y = peruTime.getFullYear();
+  const m = String(peruTime.getMonth() + 1).padStart(2, '0');
+  const d = String(peruTime.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 // ===================== Firebase =====================
@@ -103,6 +127,26 @@ async function getUserRole(env, uid, email = '') {
   } catch (e) { console.warn('Error obteniendo rol:', e); return 'usuario' }
 }
 
+// Verificar si el usuario es super_admin
+async function isSuperAdmin(env, uid, email = '') {
+  try {
+    const superAdminEmail = (env.SUPER_ADMIN_EMAIL || '').toLowerCase()
+    if (superAdminEmail && email.toLowerCase() === superAdminEmail) return true
+    const res = await env.DB.prepare('SELECT role FROM user_roles WHERE user_id = ?').bind(uid).first()
+    return res?.role === 'super_admin'
+  } catch (e) { console.warn('Error verificando super_admin:', e); return false }
+}
+
+// Verificar si el usuario es admin o super_admin
+async function isAdmin(env, uid, email = '') {
+  try {
+    const superAdminEmail = (env.SUPER_ADMIN_EMAIL || '').toLowerCase()
+    if (superAdminEmail && email.toLowerCase() === superAdminEmail) return true
+    const res = await env.DB.prepare('SELECT role FROM user_roles WHERE user_id = ?').bind(uid).first()
+    return res?.role === 'admin' || res?.role === 'super_admin'
+  } catch (e) { console.warn('Error verificando admin:', e); return false }
+}
+
 // Verificar si el usuario estÃ¡ activo
 async function isUserActive(env, uid, email = '') {
   try {
@@ -129,25 +173,54 @@ async function setUserStatus(env, uid, estado) {
   } catch (e) { console.error('Error actualizando estado:', e); return false }
 }
 
-// Actualizar flag de crear carpeta
-async function setUserCreateFolder(env, uid, crearCarpeta) {
+// Establecer o actualizar rol y estado del usuario
+async function setUserRole(env, uid, role, estado = 'activo', crearCarpeta = 1, email = null, displayName = null) {
   try {
-    await env.DB.prepare(
-      `UPDATE user_roles SET crear_carpeta = ?, updated_at = ? WHERE user_id = ?`
-    ).bind(crearCarpeta ? 1 : 0, getPeruDateTime(), uid).run()
+    await ensureUserRolesTable(env)
+
+    // Verificar si el usuario ya existe
+    const existing = await env.DB.prepare('SELECT user_id FROM user_roles WHERE user_id = ?').bind(uid).first()
+
+    if (existing) {
+      // Usuario existente: SOLO actualizar email y displayName si no son genéricos
+      // NO tocar rol ni estado - mantener los datos existentes
+      const updateFields = []
+      const updateValues = []
+
+      if (email && email !== 'unknown@example.com') {
+        updateFields.push('email = ?')
+        updateValues.push(email)
+      }
+
+      if (displayName && displayName !== 'Anonimo') {
+        updateFields.push('displayName = ?')
+        updateValues.push(displayName)
+      }
+
+      if (updateFields.length > 0) {
+        updateFields.push('updated_at = ?')
+        updateValues.push(getPeruDateTime())
+        updateValues.push(uid)
+
+        await env.DB.prepare(
+          `UPDATE user_roles SET ${updateFields.join(', ')} WHERE user_id = ?`
+        ).bind(...updateValues).run()
+      }
+    } else {
+      // Usuario nuevo: Insertar con el rol calculado
+      await env.DB.prepare(
+        `INSERT INTO user_roles (user_id, role, estado, email, displayName, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+      ).bind(uid, role, estado, email, displayName, getPeruDateTime(), getPeruDateTime()).run()
+    }
+
     return true
-  } catch (e) { console.error('Error actualizando crear_carpeta:', e); return false }
+  } catch (e) {
+    console.error('Error estableciendo rol de usuario:', e)
+    return false
+  }
 }
 
-async function isAdmin(env, uid, email = '') {
-  if (!(await isUserActive(env, uid, email))) return false
-  return ['admin', 'super_admin'].includes(await getUserRole(env, uid, email))
-}
 
-async function isSuperAdmin(env, uid, email = '') {
-  if (!(await isUserActive(env, uid, email))) return false
-  return (await getUserRole(env, uid, email)) === 'super_admin'
-}
 
 // ===================== Configuration =====================
 async function getConfig(env, key) {
@@ -225,7 +298,6 @@ async function ensureUserRolesTable(env) {
          user_id TEXT PRIMARY KEY,
          role TEXT NOT NULL DEFAULT 'usuario',
          estado TEXT DEFAULT 'activo',
-         crear_carpeta INTEGER DEFAULT 1,
          email TEXT,
          displayName TEXT,
          created_at TEXT DEFAULT (datetime('now')),
@@ -239,10 +311,6 @@ async function ensureUserRolesTable(env) {
     } catch (e) { /* Columna ya existe */ }
 
     try {
-      await env.DB.prepare(`ALTER TABLE user_roles ADD COLUMN crear_carpeta INTEGER DEFAULT 1`).run()
-    } catch (e) { /* Columna ya existe */ }
-
-    try {
       await env.DB.prepare(`ALTER TABLE user_roles ADD COLUMN email TEXT`).run()
     } catch (e) { /* Columna ya existe */ }
 
@@ -250,6 +318,21 @@ async function ensureUserRolesTable(env) {
       await env.DB.prepare(`ALTER TABLE user_roles ADD COLUMN displayName TEXT`).run()
     } catch (e) { /* Columna ya existe */ }
   } catch (e) { console.warn('No se pudo asegurar la tabla user_roles:', e.message) }
+}
+
+async function ensurePushSubscriptionsTable(env) {
+  try {
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        subscription TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `).run()
+  } catch (e) {
+    console.warn('Error creating push_subscriptions table:', e)
+  }
 }
 
 // ===================== Limpieza de Usuarios =====================
@@ -384,95 +467,6 @@ async function createOneDriveFolder(accessToken, folderPath) {
     return null
   }
 }
-
-/**
- * Asegurar que la carpeta del usuario existe, crearla si no existe
- * Formato: nombre_completo_uid (ej: Juan_Perez_abc123xyz)
- */
-async function ensureUserOneDriveFolder(accessToken, userDisplayName, userEmail, userId, subFolderPath = null) {
-  try {
-    // CORREGIDO: No intentar crear carpeta base /viaticos explÃ­citamente
-    // OneDrive personal crearÃ¡ las carpetas automÃ¡ticamente al subir archivos
-
-    // Obtener nombre completo del usuario para la carpeta
-    let userFolderName = ''
-
-    // Prioridad: displayName completo > email completo (sin @) > email sin dominio > userId
-    if (userDisplayName && userDisplayName.trim() && userDisplayName !== 'Anonimo' && userDisplayName !== 'UsuarioDev') {
-      userFolderName = userDisplayName.trim()
-    } else if (userEmail && userEmail !== 'unknown@example.com') {
-      // Usar el email completo pero sin el @ y dominio
-      const emailParts = userEmail.split('@')
-      userFolderName = emailParts[0] || userEmail
-    } else {
-      userFolderName = `usuario`
-    }
-
-    // Limpiar el nombre: mantener caracteres vÃ¡lidos, espacios a guiones bajos
-    userFolderName = userFolderName
-      .replace(/[^a-zA-Z0-9\s._-]/g, '') // Eliminar caracteres especiales excepto puntos, guiones y guiones bajos
-      .trim()
-      .replace(/\s+/g, '_') // Espacios a guiones bajos
-      .replace(/_{2,}/g, '_') // MÃºltiples guiones bajos a uno solo
-      .substring(0, 40) // Limitar longitud para dejar espacio al UID
-
-    // Si despuÃ©s de limpiar estÃ¡ vacÃ­o, usar un nombre por defecto
-    if (!userFolderName || userFolderName.length === 0) {
-      userFolderName = `usuario`
-    }
-
-    // AGREGAR UID al final del nombre para identificaciÃ³n Ãºnica
-    // Formato: nombre_completo_uid (ej: Juan_Perez_abc123xyz)
-    const uidShort = userId.substring(0, 8) // Primeros 8 caracteres del UID
-    userFolderName = `${userFolderName}_${uidShort}`
-
-    let folderPath = `viaticos/${userFolderName}`;
-    if (subFolderPath) {
-      folderPath = `viaticos/${subFolderPath}`; // Usar subFolderPath completo si se proporciona
-    }
-
-    // CORREGIDO: Intentar crear la carpeta, pero si falla (SPO license), no lanzar error
-    // La carpeta se crearÃ¡ automÃ¡ticamente cuando se suba el primer archivo
-    const folderId = await createOneDriveFolder(accessToken, folderPath)
-
-    // Si no se pudo crear, retornar Ã©xito de todas formas (se crearÃ¡ al subir archivo)
-    return {
-      success: true,
-      folderId: folderId || null,
-      folderPath: folderPath,
-      folderName: userFolderName,
-      message: folderId ? 'Carpeta verificada/creada' : 'Carpeta se crearÃ¡ al subir el primer archivo'
-    }
-  } catch (error) {
-    console.error('Error asegurando carpeta del usuario:', error)
-    // NO lanzar error - retornar Ã©xito de todas formas
-    // La carpeta se crearÃ¡ automÃ¡ticamente cuando se suba el primer archivo
-    const uidShort = userId.substring(0, 8)
-    const userFolderName = (userDisplayName || userEmail?.split('@')[0] || 'usuario')
-      .replace(/[^a-zA-Z0-9\s._-]/g, '')
-      .trim()
-      .replace(/\s+/g, '_')
-      .substring(0, 40) || 'usuario'
-
-    let folderPath = `viaticos/${userFolderName}_${uidShort}`;
-    if (subFolderPath) {
-      folderPath = `viaticos/${subFolderPath}`;
-    }
-
-    return {
-      success: true,
-      folderId: null,
-      folderPath: folderPath,
-      folderName: `${userFolderName}_${uidShort}`,
-      message: 'Carpeta se crearÃ¡ automÃ¡ticamente al subir el primer archivo'
-    }
-  }
-}
-
-/**
- * Eliminar carpeta de OneDrive personal
- * Busca la carpeta usando el UID del usuario
- */
 async function deleteOneDriveFolder(accessToken, userId, userDisplayName = null, userEmail = null) {
   try {
     // Construir el nombre de la carpeta usando la misma lÃ³gica que ensureUserOneDriveFolder
@@ -569,14 +563,21 @@ async function uploadToOneDrive(imageBuffer, fileName, contentType, userId, fech
   const uidShort = userId.substring(0, 8)
   userFolderName = `${userFolderName}_${uidShort}`
 
-  const datedFolderPath = dateTimeFolder ? `${userFolderName}/${dateTimeFolder}` : userFolderName;
-  const fullPath = `viaticos/${datedFolderPath}`;
+  // Nueva estructura: viaticos/{YYYY-MM-DD}/{UserFolder}
+  // Si dateTimeFolder se pasa (que es la fecha activa), usarla. Si no, calcularla.
+  const activeDate = dateTimeFolder || calculateActiveDate();
+
+  // La ruta completa será: viaticos/{activeDate}/{userFolderName}
+  // ensureUserOneDriveFolder espera el path relativo dentro de viaticos/
+  // Pero ensureUserOneDriveFolder está diseñado para crear la carpeta del usuario directamente en viaticos/
+  // Necesitamos ajustar la lógica o simplemente construir el path aquí.
+
+  // Como el usuario pidió "viaticos/{YYYY-MM-DD}/{UserFolder}", construimos el path completo
+  const fullPath = `viaticos/${activeDate}/${userFolderName}`;
 
   // Asegurar que la carpeta existe antes de subir (incluyendo la subcarpeta de fecha/hora)
-  await ensureUserOneDriveFolder(accessToken, displayName, userEmail, userId, datedFolderPath).catch(() => {
-    // Si falla, continuar de todas formas - OneDrive crearÃ¡ la carpeta al subir el archivo
-    console.warn('No se pudo asegurar carpeta, se crearÃ¡ al subir archivo')
-  })
+  // OneDrive API crea carpetas padres automáticamente al subir, así que no es estrictamente necesario llamar a ensureUserOneDriveFolder
+  // para la estructura dinámica.
 
   // Subir archivo directamente
   const uploadPath = `${fullPath}/${fileName}`
@@ -690,7 +691,7 @@ export default {
 
         try {
           await ensureUserRolesTable(env)
-          const existingUser = await env.DB.prepare('SELECT estado, crear_carpeta FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+          const existingUser = await env.DB.prepare('SELECT estado FROM user_roles WHERE user_id = ?').bind(user.uid).first()
           const role = await getUserRole(env, user.uid, user.email)
 
           // CORREGIDO: Log para debugging
@@ -706,7 +707,6 @@ export default {
             user.uid,
             role,
             existingUser ? existingUser.estado : 'activo',
-            existingUser ? existingUser.crear_carpeta : 1, // CORREGIDO: Respetar flag existente
             user.email || null,
             user.displayName || null
           )
@@ -715,18 +715,13 @@ export default {
             throw new Error('No se pudo registrar el usuario en la base de datos')
           }
 
-          const savedUser = await env.DB.prepare('SELECT email, displayName, crear_carpeta FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+          const savedUser = await env.DB.prepare('SELECT email, displayName FROM user_roles WHERE user_id = ?').bind(user.uid).first()
 
-          // Si crear_carpeta estÃ¡ activado, intentar crear la carpeta
-          if (savedUser?.crear_carpeta !== 0) {
-            try {
-              const accessToken = await getOneDriveAccessToken(env)
-              const folderResult = await ensureUserOneDriveFolder(accessToken, user.displayName, user.email, user.uid)
-              console.log('Carpeta OneDrive:', folderResult)
-            } catch (e) {
-              console.warn('No se pudo crear carpeta OneDrive, se crearÃ¡ al subir el primer archivo:', e.message)
-            }
-          }
+          // Intentar crear la carpeta (ahora bajo la fecha actual, pero ensureUserOneDriveFolder no maneja fechas dinámicas bien por defecto,
+          // así que mejor dejamos que se cree al subir el primer archivo, o actualizamos ensureUserOneDriveFolder.
+          // Por simplicidad y robustez, dejamos que uploadToOneDrive maneje la creación recursiva implícita de OneDrive)
+          // Opcional: Podríamos intentar crear la estructura base, pero OneDrive API crea carpetas padres automáticamente al subir.
+
 
           // Construir nombre de carpeta para respuesta
           const uidShort = user.uid.substring(0, 8)
@@ -782,36 +777,31 @@ export default {
         }
       }
 
-      // PUT /api/users/:uid/create-folder (cambiar flag de crear carpeta - solo admin)
-      if (path.startsWith('/api/users/') && path.endsWith('/create-folder') && request.method === 'PUT') {
-        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        if (!(await isAdmin(env, user.uid, user.email))) {
-          return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
 
-        const targetUid = path.split('/')[3] // /api/users/:uid/create-folder
-        const body = await request.json().catch(() => ({}))
-        const crearCarpeta = body.crear_carpeta !== false // Por defecto true
+
+      // POST /api/notifications/subscribe
+      if (path === '/api/notifications/subscribe' && request.method === 'POST') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
         try {
-          await setUserCreateFolder(env, targetUid, crearCarpeta)
+          const subscription = await request.json()
+          await ensurePushSubscriptionsTable(env)
 
-          // Si se activa crear_carpeta, crear la carpeta ahora
-          if (crearCarpeta) {
-            try {
-              const targetUser = await env.DB.prepare('SELECT email, displayName FROM user_roles WHERE user_id = ?').bind(targetUid).first()
-              const accessToken = await getOneDriveAccessToken(env)
-              await ensureUserOneDriveFolder(accessToken, targetUser?.displayName, targetUser?.email, targetUid)
-            } catch (e) {
-              console.warn('No se pudo crear carpeta:', e.message)
-            }
+          // Check if exists
+          const existing = await env.DB.prepare('SELECT id FROM push_subscriptions WHERE user_id = ? AND subscription = ?')
+            .bind(user.uid, JSON.stringify(subscription)).first()
+
+          if (!existing) {
+            await env.DB.prepare('INSERT INTO push_subscriptions (user_id, subscription) VALUES (?, ?)')
+              .bind(user.uid, JSON.stringify(subscription)).run()
           }
 
-          return new Response(JSON.stringify({ success: true, message: `Flag de crear carpeta ${crearCarpeta ? 'activado' : 'desactivado'}` }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        } catch (error) {
-          return new Response(JSON.stringify({ success: false, error: error.message || 'Error actualizando flag' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (e) {
+          return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
       }
+
 
       // DELETE /api/users/:uid (eliminar usuario y su carpeta - admin o super_admin)
       if (path.startsWith('/api/users/') && request.method === 'DELETE' && !path.includes('/status') && !path.includes('/create-folder')) {
@@ -890,116 +880,9 @@ export default {
         }
       }
 
-      // POST /api/onedrive/ensure-me (verificar y crear mi carpeta si no existe)
-      if (path === '/api/onedrive/ensure-me' && request.method === 'POST') {
-        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-        try {
-          await ensureUserRolesTable(env)
 
-          // 1. Obtener datos actuales del usuario de la BD
-          let userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
 
-          // 2. Determinar valores a usar (respetando lo existente)
-          const currentRole = userData?.role || await getUserRole(env, user.uid, user.email)
-          const currentEstado = userData?.estado || 'activo'
-          const currentCrearCarpeta = userData ? userData.crear_carpeta : 1 // Por defecto 1 si es nuevo
-
-          // 3. Actualizar o Insertar usuario (manteniendo flags críticos)
-          // Siempre actualizamos email y displayName por si cambiaron en Firebase
-          if (userData) {
-            await env.DB.prepare(
-              `UPDATE user_roles SET 
-                email = ?,
-                displayName = ?,
-                updated_at = ?
-               WHERE user_id = ?`
-            ).bind(user.email || userData.email, user.displayName || userData.displayName, getPeruDateTime(), user.uid).run()
-          } else {
-            // Usuario nuevo: insertar con valores por defecto
-            await setUserRole(env, user.uid, currentRole, currentEstado, currentCrearCarpeta, user.email, user.displayName)
-          }
-
-          // 4. Verificar si debemos crear carpeta en OneDrive
-          // Solo si crear_carpeta es 1 (true) Y el usuario está activo
-          if (currentCrearCarpeta && currentEstado === 'activo') {
-            const accessToken = await getOneDriveAccessToken(env)
-            const result = await ensureUserOneDriveFolder(
-              accessToken,
-              user.displayName || userData?.displayName,
-              user.email || userData?.email,
-              user.uid
-            )
-
-            return new Response(JSON.stringify({
-              success: true,
-              folderId: result.folderId || 'creada',
-              folderPath: result.folderPath,
-              folderName: result.folderName,
-              message: result.message || (result.folderId ? 'Carpeta verificada' : 'Carpeta creada exitosamente')
-            }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-          } else {
-            // Si no tiene permiso de carpeta, retornamos éxito pero sin datos de carpeta
-            // Esto hace el login instantáneo para usuarios sin carpeta
-            return new Response(JSON.stringify({
-              success: true,
-              message: 'Acceso verificado (Sin carpeta OneDrive asignada)',
-              folderId: null,
-              folderPath: null
-            }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-          }
-
-        } catch (error) {
-          console.error('Error en ensure-me:', error)
-          // Fallback seguro: retornar éxito para no bloquear el login, pero loguear el error
-          return new Response(JSON.stringify({
-            success: true,
-            message: 'Acceso verificado (Error en verificación de carpeta)',
-            error: error.message
-          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-      }
-
-      // POST /api/onedrive/ensure-user/:uid (verificar y crear carpeta de usuario - solo admin)
-      if (path.startsWith('/api/onedrive/ensure-user/') && request.method === 'POST') {
-        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        if (!(await isAdmin(env, user.uid, user.email))) {
-          return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-
-        const targetUid = path.split('/').pop()
-        // CORREGIDO: Obtener tambiÃ©n displayName de la tabla
-        const targetUser = await env.DB.prepare('SELECT user_id, email, displayName FROM user_roles WHERE user_id = ?').bind(targetUid).first()
-        if (!targetUser) {
-          return new Response(JSON.stringify({ error: 'Usuario no encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-
-        try {
-          const accessToken = await getOneDriveAccessToken(env)
-
-          // Asegurar que la carpeta del usuario existe, crearla si no existe
-          const result = await ensureUserOneDriveFolder(
-            accessToken,
-            targetUser.displayName || null, // CORREGIDO: Usar displayName de la tabla
-            targetUser.email || null,
-            targetUid
-          )
-
-          return new Response(JSON.stringify({
-            success: true,
-            folderId: result.folderId || 'creada',
-            folderPath: result.folderPath,
-            folderName: result.folderName,
-            message: result.folderId ? 'Carpeta verificada' : 'Carpeta creada exitosamente'
-          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        } catch (error) {
-          console.error('Error en ensure-user:', error)
-          return new Response(JSON.stringify({
-            success: false,
-            error: error.message || 'Error asegurando carpeta'
-          }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-      }
 
       // PUT /api/users/:id/role (actualizar rol de usuario - admin o super_admin)
       if (path.match(/^\/api\/users\/[^\/]+\/role$/) && request.method === 'PUT') {
@@ -1076,21 +959,44 @@ export default {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
         try {
-          // Obtener datos actualizados de la BD
-          const userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+          await ensureUserRolesTable(env)
+
+          // 1. Obtener datos actuales del usuario de la BD
+          let userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+
+          // 2. Determinar el rol (verificar si es super_admin por email)
+          const effectiveEmail = (user.email && user.email !== 'unknown@example.com') ? user.email : (userData?.email || '')
+          const role = await getUserRole(env, user.uid, effectiveEmail)
+
+          // 3. Si el usuario NO existe, registrarlo
+          if (!userData) {
+            await setUserRole(env, user.uid, role, 'activo', 1, user.email, user.displayName)
+            // Recargar datos después de insertar
+            userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+          } else {
+            // Si existe, solo actualizar email/displayName si no son genéricos
+            const newEmail = (user.email && user.email !== 'unknown@example.com') ? user.email : userData.email
+            const newDisplayName = (user.displayName && user.displayName !== 'Anonimo') ? user.displayName : userData.displayName
+
+            await setUserRole(env, user.uid, role, userData.estado, 1, newEmail, newDisplayName)
+            // Recargar datos actualizados
+            userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+          }
 
           return new Response(JSON.stringify({
             success: true,
             user: {
-              ...user,
-              role: userData?.role || 'usuario',
+              uid: user.uid,
+              email: userData?.email || user.email,
+              displayName: userData?.displayName || user.displayName,
+              role: userData?.role || role,
               estado: userData?.estado || 'activo',
-              crear_carpeta: userData?.crear_carpeta !== 0,
-              last_closed_date: userData?.last_closed_date, // Retornar fecha de cierre
-              exists: !!userData // Flag para saber si existe en BD
+              last_closed_date: userData?.last_closed_date,
+              exists: true
             }
           }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         } catch (error) {
+          console.error('Error en /api/users/me:', error)
           return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
       }
@@ -1107,11 +1013,8 @@ export default {
           return new Response(JSON.stringify({ error: 'Tu cuenta ha sido desactivada. No puedes subir viÃ¡ticos.' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
 
-        // Verificar si el usuario tiene permiso para crear carpeta (y por ende subir viÃ¡ticos)
-        const userData = await env.DB.prepare('SELECT crear_carpeta FROM user_roles WHERE user_id = ?').bind(user.uid).first()
-        if (userData && userData.crear_carpeta === 0) {
-          return new Response(JSON.stringify({ error: 'No tienes permiso para subir viÃ¡ticos. Tu carpeta de OneDrive no estÃ¡ habilitada. Contacta al administrador.' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
+        // Verificación de crear_carpeta eliminada
+
 
         const formData = await request.formData()
         const foto = formData.get('foto')
@@ -1199,7 +1102,6 @@ export default {
           const fullPath = `viaticos/${datedFolderPath}/${fileName}`;
 
           console.log(`Subiendo archivo a: ${fullPath}`);
-
           const response = await fetch(`https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${fullPath}:/content`, {
             method: 'PUT',
             headers: {
@@ -1219,7 +1121,7 @@ export default {
           return {
             url: data.webUrl,
             id: data.id,
-            folderPath: datedFolderPath
+            folderPath: fullPath
           };
         }
 
@@ -1269,10 +1171,8 @@ export default {
 
           if (!response.ok) {
             console.error('Error creando TXT en OneDrive:', await response.text());
-            // No lanzamos error para no interrumpir el flujo principal si falla el TXT
           }
         }
-
         try {
           // Procesar cada archivo
           for (const file of fotos) {
@@ -1646,7 +1546,7 @@ export default {
         }
 
         // Intentar obtener email de la BD si no viene en el token
-        let userData = await env.DB.prepare('SELECT estado, crear_carpeta, email, displayName FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+        let userData = await env.DB.prepare('SELECT estado, email, displayName FROM user_roles WHERE user_id = ?').bind(user.uid).first()
 
         const effectiveEmail = (user.email && user.email !== 'unknown@example.com') ? user.email : (userData?.email || '')
         const role = await getUserRole(env, user.uid, effectiveEmail)
@@ -1658,11 +1558,11 @@ export default {
           const newEmail = (user.email && user.email !== 'unknown@example.com') ? user.email : userData.email
           const newDisplayName = (user.displayName && user.displayName !== 'Anonimo') ? user.displayName : userData.displayName
 
-          await setUserRole(env, user.uid, role, userData.estado, userData.crear_carpeta, newEmail, newDisplayName)
+          await setUserRole(env, user.uid, role, userData.estado, 1, newEmail, newDisplayName)
         }
 
         // Recargar datos actualizados
-        userData = await env.DB.prepare('SELECT estado, crear_carpeta, email, displayName FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+        userData = await env.DB.prepare('SELECT estado, email, displayName FROM user_roles WHERE user_id = ?').bind(user.uid).first()
 
         return new Response(JSON.stringify({
           success: true,
@@ -1671,8 +1571,7 @@ export default {
             email: userData?.email || user.email,
             displayName: userData?.displayName || user.displayName,
             role,
-            estado: userData?.estado || 'activo',
-            crear_carpeta: userData ? userData.crear_carpeta !== 0 : true
+            estado: userData?.estado || 'activo'
           }
         }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
@@ -1683,13 +1582,12 @@ export default {
         if (!(await isAdmin(env, user.uid, user.email))) return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         await ensureUserRolesTable(env)
 
-        // CORREGIDO: Usar SELECT explÃ­cito en lugar de SELECT * para evitar problemas
+        // CORREGIDO: Usar SELECT explícito en lugar de SELECT * para evitar problemas
         const rows = await env.DB.prepare(`
           SELECT 
             user_id, 
             role, 
             estado, 
-            crear_carpeta, 
             email, 
             displayName, 
             created_at, 
@@ -1722,8 +1620,7 @@ export default {
             email: u.email || `${u.user_id.substring(0, 8)}@unknown.com`,
             displayName: u.displayName || null,
             role: u.role,
-            estado: u.estado || 'activo',
-            crear_carpeta: u.crear_carpeta !== 0
+            estado: u.estado || 'activo'
           })
         }
 
@@ -1734,60 +1631,7 @@ export default {
         }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
-      // POST /api/onedrive/create-all-folders (crear carpetas para todos los usuarios existentes - solo super_admin)
-      if (path === '/api/onedrive/create-all-folders' && request.method === 'POST') {
-        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        if (!(await isSuperAdmin(env, user.uid, user.email))) {
-          return new Response(JSON.stringify({ error: 'Solo super_admin puede crear carpetas para todos los usuarios' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
 
-        try {
-          await ensureUserRolesTable(env)
-          const rows = await env.DB.prepare(`
-            SELECT user_id, email, displayName, crear_carpeta 
-            FROM user_roles 
-            WHERE user_id != 'anonymous' 
-              AND user_id != 'dev-user' 
-              AND user_id NOT LIKE 'dev-%'
-              AND crear_carpeta = 1
-          `).all()
-
-          const accessToken = await getOneDriveAccessToken(env)
-          const results = []
-
-          for (const u of rows.results) {
-            try {
-              const result = await ensureUserOneDriveFolder(accessToken, u.displayName, u.email, u.user_id)
-              results.push({
-                uid: u.user_id,
-                email: u.email,
-                displayName: u.displayName,
-                success: true,
-                folderPath: result.folderPath
-              })
-            } catch (e) {
-              results.push({
-                uid: u.user_id,
-                email: u.email,
-                displayName: u.displayName,
-                success: false,
-                error: e.message
-              })
-            }
-          }
-
-          return new Response(JSON.stringify({
-            success: true,
-            message: `Procesados ${results.length} usuarios`,
-            results: results
-          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        } catch (error) {
-          return new Response(JSON.stringify({
-            success: false,
-            error: error.message || 'Error creando carpetas'
-          }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-      }
 
       // GET /api/config/super-admin-email
       if (path === '/api/config/super-admin-email' && request.method === 'GET') {
@@ -1852,6 +1696,187 @@ export default {
         }
       }
 
+
+      // GET /api/push/vapid-public-key
+      if (path === '/api/push/vapid-public-key' && request.method === 'GET') {
+        return new Response(JSON.stringify({
+          publicKey: env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      // POST /api/push/subscribe
+      if (path === '/api/push/subscribe' && request.method === 'POST') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        const user = await verifyFirebaseToken(token, env)
+        if (!user) return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        try {
+          const subscription = await request.json()
+          const endpoint = subscription.endpoint
+
+          if (!endpoint) {
+            return new Response(JSON.stringify({ error: 'Endpoint de suscripción requerido' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          // Check if subscription already exists (deduplication for multi-device/user switching)
+          // We use json_extract to find if this specific endpoint is already registered
+          const existing = await env.DB.prepare(
+            "SELECT id FROM push_subscriptions WHERE json_extract(subscription_json, '$.endpoint') = ?"
+          ).bind(endpoint).first()
+
+          if (existing) {
+            // Update existing subscription (e.g. user changed)
+            await env.DB.prepare(
+              'UPDATE push_subscriptions SET user_id = ?, subscription_json = ?, updated_at = unixepoch() WHERE id = ?'
+            ).bind(user.uid, JSON.stringify(subscription), existing.id).run()
+          } else {
+            // Create new subscription
+            await env.DB.prepare(
+              'INSERT INTO push_subscriptions (user_id, subscription_json) VALUES (?, ?)'
+            ).bind(user.uid, JSON.stringify(subscription)).run()
+          }
+
+          return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (error) {
+          return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
+
+      // POST /api/push/unsubscribe
+      if (path === '/api/push/unsubscribe' && request.method === 'POST') {
+        try {
+          const { endpoint } = await request.json()
+          if (!endpoint) return new Response(JSON.stringify({ error: 'Endpoint requerido' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+          // We use json_extract to find and delete the specific subscription
+          await env.DB.prepare(
+            "DELETE FROM push_subscriptions WHERE json_extract(subscription_json, '$.endpoint') = ?"
+          ).bind(endpoint).run()
+
+          return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (error) {
+          return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
+      // POST /api/push/broadcast (Admin only)
+      if (path === '/api/push/broadcast' && request.method === 'POST') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        const user = await verifyFirebaseToken(token, env)
+        if (!user) return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        const isSA = await isSuperAdmin(env, user.uid, user.email)
+        const isAdmin = isSA || (await env.DB.prepare('SELECT role FROM user_roles WHERE user_id = ?').bind(user.uid).first())?.role === 'admin'
+
+        if (!isAdmin) return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        try {
+          const { title, body, url } = await request.json()
+
+          webpush.setVapidDetails(
+            env.VAPID_SUBJECT || 'mailto:admin@example.com',
+            env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+            env.VAPID_PRIVATE_KEY
+          );
+
+          const subscriptions = await env.DB.prepare('SELECT * FROM push_subscriptions').all();
+          const subs = subscriptions.results || [];
+
+          const notificationPayload = JSON.stringify({
+            title: title || 'Notificación',
+            body: body || '',
+            url: url || '/'
+          });
+
+          const results = await Promise.allSettled(subs.map(async sub => {
+            try {
+              const subData = JSON.parse(sub.subscription_json);
+              await webpush.sendNotification({
+                endpoint: subData.endpoint,
+                keys: subData.keys
+              }, notificationPayload);
+              return { success: true, id: sub.id };
+            } catch (err) {
+              if (err.statusCode === 410 || err.statusCode === 404) {
+                await env.DB.prepare('DELETE FROM push_subscriptions WHERE id = ?').bind(sub.id).run();
+                return { success: false, id: sub.id, error: 'Subscription expired and deleted' };
+              }
+              throw err;
+            }
+          }));
+
+          const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+
+          return new Response(JSON.stringify({
+            success: true,
+            sent: successCount,
+            total: subs.length
+          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (error) {
+          console.error('Broadcast error:', error);
+          return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
+      // POST /api/test-notification (Test push notifications - super_admin only)
+      if (path === '/api/test-notification' && request.method === 'POST') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        const user = await verifyFirebaseToken(token, env)
+        if (!user) return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        const isSA = await isSuperAdmin(env, user.uid, user.email)
+        if (!isSA) return new Response(JSON.stringify({ error: 'Acceso denegado. Solo super_admin puede probar notificaciones.' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        try {
+          webpush.setVapidDetails(
+            env.VAPID_SUBJECT,
+            env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+            env.VAPID_PRIVATE_KEY
+          );
+
+          const subscriptions = await env.DB.prepare('SELECT * FROM push_subscriptions WHERE user_id = ?').bind(user.uid).all();
+          const subs = subscriptions.results || [];
+
+          // Usar el mismo mensaje que se envía en el cron job de 9 AM
+          const notificationPayload = JSON.stringify({
+            title: '⏳ Cierre de Viáticos en 1 hora',
+            body: 'Recuerda registrar tus viáticos pendientes de ayer antes de las 10:00 AM.',
+            url: '/nuevo-viatico'
+          });
+
+          const results = await Promise.allSettled(subs.map(async sub => {
+            try {
+              const subData = JSON.parse(sub.subscription_json);
+              await webpush.sendNotification({
+                endpoint: subData.endpoint,
+                keys: subData.keys
+              }, notificationPayload);
+              return { success: true, id: sub.id };
+            } catch (err) {
+              if (err.statusCode === 410 || err.statusCode === 404) {
+                await env.DB.prepare('DELETE FROM push_subscriptions WHERE id = ?').bind(sub.id).run();
+                return { success: false, id: sub.id, error: 'Subscription expired and deleted' };
+              }
+              throw err;
+            }
+          }));
+
+          const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+
+          return new Response(JSON.stringify({
+            success: true,
+            message: `Notificación de prueba enviada a ${successCount} de ${subs.length} suscripciones`,
+            sent: successCount,
+            total: subs.length
+          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (e) {
+          console.error('Error en test-notification:', e);
+          return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
       return new Response(JSON.stringify({ error: 'Ruta no encontrada' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     } catch (error) {
       console.error('Error:', error)
@@ -1859,10 +1884,60 @@ export default {
     }
   },
   async scheduled(event, env, ctx) {
-    switch (event.cron) {
-      case "0 0 * * *":
-        await cleanupAnonymousUsers(env);
-        break;
+    console.log("Cron triggered:", event.cron);
+
+    if (event.cron === "0 0 * * *") {
+      await cleanupAnonymousUsers(env);
+    }
+
+    if (event.cron === "0 14 * * *") {
+      // 9 AM Peru - Send notifications
+      try {
+        webpush.setVapidDetails(
+          env.VAPID_SUBJECT,
+          env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+          env.VAPID_PRIVATE_KEY
+        );
+
+        // Obtener todas las suscripciones
+        // TODO: Filtrar solo usuarios que no han registrado viáticos hoy?
+        // Por ahora enviamos a todos como recordatorio general
+        const subscriptions = await env.DB.prepare('SELECT * FROM push_subscriptions').all();
+        const subs = subscriptions.results || [];
+
+        const notificationPayload = JSON.stringify({
+          title: '⏳ Cierre de Viáticos en 1 hora',
+          body: 'Recuerda registrar tus viáticos pendientes de ayer antes de las 10:00 AM.',
+          url: '/nuevo-viatico'
+        });
+
+        const promises = subs.map(sub => {
+          try {
+            const subData = JSON.parse(sub.subscription_json);
+            const pushConfig = {
+              endpoint: subData.endpoint,
+              keys: subData.keys
+            };
+
+            return webpush.sendNotification(pushConfig, notificationPayload)
+              .catch(err => {
+                if (err.statusCode === 410 || err.statusCode === 404) {
+                  // Delete invalid subscription
+                  return env.DB.prepare('DELETE FROM push_subscriptions WHERE id = ?').bind(sub.id).run();
+                }
+                console.error('Error sending push:', err);
+              });
+          } catch (e) {
+            console.error('Error parsing subscription:', e);
+            return Promise.resolve();
+          }
+        });
+
+        await Promise.all(promises);
+        console.log(`Sent notifications to ${subs.length} users`);
+      } catch (e) {
+        console.error('Error in scheduled notification:', e);
+      }
     }
   }
 }

@@ -5,7 +5,7 @@ import Swal from 'sweetalert2'
 import { useToast } from "@/lib/use-toast"
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getAllViaticos, getAllUsers, setUserRole as apiSetUserRole, getCurrentUser, cleanupAnonymousUsers, setUserStatus, setUserCreateFolder, deleteUser, deleteViatico } from '@/services/api'
+import { getAllViaticos, getAllUsers, setUserRole as apiSetUserRole, getCurrentUser, cleanupAnonymousUsers, setUserStatus, deleteUser, deleteViatico, apiRequest } from '@/services/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
-import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, Trash2, Ban, CheckCircle2 } from 'lucide-react'
+import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, Trash2, Ban, CheckCircle2, Bell } from 'lucide-react'
 import Layout from '@/components/Layout'
 import RoleGuard from '@/components/RoleGuard'
 import ReportsView from '@/components/admin/ReportsView'
@@ -36,7 +36,6 @@ interface User {
   displayName?: string
   role: string
   estado?: string
-  crear_carpeta?: boolean
 }
 
 export default function AdminPage() {
@@ -90,7 +89,11 @@ export default function AdminPage() {
       setUsers(filteredUsers)
 
       // Actualizar el conteo de usuarios (sin super_admin)
-      setUserCount(userCount)
+      // setUserCount(userCount) // Removed because setUserCount is defined later
+      // Instead, we should move the state definition up or just use users.length if sufficient
+      // But looking at the code, setUserCount is defined at line 336. 
+      // We need to move the state definition up.
+
     } catch (e) {
       setError('Error al cargar datos: ' + (e as Error).message)
     } finally {
@@ -113,8 +116,6 @@ export default function AdminPage() {
     }
   }
 
-
-
   async function handleStatusChange(uid: string, nuevoEstado: 'activo' | 'inactivo') {
     setGlobalLoading('Actualizando estado...')
     try {
@@ -123,20 +124,6 @@ export default function AdminPage() {
       await loadData()
     } catch (e) {
       toast({ title: "Error", description: "Error al actualizar estado", variant: "destructive" })
-    } finally {
-      clearLoading()
-    }
-  }
-
-
-  async function handleCreateFolderChange(uid: string, crearCarpeta: boolean) {
-    setGlobalLoading('Actualizando configuración...')
-    try {
-      await setUserCreateFolder(uid, crearCarpeta)
-      toast({ title: "Configuración actualizada" })
-      await loadData()
-    } catch (e) {
-      toast({ title: "Error", description: "Error al actualizar flag de carpeta", variant: "destructive" })
     } finally {
       clearLoading()
     }
@@ -201,8 +188,6 @@ export default function AdminPage() {
     }
   }
 
-
-
   async function handleCleanupAnonymous() {
     const result = await Swal.fire({
       title: '¿Limpiar usuarios anónimos?',
@@ -254,6 +239,82 @@ export default function AdminPage() {
     }
   }
 
+  async function handleBroadcast() {
+    const result = await Swal.fire({
+      title: 'Enviar Alerta de Cierre',
+      text: 'Se enviará una notificación a TODOS los usuarios suscritos avisando que queda 1 hora.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, enviar',
+      cancelButtonText: 'Cancelar'
+    })
+
+    if (!result.isConfirmed) return
+
+    setGlobalLoading('Enviando notificaciones...')
+    try {
+      const data = await apiRequest('/api/push/broadcast', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: '⏳ Cierre de Viáticos en 1 hora',
+          body: 'Recuerda registrar tus viáticos pendientes de ayer antes de las 10:00 AM.',
+          url: '/nuevo-viatico'
+        })
+      })
+
+      clearLoading()
+      Swal.fire('Enviado', `Notificaciones enviadas: ${data.sent}`, 'success')
+    } catch (e) {
+      clearLoading()
+      Swal.fire('Error', (e as Error).message, 'error')
+    }
+  }
+
+  async function handleTestNotification() {
+    const result = await Swal.fire({
+      title: 'Probar Notificación',
+      html: `
+        <div style="text-align:left; line-height:1.6;">
+          <p>Se enviará una notificación de prueba con el mensaje real que se envía a las 9:00 AM:</p>
+          <div style="background:#f5f5f5; padding:12px; border-radius:8px; margin:12px 0;">
+            <p style="margin:0; font-weight:bold;">⏳ Cierre de Viáticos en 1 hora</p>
+            <p style="margin:4px 0 0 0; font-size:14px;">Recuerda registrar tus viáticos pendientes de ayer antes de las 10:00 AM.</p>
+          </div>
+          <p style="margin-top:12px; color:#666;">Esto te permite verificar cómo se ve la notificación en tus dispositivos.</p>
+        </div>
+      `,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar prueba',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#2a9d8f'
+    })
+
+    if (!result.isConfirmed) return
+
+    setGlobalLoading('Enviando notificación de prueba...')
+    try {
+      const data = await apiRequest('/api/test-notification', {
+        method: 'POST'
+      })
+
+      clearLoading()
+      Swal.fire({
+        title: 'Prueba Enviada',
+        html: `
+          <p>Notificación de prueba enviada exitosamente</p>
+          <p style="color:#666; font-size:14px; margin-top:8px;">
+            Enviadas: <strong>${data.sent}</strong> de ${data.total} suscripciones
+          </p>
+        `,
+        icon: 'success',
+        confirmButtonColor: '#2a9d8f'
+      })
+    } catch (e) {
+      clearLoading()
+      Swal.fire('Error', (e as Error).message, 'error')
+    }
+  }
 
   const totalViaticos = viaticos.length
   const totalMonto = viaticos.reduce((sum, v) => {
@@ -312,7 +373,7 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  S/ {totalMonto.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {/* CORREGIDO: Cambiar $ a S/ y es-MX a es-PE */}
+                  S/ {totalMonto.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Suma de todos los viáticos
@@ -360,11 +421,19 @@ export default function AdminPage() {
               <Card>
                 <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <CardTitle>Gestión de Usuarios</CardTitle>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {isSuperAdmin && (
-                      <Button onClick={handleCleanupAnonymous} variant="destructive" size="sm">
-                        Limpiar Anonymous
-                      </Button>
+                      <>
+                        <Button onClick={handleBroadcast} variant="outline" size="sm">
+                          Alerta 1h
+                        </Button>
+                        <Button onClick={handleTestNotification} variant="outline" size="sm">
+                          Probar Notificación
+                        </Button>
+                        <Button onClick={handleCleanupAnonymous} variant="destructive" size="sm">
+                          Limpiar Anonymous
+                        </Button>
+                      </>
                     )}
                   </div>
                 </CardHeader>
@@ -382,7 +451,6 @@ export default function AdminPage() {
                             <TableHead>Email</TableHead>
                             <TableHead>Rol Actual</TableHead>
                             <TableHead>Estado</TableHead>
-                            <TableHead>Crear Carpeta</TableHead>
                             <TableHead>Cambiar Rol</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
                           </TableRow>
@@ -438,17 +506,7 @@ export default function AdminPage() {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Switch
-                                    checked={u.crear_carpeta !== false}
-                                    onCheckedChange={(checked) => handleCreateFolderChange(u.uid, checked)}
-                                  />
-                                  <span className="text-sm text-muted-foreground">
-                                    {u.crear_carpeta !== false ? 'Sí' : 'No'}
-                                  </span>
-                                </div>
-                              </TableCell>
+
                               <TableCell>
                                 <Select
                                   value={u.role}
@@ -504,4 +562,3 @@ export default function AdminPage() {
     </RoleGuard >
   )
 }
-

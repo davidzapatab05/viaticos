@@ -1,12 +1,12 @@
 {
-  "/_global-error/page": "/_global-error",
   "/_not-found/page": "/_not-found",
-  "/admin/page": "/admin",
+  "/_global-error/page": "/_global-error",
   "/api/config/route": "/api/config",
-  "/dashboard/page": "/dashboard",
-  "/login/page": "/login",
   "/manifest.webmanifest/route": "/manifest.webmanifest",
-  "/mis-viaticos/page": "/mis-viaticos",
+  "/dashboard/page": "/dashboard",
+  "/admin/page": "/admin",
+  "/login/page": "/login",
   "/nuevo-viatico/page": "/nuevo-viatico",
+  "/mis-viaticos/page": "/mis-viaticos",
   "/page": "/"
 }

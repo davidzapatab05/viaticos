@@ -86,11 +86,7 @@ export default function NuevoViaticoPage() {
     }
   }, [activeDate, success])
 
-  useEffect(() => {
-    if (!authLoading && appUser && !appUser.crear_carpeta) {
-      router.push('/dashboard')
-    }
-  }, [appUser, authLoading, router])
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files
@@ -305,34 +301,7 @@ export default function NuevoViaticoPage() {
     );
   }
 
-  if (!appUser.crear_carpeta) {
-    return (
-      <AuthGuard>
-        <Layout>
-          <div className="max-w-5xl mx-auto space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Acceso Restringido</CardTitle>
-                <CardDescription>No tienes permiso para acceder a esta página</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Sin Permiso</AlertTitle>
-                  <AlertDescription>
-                    Tu carpeta de OneDrive no está habilitada. No puedes subir viáticos en este momento.
-                    Por favor, contacta al administrador para habilitar tu cuenta.
-                    <br /><br />
-                    Serás redirigido al dashboard...
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-          </div>
-        </Layout>
-      </AuthGuard>
-    )
-  }
+
 
   return (
     <AuthGuard>
@@ -368,8 +337,8 @@ export default function NuevoViaticoPage() {
                         />
                       </div>
                     ) : (
-                      <div className={`flex items-center h-10 px-3 py-2 border rounded-md ${isGracePeriod ? 'bg-orange-600 border-orange-600' : 'bg-background'}`}>
-                        <span className={`text-sm ${isGracePeriod ? 'text-white' : 'text-primary'}`}>
+                      <div className={`flex items-center min-h-10 h-auto px-3 py-2 border rounded-md ${isGracePeriod ? 'bg-orange-600 border-orange-600' : 'bg-background'}`}>
+                        <span className={`text-sm text-center sm:text-left ${isGracePeriod ? 'text-white' : 'text-primary'}`}>
                           {activeDateObj ? format(activeDateObj, "EEEE d 'de' MMMM 'de' yyyy", { locale: es }) : activeDateDisplay}
                         </span>
                       </div>

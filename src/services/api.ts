@@ -4,7 +4,7 @@ import { toast } from '@/lib/use-toast'
 // API URL constante para producción
 const API_URL = 'https://viaticos.davidzapata-dz051099.workers.dev'
 
-async function getAuthToken() {
+export async function getAuthToken() {
   if (typeof window === 'undefined') {
     throw new Error('getAuthToken solo puede ser llamado en el cliente')
   }
@@ -23,7 +23,7 @@ async function getAuthToken() {
   return token
 }
 
-async function apiRequest(endpoint: string, options: RequestInit = {}) {
+export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   try {
     const token = await getAuthToken()
 
@@ -68,14 +68,15 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
           throw new Error(data.error || data.message || 'Error en la solicitud')
         }
 
-        const method = options.method?.toUpperCase()
-        if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
-          toast({
-            title: "Éxito",
-            description: "Datos actualizados correctamente.",
-            variant: "success",
-          })
-        }
+        // Toast eliminado para evitar redundancia con SweetAlert
+        // const method = options.method?.toUpperCase()
+        // if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+        //   toast({
+        //     title: "Éxito",
+        //     description: "Datos actualizados correctamente.",
+        //     variant: "success",
+        //   })
+        // }
 
         return data
 
@@ -180,19 +181,7 @@ export async function setUserRole(uid: string, role: string) {
 
 
 
-export async function ensureMyOneDriveFolder() {
-  const token = await getAuthToken()
-  const response = await fetch(`${API_URL}/api/onedrive/ensure-me`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` },
-  })
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Error asegurando carpeta' }))
-    throw new Error(error.message || 'Error asegurando carpeta')
-  }
-  // Toast removed to avoid UI clutter during auto-verification
-  return response.json()
-}
+
 
 
 
@@ -227,12 +216,7 @@ export async function setUserStatus(uid: string, estado: 'activo' | 'inactivo') 
   })
 }
 
-export async function setUserCreateFolder(uid: string, crearCarpeta: boolean) {
-  return apiRequest(`/api/users/${uid}/create-folder`, {
-    method: 'PUT',
-    body: JSON.stringify({ crear_carpeta: crearCarpeta }),
-  })
-}
+
 
 export async function closeDay(date: string) {
   return apiRequest('/api/users/close-day', {
@@ -278,5 +262,24 @@ export async function updateViatico(id: string, updates: any) {
 export async function deleteViatico(id: string) {
   return apiRequest(`/api/viaticos/${id}`, {
     method: 'DELETE',
+  })
+}
+
+export async function subscribeToNotifications(subscription: PushSubscription) {
+  const token = await getAuthToken()
+  return apiRequest('/api/push/subscribe', {
+    method: 'POST',
+    body: JSON.stringify(subscription),
+  })
+}
+
+export async function getVapidPublicKey() {
+  return fetch(`${API_URL}/api/push/vapid-public-key`).then(res => res.json())
+}
+
+export async function unsubscribeFromNotifications(endpoint: string) {
+  return apiRequest('/api/push/unsubscribe', {
+    method: 'POST',
+    body: JSON.stringify({ endpoint }),
   })
 }

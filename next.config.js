@@ -5,7 +5,7 @@ const path = require('path')
 const withSerwist = require("@serwist/next").default({
   swSrc: "src/app/sw.ts",
   swDest: "public/sw.js",
-  disable: true,
+  disable: false,
 })
 
 /** @type {import('next').NextConfig} */
@@ -26,5 +26,5 @@ const nextConfig = {
   outputFileTracingRoot: path.join(__dirname),
 }
 
-// module.exports = withSerwist(nextConfig)
-module.exports = nextConfig
+module.exports = withSerwist(nextConfig)
+// module.exports = nextConfig

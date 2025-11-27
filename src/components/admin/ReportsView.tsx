@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { format, startOfDay, endOfDay, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Trash2, FileSpreadsheet, FileText, ArrowLeft, ChevronRight, User, List, Pencil, Search, X } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import * as ExcelJS from 'exceljs'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import { EditViaticoDialog } from '@/components/EditViaticoDialog'
@@ -129,11 +129,26 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
     }, [selectedUserId, userTotals])
 
     // Export to Excel
-    const exportToExcel = (data: any[], filename: string) => {
-        const ws = XLSX.utils.json_to_sheet(data)
-        const wb = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(wb, ws, 'Reporte')
-        XLSX.writeFile(wb, `${filename}_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`)
+    const exportToExcel = async (data: any[], filename: string) => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Reporte');
+
+        // Get headers from the first object
+        if (data.length > 0) {
+            const columns = Object.keys(data[0]).map(key => ({ header: key, key: key, width: 20 }));
+            worksheet.columns = columns;
+        }
+
+        worksheet.addRows(data);
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
     }
 
     // Export to PDF

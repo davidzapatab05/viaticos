@@ -14,7 +14,8 @@ import {
   User,
 } from 'firebase/auth'
 import { initializeFirebase } from '../config/firebase'
-import { ensureMyOneDriveFolder, getMyUser } from '../services/api'
+import { getMyUser } from '../services/api'
+import { unsubscribeFromPush } from '@/utils/push'
 
 interface AppUser {
   uid: string
@@ -22,7 +23,6 @@ interface AppUser {
   displayName: string | null
   role: string
   estado: string
-  crear_carpeta: boolean
   last_closed_date?: string
   exists?: boolean
 }
@@ -55,7 +55,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [appUser, setAppUser] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
-  const [verifyingFolder, setVerifyingFolder] = useState(false)
 
   useEffect(() => {
     let unsub = () => { }
@@ -83,20 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const redirectResult = await getRedirectResult(currentAuth)
         if (redirectResult) {
-          const { getAdditionalUserInfo } = await import('firebase/auth')
-          const isNewUser = getAdditionalUserInfo(redirectResult)?.isNewUser
-          if (isNewUser) {
-            // Usuario es nuevo, registrarlo en la base de datos
-            try {
-              setVerifyingFolder(true)
-              const { ensureMyOneDriveFolder } = await import('@/services/api')
-              await ensureMyOneDriveFolder()
-            } catch (e) {
-              console.warn('No se pudo crear la carpeta para el nuevo usuario:', (e as Error).message || e)
-            } finally {
-              setVerifyingFolder(false)
-            }
-          }
+          // Redirect result handled, user will be processed by onAuthStateChanged
         }
       } catch (e) {
         // Ignorar errores de redirect
@@ -128,20 +114,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return
               }
               setAppUser(myUser)
+
+              // Auto-subscribe to push notifications on login
+              try {
+                const { subscribeToPush } = await import('@/utils/push')
+                await subscribeToPush()
+                console.log('Push notifications auto-subscribed')
+              } catch (e) {
+                console.warn('Could not auto-subscribe to push notifications:', e)
+              }
             } else {
               // Si el usuario no existe en la BD (pero sí en Firebase), registrarlo
               console.log('Usuario no encontrado en BD, registrando...')
               try {
-                setVerifyingFolder(true)
-                const { ensureMyOneDriveFolder } = await import('@/services/api')
-                await ensureMyOneDriveFolder()
-                // Reintentar obtener usuario
+                // Reintentar obtener usuario (se creará automáticamente en el backend)
                 const newUser = await getMyUser()
-                if (newUser) setAppUser(newUser)
+                if (newUser) {
+                  setAppUser(newUser)
+
+                  // Auto-subscribe to push notifications for new users
+                  try {
+                    const { subscribeToPush } = await import('@/utils/push')
+                    await subscribeToPush()
+                    console.log('Push notifications auto-subscribed for new user')
+                  } catch (e) {
+                    console.warn('Could not auto-subscribe to push notifications:', e)
+                  }
+                }
               } catch (e) {
                 console.warn('Error auto-registrando usuario:', e)
-              } finally {
-                setVerifyingFolder(false)
               }
             }
           }).catch(e => {
@@ -209,19 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Usar signInWithPopup (funciona correctamente, los warnings de COOP no afectan funcionalidad)
       const result = await signInWithPopup(currentAuth, provider)
 
-      const { getAdditionalUserInfo } = await import('firebase/auth')
-      const isNewUser = getAdditionalUserInfo(result)?.isNewUser
-      if (isNewUser) {
-        try {
-          setVerifyingFolder(true)
-          const { ensureMyOneDriveFolder } = await import('@/services/api')
-          await ensureMyOneDriveFolder()
-        } catch (e) {
-          console.warn('No se pudo crear la carpeta para el nuevo usuario:', (e as Error).message || e)
-        } finally {
-          setVerifyingFolder(false)
-        }
-      }
+      // New user will be registered automatically on first API call
 
       return { success: true, user: result.user }
     } catch (error: any) {
@@ -242,14 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const userCredential = await createUserWithEmailAndPassword(currentAuth, email, password)
-      try {
-        setVerifyingFolder(true)
-        await ensureMyOneDriveFolder()
-      } catch (e) {
-        console.warn('No se pudo crear la carpeta en OneDrive al registrar usuario:', (e as Error).message || e)
-      } finally {
-        setVerifyingFolder(false)
-      }
+      // User will be registered automatically on first API call
       return { success: true, user: userCredential.user }
     } catch (error) {
       return { success: false, error: (error as Error).message }
@@ -263,6 +245,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: 'Firebase Auth no está disponible' }
     }
     try {
+      // Intentar desuscribir push notifications antes de cerrar sesión
+      // No bloqueamos el logout si falla
+      try {
+        await unsubscribeFromPush()
+      } catch (e) {
+        console.warn('Error unsubscribing push:', e)
+      }
+
       await firebaseSignOut(currentAuth)
       // Eliminar cookie al cerrar sesión
       document.cookie = 'firebase-token=; path=/; max-age=0'
@@ -285,18 +275,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       {children}
-      {/* Global Loading Overlay for Folder Verification */}
-      {verifyingFolder && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[9999] flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4 p-6 bg-card rounded-lg shadow-lg border">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <div className="text-center">
-              <h3 className="text-lg font-semibold">Verificando carpeta...</h3>
-              <p className="text-sm text-muted-foreground">Configurando tu espacio en OneDrive</p>
-            </div>
-          </div>
-        </div>
-      )}
     </AuthContext.Provider>
   )
 }

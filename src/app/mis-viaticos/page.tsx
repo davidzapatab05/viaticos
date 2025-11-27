@@ -44,16 +44,10 @@ export default function MisViaticosPage() {
   const router = useRouter()
 
   useEffect(() => {
-    if (!authLoading && appUser && !appUser.crear_carpeta) {
-      router.push('/dashboard')
-    }
-  }, [appUser, authLoading, router])
-
-  useEffect(() => {
-    if (user && !authLoading && appUser?.crear_carpeta) {
+    if (user && !authLoading) {
       loadViaticos()
     }
-  }, [user, authLoading, appUser])
+  }, [user, authLoading])
 
   const loadViaticos = async () => {
     if (authLoading) return
