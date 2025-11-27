@@ -8,8 +8,8 @@ CREATE TABLE user_roles (
   email TEXT,
   displayName TEXT,
   last_closed_date TEXT,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
+  created_at TEXT,
+  updated_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_roles_email ON user_roles(email);
@@ -29,8 +29,8 @@ CREATE TABLE viaticos (
     monto REAL NOT NULL,
     descripcion TEXT NOT NULL,
     folder_path TEXT,
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
+    created_at TEXT,
+    updated_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_viaticos_usuario_id ON viaticos(usuario_id);

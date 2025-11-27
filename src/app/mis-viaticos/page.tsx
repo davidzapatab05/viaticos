@@ -17,6 +17,7 @@ import { RefreshCw, Receipt, Loader2, FileText, DollarSign, TrendingUp, ArrowRig
 import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
 import { EditViaticoDialog } from '@/components/EditViaticoDialog'
+import Swal from 'sweetalert2'
 
 interface Viatico {
   id: string
@@ -79,14 +80,38 @@ export default function MisViaticosPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de eliminar este viático? Esta acción no se puede deshacer.')) return
+    const result = await Swal.fire({
+      title: '¿Eliminar viático?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    })
+
+    if (!result.isConfirmed) return
 
     try {
       setLoading(true)
       await deleteViatico(id)
       await loadViaticos()
+
+      await Swal.fire({
+        title: 'Eliminado',
+        text: 'El viático ha sido eliminado correctamente',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+      })
     } catch (err) {
-      alert('Error al eliminar viático: ' + (err as Error).message)
+      await Swal.fire({
+        title: 'Error',
+        text: 'Error al eliminar viático: ' + (err as Error).message,
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      })
     } finally {
       setLoading(false)
     }
