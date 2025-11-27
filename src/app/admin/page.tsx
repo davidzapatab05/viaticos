@@ -14,13 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
-import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, ExternalLink, Trash2, Ban, CheckCircle2 } from 'lucide-react'
+import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, Trash2, Ban, CheckCircle2 } from 'lucide-react'
 import Layout from '@/components/Layout'
 import RoleGuard from '@/components/RoleGuard'
 import ReportsView from '@/components/admin/ReportsView'
-import LoadingOverlay from '@/components/LoadingOverlay'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { useLoading } from '@/contexts/LoadingContext'
 
 interface Viatico {
   id: string
@@ -50,8 +48,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [updating, setUpdating] = useState<string | null>(null)
-  const [globalLoading, setGlobalLoading] = useState(false)
-  const [loadingMessage, setLoadingMessage] = useState('')
+  const { setLoading: setGlobalLoading, clearLoading } = useLoading()
   const [oneDriveUrl, setOneDriveUrl] = useState<string | null>(null)
   const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
   const isSuperAdmin = user?.email?.toLowerCase() === superAdminEmail?.toLowerCase();
@@ -83,7 +80,10 @@ export default function AdminPage() {
 
       // Filtrar super_admin del array de usuarios para la tabla si es necesario
       const filteredUsers = (usersData?.users || []).filter((u: User) => {
-        // Mantener todos los usuarios en la tabla, pero el conteo ya está filtrado
+        // Ocultar super_admin si el usuario actual no es super_admin
+        if (!isSuperAdmin && u.role === 'super_admin') return false;
+
+        // Mantener todos los usuarios en la tabla (menos anonymous/dev)
         return u.uid !== 'anonymous' && u.uid !== 'dev-user' && !u.uid.startsWith('dev-')
       })
 
@@ -99,26 +99,24 @@ export default function AdminPage() {
   }
 
   async function handleRoleChange(uid: string, newRole: string) {
-    setGlobalLoading(true)
-    setLoadingMessage('Actualizando rol...')
+    setGlobalLoading('Actualizando rol...')
     setUpdating(uid)
     try {
       await apiSetUserRole(uid, newRole)
       toast({ title: "Rol actualizado" })
       await loadData()
     } catch (e) {
-      toast({ title: "Error", description: "Error al actualizar rol", variant: "destructive" })
+      toast({ title: "Error", description: (e as Error).message || "Error al actualizar rol", variant: "destructive" })
     } finally {
       setUpdating(null)
-      setGlobalLoading(false)
+      clearLoading()
     }
   }
 
 
 
   async function handleStatusChange(uid: string, nuevoEstado: 'activo' | 'inactivo') {
-    setGlobalLoading(true)
-    setLoadingMessage('Actualizando estado...')
+    setGlobalLoading('Actualizando estado...')
     try {
       await setUserStatus(uid, nuevoEstado)
       toast({ title: "Estado actualizado" })
@@ -126,14 +124,13 @@ export default function AdminPage() {
     } catch (e) {
       toast({ title: "Error", description: "Error al actualizar estado", variant: "destructive" })
     } finally {
-      setGlobalLoading(false)
+      clearLoading()
     }
   }
 
 
   async function handleCreateFolderChange(uid: string, crearCarpeta: boolean) {
-    setGlobalLoading(true)
-    setLoadingMessage('Actualizando configuración...')
+    setGlobalLoading('Actualizando configuración...')
     try {
       await setUserCreateFolder(uid, crearCarpeta)
       toast({ title: "Configuración actualizada" })
@@ -141,7 +138,7 @@ export default function AdminPage() {
     } catch (e) {
       toast({ title: "Error", description: "Error al actualizar flag de carpeta", variant: "destructive" })
     } finally {
-      setGlobalLoading(false)
+      clearLoading()
     }
   }
 
@@ -180,12 +177,11 @@ export default function AdminPage() {
 
     if (!result.isConfirmed) return
 
-    setGlobalLoading(true)
-    setLoadingMessage('Eliminando usuario y sus datos...')
+    setGlobalLoading('Eliminando usuario y sus datos...')
     try {
       await deleteUser(uid)
 
-      setGlobalLoading(false)
+      clearLoading()
       await Swal.fire({
         title: 'Usuario eliminado',
         text: 'El usuario fue eliminado correctamente.',
@@ -195,7 +191,7 @@ export default function AdminPage() {
 
       await loadData()
     } catch (e) {
-      setGlobalLoading(false)
+      clearLoading()
       await Swal.fire({
         title: 'Error',
         text: 'Error al eliminar usuario: ' + (e as Error).message,
@@ -246,15 +242,14 @@ export default function AdminPage() {
 
     if (!result.isConfirmed) return
 
-    setGlobalLoading(true)
-    setLoadingMessage('Eliminando viático...')
+    setGlobalLoading('Eliminando viático...')
     try {
       await deleteViatico(id)
-      setGlobalLoading(false)
+      clearLoading()
       await Swal.fire('Eliminado', 'El viático ha sido eliminado.', 'success')
       await loadData()
     } catch (e) {
-      setGlobalLoading(false)
+      clearLoading()
       await Swal.fire('Error', (e as Error).message || 'Error al eliminar viático', 'error')
     }
   }
@@ -272,7 +267,7 @@ export default function AdminPage() {
   return (
     <RoleGuard allowedRoles={['admin', 'super_admin']}>
       <Layout>
-        <LoadingOverlay isLoading={globalLoading} message={loadingMessage} />
+
         <div className="space-y-8">
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -448,7 +443,6 @@ export default function AdminPage() {
                                   <Switch
                                     checked={u.crear_carpeta !== false}
                                     onCheckedChange={(checked) => handleCreateFolderChange(u.uid, checked)}
-                                    disabled={userRole === 'admin' && (u.role === 'admin' || u.role === 'super_admin')}
                                   />
                                   <span className="text-sm text-muted-foreground">
                                     {u.crear_carpeta !== false ? 'Sí' : 'No'}
@@ -464,8 +458,8 @@ export default function AdminPage() {
                                     u.uid === user?.uid ||
                                     // No se puede editar el rol de super_admin
                                     u.role === 'super_admin' ||
-                                    // Solo super_admin puede editar roles de admin
-                                    (u.role === 'admin' && userRole !== 'super_admin')
+                                    // Admin no puede asignar rol de super_admin
+                                    (userRole !== 'super_admin' && u.role === 'super_admin')
                                   }
                                 >
                                   <SelectTrigger className="w-40">
@@ -485,7 +479,7 @@ export default function AdminPage() {
                                 </Select>
                               </TableCell>
                               <TableCell className="text-right">
-                                {userRole === 'super_admin' && u.role !== 'super_admin' && (
+                                {((userRole === 'super_admin' && u.role !== 'super_admin') || (userRole === 'admin' && u.role !== 'super_admin')) && (
                                   <Button
                                     variant="destructive"
                                     size="sm"

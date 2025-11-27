@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { format } from 'date-fns'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import Swal from 'sweetalert2'
@@ -6,9 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
 import { updateViatico } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLoading } from '@/contexts/LoadingContext'
 import { DatePicker } from '@/components/ui/date-picker'
 
 interface Viatico {
@@ -32,7 +33,7 @@ interface EditViaticoDialogProps {
 
 export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: EditViaticoDialogProps) {
     const { appUser } = useAuth()
-    const [loading, setLoading] = useState(false)
+    const { setLoading, clearLoading } = useLoading()
     const [formData, setFormData] = useState<Partial<Viatico>>({})
 
     useEffect(() => {
@@ -58,13 +59,14 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
         e.preventDefault()
         if (!viatico) return
 
-        setLoading(true)
+        setLoading('Actualizando viático...')
         try {
             await updateViatico(viatico.id, formData)
 
             // Close modal immediately
             onOpenChange(false)
             onSuccess()
+            clearLoading()
 
             // Show auto-closing success message
             await Swal.fire({
@@ -75,14 +77,13 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
                 showConfirmButton: false
             })
         } catch (error) {
+            clearLoading()
             Swal.fire({
                 title: 'Error',
                 text: (error as Error).message || 'Error al actualizar viático',
                 icon: 'error',
                 confirmButtonColor: '#ef4444'
             })
-        } finally {
-            setLoading(false)
         }
     }
 
@@ -107,7 +108,7 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
                                     date={formData.fecha ? new Date(formData.fecha + 'T12:00:00') : undefined}
                                     onSelect={(date) => {
                                         if (date) {
-                                            handleChange('fecha', date.toISOString().split('T')[0])
+                                            handleChange('fecha', format(date, 'yyyy-MM-dd'))
                                         }
                                     }}
                                 />
@@ -166,7 +167,7 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
                             <SelectContent>
                                 <SelectItem value="FACTURA">FACTURA</SelectItem>
                                 <SelectItem value="BOLETA">BOLETA</SelectItem>
-                                <SelectItem value="RECIBO POR HONORARIOS">RECIBO POR HONORARIOS</SelectItem>
+                                <SelectItem value="RECIBO POR HONORARIO">RECIBO POR HONORARIO</SelectItem>
                                 <SelectItem value="SIN COMPROBANTE">SIN COMPROBANTE</SelectItem>
                             </SelectContent>
                         </Select>
@@ -200,23 +201,12 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
                         </>
                     )}
                     <DialogFooter>
-                        <Button type="submit" disabled={loading}>
-                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Button type="submit">
                             Guardar cambios
                         </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
-
-            {/* Blocking Loading Overlay */}
-            {loading && (
-                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-4">
-                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        <p className="text-lg font-medium text-foreground">Actualizando viático...</p>
-                    </div>
-                </div>
-            )}
         </Dialog>
     )
 }

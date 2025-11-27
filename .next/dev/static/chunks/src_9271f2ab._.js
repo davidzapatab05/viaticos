@@ -914,15 +914,12 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$addDays$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__addDays$3e$__ = __turbopack_context__.i("[project]/node_modules/date-fns/esm/addDays/index.js [app-client] (ecmascript) <export default as addDays>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$differenceInSeconds$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__differenceInSeconds$3e$__ = __turbopack_context__.i("[project]/node_modules/date-fns/esm/differenceInSeconds/index.js [app-client] (ecmascript) <export default as differenceInSeconds>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$locale$2f$es$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__es$3e$__ = __turbopack_context__.i("[project]/node_modules/date-fns/esm/locale/es/index.js [app-client] (ecmascript) <export default as es>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/contexts/AuthContext.tsx [app-client] (ecmascript)");
 var _s = __turbopack_context__.k.signature();
-;
 ;
 ;
 ;
 function useViaticoDeadline() {
     _s();
-    const { appUser } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"])();
     const [activeDate, setActiveDate] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(new Date());
     const [activeDateDisplay, setActiveDateDisplay] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
     const [timeLeft, setTimeLeft] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
@@ -1057,11 +1054,7 @@ function useViaticoDeadline() {
         loading
     };
 }
-_s(useViaticoDeadline, "Lv0TJNWsRvh55mrR7sUTVT1lDZY=", false, function() {
-    return [
-        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"]
-    ];
-});
+_s(useViaticoDeadline, "dGTTk+knpHTmw3qtC7hkTvvA0gI=");
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }
@@ -1105,7 +1098,7 @@ function CountdownBanner() {
                                     className: "h-3.5 w-3.5 animate-pulse"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/CountdownBanner.tsx",
-                                    lineNumber: 19,
+                                    lineNumber: 18,
                                     columnNumber: 25
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1116,13 +1109,13 @@ function CountdownBanner() {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/CountdownBanner.tsx",
-                                    lineNumber: 20,
+                                    lineNumber: 19,
                                     columnNumber: 25
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/CountdownBanner.tsx",
-                            lineNumber: 18,
+                            lineNumber: 17,
                             columnNumber: 21
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1130,7 +1123,7 @@ function CountdownBanner() {
                             children: "|"
                         }, void 0, false, {
                             fileName: "[project]/src/components/CountdownBanner.tsx",
-                            lineNumber: 24,
+                            lineNumber: 23,
                             columnNumber: 21
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1141,19 +1134,19 @@ function CountdownBanner() {
                                     children: activeDateDisplay
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/CountdownBanner.tsx",
-                                    lineNumber: 25,
+                                    lineNumber: 24,
                                     columnNumber: 57
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/CountdownBanner.tsx",
-                            lineNumber: 25,
+                            lineNumber: 24,
                             columnNumber: 21
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/CountdownBanner.tsx",
-                    lineNumber: 17,
+                    lineNumber: 16,
                     columnNumber: 17
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1166,23 +1159,23 @@ function CountdownBanner() {
                         children: "Registrar viatico"
                     }, void 0, false, {
                         fileName: "[project]/src/components/CountdownBanner.tsx",
-                        lineNumber: 28,
+                        lineNumber: 27,
                         columnNumber: 21
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/components/CountdownBanner.tsx",
-                    lineNumber: 27,
+                    lineNumber: 26,
                     columnNumber: 17
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/components/CountdownBanner.tsx",
-            lineNumber: 16,
+            lineNumber: 15,
             columnNumber: 13
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/components/CountdownBanner.tsx",
-        lineNumber: 15,
+        lineNumber: 14,
         columnNumber: 9
     }, this);
 }
@@ -2833,6 +2826,7 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$format$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__format$3e$__ = __turbopack_context__.i("[project]/node_modules/date-fns/esm/format/index.js [app-client] (ecmascript) <export default as format>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/ui/dialog.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/ui/button.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sweetalert2$2f$dist$2f$sweetalert2$2e$all$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/sweetalert2/dist/sweetalert2.all.js [app-client] (ecmascript)");
@@ -2840,9 +2834,9 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$i
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$label$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/ui/label.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$textarea$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/ui/textarea.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/ui/select.tsx [app-client] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/loader-circle.js [app-client] (ecmascript) <export default as Loader2>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/services/api.ts [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/contexts/AuthContext.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$LoadingContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/contexts/LoadingContext.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$date$2d$picker$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/ui/date-picker.tsx [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
@@ -2858,10 +2852,11 @@ var _s = __turbopack_context__.k.signature();
 ;
 ;
 ;
+;
 function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
     _s();
     const { appUser } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"])();
-    const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const { setLoading, clearLoading } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$LoadingContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useLoading"])();
     const [formData, setFormData] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({});
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "EditViaticoDialog.useEffect": ()=>{
@@ -2890,12 +2885,13 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
     const handleSubmit = async (e)=>{
         e.preventDefault();
         if (!viatico) return;
-        setLoading(true);
+        setLoading('Actualizando viático...');
         try {
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["updateViatico"])(viatico.id, formData);
             // Close modal immediately
             onOpenChange(false);
             onSuccess();
+            clearLoading();
             // Show auto-closing success message
             await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sweetalert2$2f$dist$2f$sweetalert2$2e$all$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].fire({
                 title: 'Actualizado',
@@ -2905,14 +2901,13 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                 showConfirmButton: false
             });
         } catch (error) {
+            clearLoading();
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sweetalert2$2f$dist$2f$sweetalert2$2e$all$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].fire({
                 title: 'Error',
                 text: error.message || 'Error al actualizar viático',
                 icon: 'error',
                 confirmButtonColor: '#ef4444'
             });
-        } finally{
-            setLoading(false);
         }
     };
     if (!viatico) return null;
@@ -2928,20 +2923,20 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                             children: "Editar Viático"
                         }, void 0, false, {
                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                            lineNumber: 95,
+                            lineNumber: 96,
                             columnNumber: 21
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DialogDescription"], {
                             children: "Modifica los detalles del viático. Haz clic en guardar cuando termines."
                         }, void 0, false, {
                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                            lineNumber: 96,
+                            lineNumber: 97,
                             columnNumber: 21
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                    lineNumber: 94,
+                    lineNumber: 95,
                     columnNumber: 17
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -2956,7 +2951,7 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                     children: "Fecha"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                    lineNumber: 104,
+                                    lineNumber: 105,
                                     columnNumber: 29
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2965,23 +2960,23 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                         date: formData.fecha ? new Date(formData.fecha + 'T12:00:00') : undefined,
                                         onSelect: (date)=>{
                                             if (date) {
-                                                handleChange('fecha', date.toISOString().split('T')[0]);
+                                                handleChange('fecha', (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$format$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__format$3e$__["format"])(date, 'yyyy-MM-dd'));
                                             }
                                         }
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                        lineNumber: 106,
+                                        lineNumber: 107,
                                         columnNumber: 33
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                    lineNumber: 105,
+                                    lineNumber: 106,
                                     columnNumber: 29
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                            lineNumber: 103,
+                            lineNumber: 104,
                             columnNumber: 25
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2993,7 +2988,7 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                     children: "Monto"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                    lineNumber: 119,
+                                    lineNumber: 120,
                                     columnNumber: 25
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -3006,13 +3001,13 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                     required: true
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                    lineNumber: 122,
+                                    lineNumber: 123,
                                     columnNumber: 25
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                            lineNumber: 118,
+                            lineNumber: 119,
                             columnNumber: 21
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3024,7 +3019,7 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                     children: "Descripción"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                    lineNumber: 133,
+                                    lineNumber: 134,
                                     columnNumber: 25
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$textarea$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Textarea"], {
@@ -3035,13 +3030,13 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                     required: true
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                    lineNumber: 136,
+                                    lineNumber: 137,
                                     columnNumber: 25
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                            lineNumber: 132,
+                            lineNumber: 133,
                             columnNumber: 21
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3053,7 +3048,7 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                     children: "Para"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                    lineNumber: 145,
+                                    lineNumber: 146,
                                     columnNumber: 25
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -3066,12 +3061,12 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                                 placeholder: "Seleccionar"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                                lineNumber: 150,
+                                                lineNumber: 151,
                                                 columnNumber: 33
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                            lineNumber: 149,
+                                            lineNumber: 150,
                                             columnNumber: 29
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -3081,7 +3076,7 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                                     children: "EMPRESA"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                                    lineNumber: 153,
+                                                    lineNumber: 154,
                                                     columnNumber: 33
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -3089,25 +3084,25 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                                     children: "PERSONAL"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                                    lineNumber: 154,
+                                                    lineNumber: 155,
                                                     columnNumber: 33
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                            lineNumber: 152,
+                                            lineNumber: 153,
                                             columnNumber: 29
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                    lineNumber: 148,
+                                    lineNumber: 149,
                                     columnNumber: 25
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                            lineNumber: 144,
+                            lineNumber: 145,
                             columnNumber: 21
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3119,7 +3114,7 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                     children: "Tipo Comp."
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                    lineNumber: 159,
+                                    lineNumber: 160,
                                     columnNumber: 25
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -3132,12 +3127,12 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                                 placeholder: "Seleccionar"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                                lineNumber: 164,
+                                                lineNumber: 165,
                                                 columnNumber: 33
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                            lineNumber: 163,
+                                            lineNumber: 164,
                                             columnNumber: 29
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -3147,7 +3142,7 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                                     children: "FACTURA"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                                    lineNumber: 167,
+                                                    lineNumber: 168,
                                                     columnNumber: 33
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -3155,15 +3150,15 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                                     children: "BOLETA"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                                    lineNumber: 168,
+                                                    lineNumber: 169,
                                                     columnNumber: 33
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
-                                                    value: "RECIBO POR HONORARIOS",
-                                                    children: "RECIBO POR HONORARIOS"
+                                                    value: "RECIBO POR HONORARIO",
+                                                    children: "RECIBO POR HONORARIO"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                                    lineNumber: 169,
+                                                    lineNumber: 170,
                                                     columnNumber: 33
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -3171,25 +3166,25 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                                     children: "SIN COMPROBANTE"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                                    lineNumber: 170,
+                                                    lineNumber: 171,
                                                     columnNumber: 33
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                            lineNumber: 166,
+                                            lineNumber: 167,
                                             columnNumber: 29
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                    lineNumber: 162,
+                                    lineNumber: 163,
                                     columnNumber: 25
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                            lineNumber: 158,
+                            lineNumber: 159,
                             columnNumber: 21
                         }, this),
                         formData.tipo_comprobante && formData.tipo_comprobante !== 'SIN COMPROBANTE' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -3203,7 +3198,7 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                             children: formData.tipo_comprobante === 'BOLETA' ? 'N° DNI' : 'N° RUC'
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                            lineNumber: 177,
+                                            lineNumber: 178,
                                             columnNumber: 33
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -3214,13 +3209,13 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                             placeholder: formData.tipo_comprobante === 'BOLETA' ? 'Ej: 12345678' : 'Ej: 20123456789'
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                            lineNumber: 180,
+                                            lineNumber: 181,
                                             columnNumber: 33
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                    lineNumber: 176,
+                                    lineNumber: 177,
                                     columnNumber: 29
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3232,7 +3227,7 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                             children: "N° Comp."
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                            lineNumber: 189,
+                                            lineNumber: 190,
                                             columnNumber: 33
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -3243,13 +3238,13 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                                             placeholder: "Serie-Número"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                            lineNumber: 192,
+                                            lineNumber: 193,
                                             columnNumber: 33
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                    lineNumber: 188,
+                                    lineNumber: 189,
                                     columnNumber: 29
                                 }, this)
                             ]
@@ -3257,48 +3252,39 @@ function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }) {
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DialogFooter"], {
                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
                                 type: "submit",
-                                disabled: loading,
-                                children: [
-                                    loading && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
-                                        className: "mr-2 h-4 w-4 animate-spin"
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                        lineNumber: 204,
-                                        columnNumber: 41
-                                    }, this),
-                                    "Guardar cambios"
-                                ]
-                            }, void 0, true, {
+                                children: "Guardar cambios"
+                            }, void 0, false, {
                                 fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                                lineNumber: 203,
+                                lineNumber: 204,
                                 columnNumber: 25
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                            lineNumber: 202,
+                            lineNumber: 203,
                             columnNumber: 21
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/EditViaticoDialog.tsx",
-                    lineNumber: 100,
+                    lineNumber: 101,
                     columnNumber: 17
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/components/EditViaticoDialog.tsx",
-            lineNumber: 93,
+            lineNumber: 94,
             columnNumber: 13
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/components/EditViaticoDialog.tsx",
-        lineNumber: 92,
+        lineNumber: 93,
         columnNumber: 9
     }, this);
 }
-_s(EditViaticoDialog, "cCP0db2vPkc6yOsTkLZ3SF3BR80=", false, function() {
+_s(EditViaticoDialog, "GXyMfCbi3sVzbTaAYFpcnhKB8xM=", false, function() {
     return [
-        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"]
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"],
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$LoadingContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useLoading"]
     ];
 });
 _c = EditViaticoDialog;
@@ -3341,9 +3327,11 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Layout$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/Layout.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$AuthGuard$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/AuthGuard.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$EditViaticoDialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/EditViaticoDialog.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sweetalert2$2f$dist$2f$sweetalert2$2e$all$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/sweetalert2/dist/sweetalert2.all.js [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
 'use client';
+;
 ;
 ;
 ;
@@ -3415,13 +3403,35 @@ function MisViaticosPage() {
         }
     };
     const handleDelete = async (id)=>{
-        if (!confirm('¿Estás seguro de eliminar este viático? Esta acción no se puede deshacer.')) return;
+        const result = await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sweetalert2$2f$dist$2f$sweetalert2$2e$all$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].fire({
+            title: '¿Eliminar viático?',
+            text: 'Esta acción no se puede deshacer',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!result.isConfirmed) return;
         try {
             setLoading(true);
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["deleteViatico"])(id);
             await loadViaticos();
+            await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sweetalert2$2f$dist$2f$sweetalert2$2e$all$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].fire({
+                title: 'Eliminado',
+                text: 'El viático ha sido eliminado correctamente',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
         } catch (err) {
-            alert('Error al eliminar viático: ' + err.message);
+            await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$sweetalert2$2f$dist$2f$sweetalert2$2e$all$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].fire({
+                title: 'Error',
+                text: 'Error al eliminar viático: ' + err.message,
+                icon: 'error',
+                confirmButtonColor: '#ef4444'
+            });
         } finally{
             setLoading(false);
         }
@@ -3433,7 +3443,7 @@ function MisViaticosPage() {
     const total = viaticos.reduce((sum, v)=>sum + parseFloat(String(v.monto || 0)), 0);
     const totalCount = viaticos.length;
     const groupedByMonth = viaticos.reduce((acc, v)=>{
-        const monthKey = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$format$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__format$3e$__["format"])(new Date(v.fecha), 'MMMM yyyy', {
+        const monthKey = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$format$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__format$3e$__["format"])(new Date(v.fecha + 'T12:00:00'), 'MMMM yyyy', {
             locale: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$locale$2f$es$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__es$3e$__["es"]
         });
         if (!acc[monthKey]) {
@@ -3453,7 +3463,7 @@ function MisViaticosPage() {
                             className: "h-8 w-8 animate-spin text-primary mx-auto"
                         }, void 0, false, {
                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                            lineNumber: 117,
+                            lineNumber: 142,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3461,23 +3471,23 @@ function MisViaticosPage() {
                             children: "Verificando autenticación..."
                         }, void 0, false, {
                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                            lineNumber: 118,
+                            lineNumber: 143,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                    lineNumber: 116,
+                    lineNumber: 141,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                lineNumber: 115,
+                lineNumber: 140,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-            lineNumber: 114,
+            lineNumber: 139,
             columnNumber: 7
         }, this);
     }
@@ -3492,7 +3502,7 @@ function MisViaticosPage() {
                             className: "h-8 w-8 animate-spin text-primary mx-auto"
                         }, void 0, false, {
                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                            lineNumber: 130,
+                            lineNumber: 155,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3500,23 +3510,23 @@ function MisViaticosPage() {
                             children: "Cargando tus viáticos..."
                         }, void 0, false, {
                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                            lineNumber: 131,
+                            lineNumber: 156,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                    lineNumber: 129,
+                    lineNumber: 154,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                lineNumber: 128,
+                lineNumber: 153,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-            lineNumber: 127,
+            lineNumber: 152,
             columnNumber: 7
         }, this);
     }
@@ -3537,7 +3547,7 @@ function MisViaticosPage() {
                                                 children: "Mis Viáticos"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                lineNumber: 145,
+                                                lineNumber: 170,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3545,13 +3555,13 @@ function MisViaticosPage() {
                                                 children: "Consulta y gestiona todos tus registros"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                lineNumber: 146,
+                                                lineNumber: 171,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                        lineNumber: 144,
+                                        lineNumber: 169,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3565,23 +3575,23 @@ function MisViaticosPage() {
                                                 className: `h-4 w-4 ${loading ? 'animate-spin' : ''}`
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                lineNumber: 157,
+                                                lineNumber: 182,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                            lineNumber: 151,
+                                            lineNumber: 176,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                        lineNumber: 150,
+                                        lineNumber: 175,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                lineNumber: 143,
+                                lineNumber: 168,
                                 columnNumber: 13
                             }, this),
                             error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Alert"], {
@@ -3590,12 +3600,12 @@ function MisViaticosPage() {
                                     children: error
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                    lineNumber: 164,
+                                    lineNumber: 189,
                                     columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                lineNumber: 163,
+                                lineNumber: 188,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3611,20 +3621,20 @@ function MisViaticosPage() {
                                                         children: "Total de Viáticos"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 171,
+                                                        lineNumber: 196,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$receipt$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Receipt$3e$__["Receipt"], {
                                                         className: "h-4 w-4 text-muted-foreground"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 172,
+                                                        lineNumber: 197,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                lineNumber: 170,
+                                                lineNumber: 195,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -3634,7 +3644,7 @@ function MisViaticosPage() {
                                                         children: totalCount
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 175,
+                                                        lineNumber: 200,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3642,19 +3652,19 @@ function MisViaticosPage() {
                                                         children: "Registros totales"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 176,
+                                                        lineNumber: 201,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                lineNumber: 174,
+                                                lineNumber: 199,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                        lineNumber: 169,
+                                        lineNumber: 194,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -3667,20 +3677,20 @@ function MisViaticosPage() {
                                                         children: "Total Gastado"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 182,
+                                                        lineNumber: 207,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$dollar$2d$sign$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__DollarSign$3e$__["DollarSign"], {
                                                         className: "h-4 w-4 text-muted-foreground"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 183,
+                                                        lineNumber: 208,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                lineNumber: 181,
+                                                lineNumber: 206,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -3693,7 +3703,7 @@ function MisViaticosPage() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 186,
+                                                        lineNumber: 211,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3701,19 +3711,19 @@ function MisViaticosPage() {
                                                         children: "Suma total"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 187,
+                                                        lineNumber: 212,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                lineNumber: 185,
+                                                lineNumber: 210,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                        lineNumber: 180,
+                                        lineNumber: 205,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -3726,20 +3736,20 @@ function MisViaticosPage() {
                                                         children: "Promedio"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 193,
+                                                        lineNumber: 218,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trending$2d$up$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__TrendingUp$3e$__["TrendingUp"], {
                                                         className: "h-4 w-4 text-muted-foreground"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 194,
+                                                        lineNumber: 219,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                lineNumber: 192,
+                                                lineNumber: 217,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -3749,7 +3759,7 @@ function MisViaticosPage() {
                                                         children: totalCount > 0 ? `S/ ${(total / totalCount).toFixed(2)}` : 'S/ 0.00'
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 197,
+                                                        lineNumber: 222,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3757,25 +3767,25 @@ function MisViaticosPage() {
                                                         children: "Por viático"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 200,
+                                                        lineNumber: 225,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                lineNumber: 196,
+                                                lineNumber: 221,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                        lineNumber: 191,
+                                        lineNumber: 216,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                lineNumber: 168,
+                                lineNumber: 193,
                                 columnNumber: 13
                             }, this),
                             viaticos.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -3786,7 +3796,7 @@ function MisViaticosPage() {
                                             className: "h-12 w-12 text-muted-foreground mb-4"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                            lineNumber: 208,
+                                            lineNumber: 233,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -3794,7 +3804,7 @@ function MisViaticosPage() {
                                             children: "No tienes viáticos registrados"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                            lineNumber: 209,
+                                            lineNumber: 234,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3802,7 +3812,7 @@ function MisViaticosPage() {
                                             children: "Comienza registrando tu primer viático"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                            lineNumber: 210,
+                                            lineNumber: 235,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -3815,29 +3825,29 @@ function MisViaticosPage() {
                                                         className: "ml-2 h-4 w-4"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 216,
+                                                        lineNumber: 241,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                lineNumber: 214,
+                                                lineNumber: 239,
                                                 columnNumber: 21
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                            lineNumber: 213,
+                                            lineNumber: 238,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                    lineNumber: 207,
+                                    lineNumber: 232,
                                     columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                lineNumber: 206,
+                                lineNumber: 231,
                                 columnNumber: 15
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                                 children: [
@@ -3851,20 +3861,20 @@ function MisViaticosPage() {
                                                             children: "Lista de Viáticos"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                            lineNumber: 227,
+                                                            lineNumber: 252,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardDescription"], {
                                                             children: "Vista detallada de todos tus viáticos"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                            lineNumber: 228,
+                                                            lineNumber: 253,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                    lineNumber: 226,
+                                                    lineNumber: 251,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -3878,42 +3888,42 @@ function MisViaticosPage() {
                                                                             children: "Fecha"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                            lineNumber: 234,
+                                                                            lineNumber: 259,
                                                                             columnNumber: 29
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
                                                                             children: "Para"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                            lineNumber: 235,
+                                                                            lineNumber: 260,
                                                                             columnNumber: 29
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
                                                                             children: "Que Sustenta"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                            lineNumber: 236,
+                                                                            lineNumber: 261,
                                                                             columnNumber: 29
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
                                                                             children: "Tipo Comp."
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                            lineNumber: 237,
+                                                                            lineNumber: 262,
                                                                             columnNumber: 29
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
                                                                             children: "N° Doc."
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                            lineNumber: 238,
+                                                                            lineNumber: 263,
                                                                             columnNumber: 29
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
                                                                             children: "N° Comp."
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                            lineNumber: 239,
+                                                                            lineNumber: 264,
                                                                             columnNumber: 29
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
@@ -3921,14 +3931,14 @@ function MisViaticosPage() {
                                                                             children: "Monto"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                            lineNumber: 240,
+                                                                            lineNumber: 265,
                                                                             columnNumber: 29
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
                                                                             children: "Descripción"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                            lineNumber: 241,
+                                                                            lineNumber: 266,
                                                                             columnNumber: 29
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
@@ -3936,18 +3946,18 @@ function MisViaticosPage() {
                                                                             children: "Acciones"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                            lineNumber: 242,
+                                                                            lineNumber: 267,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                    lineNumber: 233,
+                                                                    lineNumber: 258,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                lineNumber: 232,
+                                                                lineNumber: 257,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableBody"], {
@@ -3955,10 +3965,10 @@ function MisViaticosPage() {
                                                                         children: [
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
                                                                                 className: "whitespace-nowrap",
-                                                                                children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$format$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__format$3e$__["format"])(new Date(viatico.fecha), 'dd/MM/yyyy')
+                                                                                children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$format$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__format$3e$__["format"])(new Date(viatico.fecha + 'T12:00:00'), 'dd/MM/yyyy')
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                lineNumber: 248,
+                                                                                lineNumber: 273,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
@@ -3968,12 +3978,12 @@ function MisViaticosPage() {
                                                                                     children: viatico.para || '-'
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                    lineNumber: 251,
+                                                                                    lineNumber: 276,
                                                                                     columnNumber: 42
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                lineNumber: 251,
+                                                                                lineNumber: 276,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
@@ -3981,7 +3991,7 @@ function MisViaticosPage() {
                                                                                 children: viatico.que_sustenta || 'VIATICO'
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                lineNumber: 252,
+                                                                                lineNumber: 277,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
@@ -3991,12 +4001,12 @@ function MisViaticosPage() {
                                                                                     children: viatico.tipo_comprobante || '-'
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                    lineNumber: 253,
+                                                                                    lineNumber: 278,
                                                                                     columnNumber: 42
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                lineNumber: 253,
+                                                                                lineNumber: 278,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
@@ -4004,7 +4014,7 @@ function MisViaticosPage() {
                                                                                 children: viatico.numero_documento || '-'
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                lineNumber: 254,
+                                                                                lineNumber: 279,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
@@ -4012,7 +4022,7 @@ function MisViaticosPage() {
                                                                                 children: viatico.numero_comprobante || '-'
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                lineNumber: 255,
+                                                                                lineNumber: 280,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
@@ -4023,7 +4033,7 @@ function MisViaticosPage() {
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                lineNumber: 256,
+                                                                                lineNumber: 281,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
@@ -4037,12 +4047,12 @@ function MisViaticosPage() {
                                                                                                 children: viatico.descripcion
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                                lineNumber: 262,
+                                                                                                lineNumber: 287,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                            lineNumber: 261,
+                                                                                            lineNumber: 286,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$tooltip$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TooltipContent"], {
@@ -4051,23 +4061,23 @@ function MisViaticosPage() {
                                                                                                 children: viatico.descripcion
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                                lineNumber: 265,
+                                                                                                lineNumber: 290,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                            lineNumber: 264,
+                                                                                            lineNumber: 289,
                                                                                             columnNumber: 35
                                                                                         }, this)
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                    lineNumber: 260,
+                                                                                    lineNumber: 285,
                                                                                     columnNumber: 33
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                lineNumber: 259,
+                                                                                lineNumber: 284,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
@@ -4083,12 +4093,12 @@ function MisViaticosPage() {
                                                                                                 className: "h-4 w-4 text-blue-500"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                                lineNumber: 272,
+                                                                                                lineNumber: 297,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                            lineNumber: 271,
+                                                                                            lineNumber: 296,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -4099,56 +4109,56 @@ function MisViaticosPage() {
                                                                                                 className: "h-4 w-4 text-red-500"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                                lineNumber: 275,
+                                                                                                lineNumber: 300,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                            lineNumber: 274,
+                                                                                            lineNumber: 299,
                                                                                             columnNumber: 35
                                                                                         }, this)
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                    lineNumber: 270,
+                                                                                    lineNumber: 295,
                                                                                     columnNumber: 33
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                lineNumber: 269,
+                                                                                lineNumber: 294,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         ]
                                                                     }, viatico.id, true, {
                                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                        lineNumber: 247,
+                                                                        lineNumber: 272,
                                                                         columnNumber: 29
                                                                     }, this))
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                lineNumber: 245,
+                                                                lineNumber: 270,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 231,
+                                                        lineNumber: 256,
                                                         columnNumber: 23
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                    lineNumber: 230,
+                                                    lineNumber: 255,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                            lineNumber: 225,
+                                            lineNumber: 250,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                        lineNumber: 224,
+                                        lineNumber: 249,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4166,7 +4176,7 @@ function MisViaticosPage() {
                                                                 children: month
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                lineNumber: 294,
+                                                                lineNumber: 319,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -4177,13 +4187,13 @@ function MisViaticosPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                lineNumber: 295,
+                                                                lineNumber: 320,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 293,
+                                                        lineNumber: 318,
                                                         columnNumber: 25
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4203,7 +4213,7 @@ function MisViaticosPage() {
                                                                                             children: viatico.descripcion || 'Sin descripción'
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                            lineNumber: 303,
+                                                                                            lineNumber: 328,
                                                                                             columnNumber: 37
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4215,22 +4225,22 @@ function MisViaticosPage() {
                                                                                                     children: viatico.tipo || 'otro'
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                                    lineNumber: 305,
+                                                                                                    lineNumber: 330,
                                                                                                     columnNumber: 39
                                                                                                 }, this),
-                                                                                                (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$format$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__format$3e$__["format"])(new Date(viatico.fecha), 'dd MMM, HH:mm', {
+                                                                                                (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$format$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__format$3e$__["format"])(new Date(viatico.fecha + 'T12:00:00'), 'dd MMM', {
                                                                                                     locale: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$locale$2f$es$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__es$3e$__["es"]
                                                                                                 })
                                                                                             ]
                                                                                         }, void 0, true, {
                                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                            lineNumber: 304,
+                                                                                            lineNumber: 329,
                                                                                             columnNumber: 37
                                                                                         }, this)
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                    lineNumber: 302,
+                                                                                    lineNumber: 327,
                                                                                     columnNumber: 35
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4241,13 +4251,13 @@ function MisViaticosPage() {
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                    lineNumber: 309,
+                                                                                    lineNumber: 334,
                                                                                     columnNumber: 35
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                            lineNumber: 301,
+                                                                            lineNumber: 326,
                                                                             columnNumber: 33
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4262,14 +4272,14 @@ function MisViaticosPage() {
                                                                                             className: "h-4 w-4 mr-2 text-blue-500"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                            lineNumber: 315,
+                                                                                            lineNumber: 340,
                                                                                             columnNumber: 37
                                                                                         }, this),
                                                                                         "Editar"
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                    lineNumber: 314,
+                                                                                    lineNumber: 339,
                                                                                     columnNumber: 35
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -4281,48 +4291,48 @@ function MisViaticosPage() {
                                                                                             className: "h-4 w-4 mr-2 text-red-500"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                            lineNumber: 319,
+                                                                                            lineNumber: 344,
                                                                                             columnNumber: 37
                                                                                         }, this),
                                                                                         "Eliminar"
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                                    lineNumber: 318,
+                                                                                    lineNumber: 343,
                                                                                     columnNumber: 35
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                            lineNumber: 313,
+                                                                            lineNumber: 338,
                                                                             columnNumber: 33
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                    lineNumber: 300,
+                                                                    lineNumber: 325,
                                                                     columnNumber: 31
                                                                 }, this)
                                                             }, viatico.id, false, {
                                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                                lineNumber: 299,
+                                                                lineNumber: 324,
                                                                 columnNumber: 29
                                                             }, this))
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                        lineNumber: 297,
+                                                        lineNumber: 322,
                                                         columnNumber: 25
                                                     }, this)
                                                 ]
                                             }, month, true, {
                                                 fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                                lineNumber: 292,
+                                                lineNumber: 317,
                                                 columnNumber: 23
                                             }, this);
                                         })
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                                        lineNumber: 288,
+                                        lineNumber: 313,
                                         columnNumber: 17
                                     }, this)
                                 ]
@@ -4330,12 +4340,12 @@ function MisViaticosPage() {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                        lineNumber: 142,
+                        lineNumber: 167,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                    lineNumber: 141,
+                    lineNumber: 166,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$EditViaticoDialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["EditViaticoDialog"], {
@@ -4345,18 +4355,18 @@ function MisViaticosPage() {
                     onSuccess: loadViaticos
                 }, void 0, false, {
                     fileName: "[project]/src/app/mis-viaticos/page.tsx",
-                    lineNumber: 335,
+                    lineNumber: 360,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/app/mis-viaticos/page.tsx",
-            lineNumber: 140,
+            lineNumber: 165,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/app/mis-viaticos/page.tsx",
-        lineNumber: 139,
+        lineNumber: 164,
         columnNumber: 5
     }, this);
 }

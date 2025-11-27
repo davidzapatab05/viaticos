@@ -4,7 +4,7 @@ import { es } from 'date-fns/locale'
 import { useAuth } from '@/contexts/AuthContext'
 
 export function useViaticoDeadline() {
-    const { appUser } = useAuth()
+
     const [activeDate, setActiveDate] = useState<Date>(new Date())
     const [activeDateDisplay, setActiveDateDisplay] = useState<string>('')
     const [timeLeft, setTimeLeft] = useState<string>('')

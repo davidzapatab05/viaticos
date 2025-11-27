@@ -116,28 +116,6 @@ async function isUserActive(env, uid, email = '') {
     return res.estado === 'activo' || res.estado === null
   } catch (e) {
     console.warn('Error verificando estado:', e)
-    return true // Por defecto permitir acceso si hay error
-  }
-}
-
-async function setUserRole(env, uid, role, estado = 'activo', crearCarpeta = 1, email = null, displayName = null) {
-  try {
-    await env.DB.prepare(
-      `INSERT INTO user_roles (user_id, role, estado, crear_carpeta, email, displayName, updated_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(user_id) DO UPDATE SET
-         role = excluded.role,
-         estado = COALESCE(excluded.estado, estado),
-         crear_carpeta = COALESCE(excluded.crear_carpeta, crear_carpeta),
-         email = excluded.email,
-         displayName = excluded.displayName,
-         updated_at = ?`
-    ).bind(uid, role, estado, crearCarpeta, email, displayName, getPeruDateTime(), getPeruDateTime(), getPeruDateTime()).run()
-    return true
-  } catch (e) {
-    console.error('Error estableciendo rol:', e)
-    console.error('Detalles:', { uid, role, estado, crearCarpeta, email, displayName })
-    return false
   }
 }
 
@@ -712,7 +690,7 @@ export default {
 
         try {
           await ensureUserRolesTable(env)
-          const existingUser = await env.DB.prepare('SELECT estado FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+          const existingUser = await env.DB.prepare('SELECT estado, crear_carpeta FROM user_roles WHERE user_id = ?').bind(user.uid).first()
           const role = await getUserRole(env, user.uid, user.email)
 
           // CORREGIDO: Log para debugging
@@ -728,7 +706,7 @@ export default {
             user.uid,
             role,
             existingUser ? existingUser.estado : 'activo',
-            1,
+            existingUser ? existingUser.crear_carpeta : 1, // CORREGIDO: Respetar flag existente
             user.email || null,
             user.displayName || null
           )
@@ -835,24 +813,36 @@ export default {
         }
       }
 
-      // DELETE /api/users/:uid (eliminar usuario y su carpeta - solo super_admin)
+      // DELETE /api/users/:uid (eliminar usuario y su carpeta - admin o super_admin)
       if (path.startsWith('/api/users/') && request.method === 'DELETE' && !path.includes('/status') && !path.includes('/create-folder')) {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        if (!(await isSuperAdmin(env, user.uid, user.email))) {
-          return new Response(JSON.stringify({ error: 'Solo super_admin puede eliminar usuarios' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        const currentUserRole = await getUserRole(env, user.uid, user.email)
+        const isSA = currentUserRole === 'super_admin'
+        const isAdminUser = currentUserRole === 'admin'
+
+        if (!isSA && !isAdminUser) {
+          return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
 
         const targetUid = path.split('/').pop()
 
-        // No permitir eliminar super_admin
+        // Obtener datos del usuario objetivo
         const targetUser = await env.DB.prepare('SELECT role, email, displayName FROM user_roles WHERE user_id = ?').bind(targetUid).first()
-        if (targetUser?.role === 'super_admin') {
-          return new Response(JSON.stringify({ error: 'No se puede eliminar un super_admin' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
 
         if (!targetUser) {
           return new Response(JSON.stringify({ error: 'Usuario no encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
+
+        // Reglas de jerarquía:
+        // 1. Nadie puede eliminar a un super_admin
+        if (targetUser.role === 'super_admin') {
+          return new Response(JSON.stringify({ error: 'No se puede eliminar un super_admin' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        // 2. Un admin puede eliminar a otro admin o usuario (pero no super_admin)
+        // Ya validamos arriba que no sea super_admin.
+        // Si soy admin, puedo eliminar a cualquiera que no sea super_admin (incluyendo otros admins)
 
         try {
           // Eliminar carpeta de OneDrive usando el UID
@@ -905,58 +895,67 @@ export default {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
         try {
-          // CORREGIDO: Asegurar que el usuario estÃ© registrado con email y displayName
           await ensureUserRolesTable(env)
-          const role = await getUserRole(env, user.uid, user.email)
 
-          // Registrar o actualizar usuario con email y displayName
-          await setUserRole(env, user.uid, role, 'activo', 1, user.email, user.displayName)
+          // 1. Obtener datos actuales del usuario de la BD
+          let userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
 
-          // CORREGIDO: Forzar actualizaciÃ³n de email y displayName SIEMPRE
-          if (user.email !== undefined || user.displayName !== undefined) {
+          // 2. Determinar valores a usar (respetando lo existente)
+          const currentRole = userData?.role || await getUserRole(env, user.uid, user.email)
+          const currentEstado = userData?.estado || 'activo'
+          const currentCrearCarpeta = userData ? userData.crear_carpeta : 1 // Por defecto 1 si es nuevo
+
+          // 3. Actualizar o Insertar usuario (manteniendo flags críticos)
+          // Siempre actualizamos email y displayName por si cambiaron en Firebase
+          if (userData) {
             await env.DB.prepare(
               `UPDATE user_roles SET 
                 email = ?,
                 displayName = ?,
                 updated_at = ?
                WHERE user_id = ?`
-            ).bind(user.email || null, user.displayName || null, getPeruDateTime(), user.uid).run()
+            ).bind(user.email || userData.email, user.displayName || userData.displayName, getPeruDateTime(), user.uid).run()
+          } else {
+            // Usuario nuevo: insertar con valores por defecto
+            await setUserRole(env, user.uid, currentRole, currentEstado, currentCrearCarpeta, user.email, user.displayName)
           }
 
-          const accessToken = await getOneDriveAccessToken(env)
+          // 4. Verificar si debemos crear carpeta en OneDrive
+          // Solo si crear_carpeta es 1 (true) Y el usuario está activo
+          if (currentCrearCarpeta && currentEstado === 'activo') {
+            const accessToken = await getOneDriveAccessToken(env)
+            const result = await ensureUserOneDriveFolder(
+              accessToken,
+              user.displayName || userData?.displayName,
+              user.email || userData?.email,
+              user.uid
+            )
 
-          // Asegurar que la carpeta del usuario existe, crearla si no existe
-          const result = await ensureUserOneDriveFolder(
-            accessToken,
-            user.displayName,
-            user.email,
-            user.uid
-          )
+            return new Response(JSON.stringify({
+              success: true,
+              folderId: result.folderId || 'creada',
+              folderPath: result.folderPath,
+              folderName: result.folderName,
+              message: result.message || (result.folderId ? 'Carpeta verificada' : 'Carpeta creada exitosamente')
+            }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          } else {
+            // Si no tiene permiso de carpeta, retornamos éxito pero sin datos de carpeta
+            // Esto hace el login instantáneo para usuarios sin carpeta
+            return new Response(JSON.stringify({
+              success: true,
+              message: 'Acceso verificado (Sin carpeta OneDrive asignada)',
+              folderId: null,
+              folderPath: null
+            }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
 
-          return new Response(JSON.stringify({
-            success: true,
-            folderId: result.folderId || 'creada',
-            folderPath: result.folderPath,
-            folderName: result.folderName,
-            message: result.message || (result.folderId ? 'Carpeta verificada' : 'Carpeta creada exitosamente')
-          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         } catch (error) {
           console.error('Error en ensure-me:', error)
-          // NO retornar error - retornar Ã©xito de todas formas
-          // La carpeta se crearÃ¡ automÃ¡ticamente al subir el primer archivo
-          const uidShort = user.uid.substring(0, 8)
-          const userFolderName = (user.displayName || user.email?.split('@')[0] || 'usuario')
-            .replace(/[^a-zA-Z0-9\s._-]/g, '')
-            .trim()
-            .replace(/\s+/g, '_')
-            .substring(0, 40) || 'usuario'
-
+          // Fallback seguro: retornar éxito para no bloquear el login, pero loguear el error
           return new Response(JSON.stringify({
             success: true,
-            folderId: null,
-            folderPath: `viaticos/${userFolderName}_${uidShort}`,
-            folderName: `${userFolderName}_${uidShort}`,
-            message: 'Carpeta se crearÃ¡ automÃ¡ticamente al subir el primer archivo'
+            message: 'Acceso verificado (Error en verificación de carpeta)',
+            error: error.message
           }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
       }
@@ -1002,13 +1001,16 @@ export default {
         }
       }
 
-      // PUT /api/users/:id/role (actualizar rol de usuario - solo super_admin)
+      // PUT /api/users/:id/role (actualizar rol de usuario - admin o super_admin)
       if (path.match(/^\/api\/users\/[^\/]+\/role$/) && request.method === 'PUT') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-        // Verificar si es super_admin
-        if (!(await isSuperAdmin(env, user.uid, user.email))) {
-          return new Response(JSON.stringify({ error: 'Acceso denegado: Solo super_admin puede cambiar roles' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        const currentUserRole = await getUserRole(env, user.uid, user.email)
+        const isSA = currentUserRole === 'super_admin'
+        const isAdminUser = currentUserRole === 'admin'
+
+        if (!isSA && !isAdminUser) {
+          return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
 
         const targetUid = path.split('/')[3] // /api/users/:id/role
@@ -1019,6 +1021,19 @@ export default {
 
           if (!role || !['usuario', 'admin', 'super_admin'].includes(role)) {
             return new Response(JSON.stringify({ error: 'Rol inválido' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          // Reglas de jerarquía para cambio de rol:
+          // 1. Solo Super Admin puede asignar/quitar rol de Super Admin
+          if (role === 'super_admin' && !isSA) {
+            return new Response(JSON.stringify({ error: 'Solo Super Admin puede asignar este rol' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          // 2. Verificar rol actual del usuario objetivo
+          const targetUser = await env.DB.prepare('SELECT role FROM user_roles WHERE user_id = ?').bind(targetUid).first()
+
+          if (targetUser?.role === 'super_admin') {
+            return new Response(JSON.stringify({ error: 'No se puede modificar el rol de un Super Admin' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
           }
 
           // Actualizar rol en la BD
@@ -1071,7 +1086,8 @@ export default {
               role: userData?.role || 'usuario',
               estado: userData?.estado || 'activo',
               crear_carpeta: userData?.crear_carpeta !== 0,
-              last_closed_date: userData?.last_closed_date // Retornar fecha de cierre
+              last_closed_date: userData?.last_closed_date, // Retornar fecha de cierre
+              exists: !!userData // Flag para saber si existe en BD
             }
           }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         } catch (error) {

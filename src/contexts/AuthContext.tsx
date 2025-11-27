@@ -13,8 +13,8 @@ import {
   browserLocalPersistence,
   User,
 } from 'firebase/auth'
-import { auth, initializeFirebase } from '../config/firebase'
-import { createUserFolder, getMyUser } from '../services/api'
+import { initializeFirebase } from '../config/firebase'
+import { ensureMyOneDriveFolder, getMyUser } from '../services/api'
 
 interface AppUser {
   uid: string
@@ -24,6 +24,7 @@ interface AppUser {
   estado: string
   crear_carpeta: boolean
   last_closed_date?: string
+  exists?: boolean
 }
 
 interface AuthContextType {
@@ -54,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [appUser, setAppUser] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const [verifyingFolder, setVerifyingFolder] = useState(false)
 
   useEffect(() => {
     let unsub = () => { }
@@ -86,10 +88,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (isNewUser) {
             // Usuario es nuevo, registrarlo en la base de datos
             try {
-              const { createUserFolder } = await import('@/services/api')
-              await createUserFolder()
+              setVerifyingFolder(true)
+              const { ensureMyOneDriveFolder } = await import('@/services/api')
+              await ensureMyOneDriveFolder()
             } catch (e) {
               console.warn('No se pudo crear la carpeta para el nuevo usuario:', (e as Error).message || e)
+            } finally {
+              setVerifyingFolder(false)
             }
           }
         }
@@ -106,9 +111,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           user.getIdToken().then(token => {
             document.cookie = `firebase-token=${token}; path=/; max-age=604800; SameSite=Lax; Secure`
             return getMyUser()
-          }).then(myUser => {
-            if (myUser) {
+          }).then(async myUser => {
+            if (myUser && myUser.exists) {
+              if (myUser.estado === 'inactivo') {
+                await currentAuth.signOut()
+                setUser(null)
+                setAppUser(null)
+                // Usar import dinámico para Swal para evitar problemas de SSR/dependencias circulares si las hubiera
+                const Swal = (await import('sweetalert2')).default
+                await Swal.fire({
+                  title: 'Cuenta Inactiva',
+                  text: 'Tu cuenta ha sido desactivada por un administrador. Contacta a soporte para más información.',
+                  icon: 'error',
+                  confirmButtonColor: '#ea580c'
+                })
+                return
+              }
               setAppUser(myUser)
+            } else {
+              // Si el usuario no existe en la BD (pero sí en Firebase), registrarlo
+              console.log('Usuario no encontrado en BD, registrando...')
+              try {
+                setVerifyingFolder(true)
+                const { ensureMyOneDriveFolder } = await import('@/services/api')
+                await ensureMyOneDriveFolder()
+                // Reintentar obtener usuario
+                const newUser = await getMyUser()
+                if (newUser) setAppUser(newUser)
+              } catch (e) {
+                console.warn('Error auto-registrando usuario:', e)
+              } finally {
+                setVerifyingFolder(false)
+              }
             }
           }).catch(e => {
             console.warn('Error fetching user data:', e)
@@ -179,10 +213,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const isNewUser = getAdditionalUserInfo(result)?.isNewUser
       if (isNewUser) {
         try {
-          const { createUserFolder } = await import('@/services/api')
-          await createUserFolder()
+          setVerifyingFolder(true)
+          const { ensureMyOneDriveFolder } = await import('@/services/api')
+          await ensureMyOneDriveFolder()
         } catch (e) {
           console.warn('No se pudo crear la carpeta para el nuevo usuario:', (e as Error).message || e)
+        } finally {
+          setVerifyingFolder(false)
         }
       }
 
@@ -206,9 +243,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userCredential = await createUserWithEmailAndPassword(currentAuth, email, password)
       try {
-        await createUserFolder()
+        setVerifyingFolder(true)
+        await ensureMyOneDriveFolder()
       } catch (e) {
         console.warn('No se pudo crear la carpeta en OneDrive al registrar usuario:', (e as Error).message || e)
+      } finally {
+        setVerifyingFolder(false)
       }
       return { success: true, user: userCredential.user }
     } catch (error) {
@@ -245,6 +285,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       {children}
+      {/* Global Loading Overlay for Folder Verification */}
+      {verifyingFolder && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[9999] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4 p-6 bg-card rounded-lg shadow-lg border">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <div className="text-center">
+              <h3 className="text-lg font-semibold">Verificando carpeta...</h3>
+              <p className="text-sm text-muted-foreground">Configurando tu espacio en OneDrive</p>
+            </div>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   )
 }

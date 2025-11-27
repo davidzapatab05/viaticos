@@ -7,11 +7,12 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { Badge } from '@/components/ui/badge'
 import { format, startOfDay, endOfDay, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Trash2, FileSpreadsheet, FileText, ArrowLeft, ChevronRight, User, List, Pencil } from 'lucide-react'
+import { Trash2, FileSpreadsheet, FileText, ArrowLeft, ChevronRight, User, List, Pencil, Search, X } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import { EditViaticoDialog } from '@/components/EditViaticoDialog'
+import { Input } from '@/components/ui/input'
 
 declare module 'jspdf' {
     interface jsPDF {
@@ -52,6 +53,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
     const [startDate, setStartDate] = useState<Date | undefined>()
     const [endDate, setEndDate] = useState<Date | undefined>()
+    const [searchQuery, setSearchQuery] = useState('')
     const [editingViatico, setEditingViatico] = useState<Viatico | null>(null)
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
@@ -85,11 +87,12 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
             .sort((a, b) => b.total - a.total)
     }, [viaticos, users])
 
-    // Filter viaticos by date range for "Por Registro" tab
+    // Filter viaticos by date range and search query for "Por Registro" tab
     const filteredViaticos = useMemo(() => {
         return viaticos.filter(v => {
             const vDate = parseISO(v.fecha)
 
+            // Date filter
             if (startDate) {
                 const start = startOfDay(startDate)
                 if (vDate < start) return false
@@ -99,9 +102,25 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                 if (vDate > end) return false
             }
 
+            // Search filter
+            if (searchQuery.trim()) {
+                const query = searchQuery.toLowerCase()
+                const searchableFields = [
+                    v.fecha,
+                    v.para || '',
+                    v.tipo_comprobante || '',
+                    v.numero_documento || '',
+                    v.numero_comprobante || '',
+                    v.descripcion || '',
+                    getUserName(v.usuario_id)
+                ].join(' ').toLowerCase()
+
+                if (!searchableFields.includes(query)) return false
+            }
+
             return true
         }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-    }, [viaticos, startDate, endDate])
+    }, [viaticos, startDate, endDate, searchQuery, users])
 
     // Get selected user data
     const selectedUserData = useMemo(() => {
@@ -458,23 +477,48 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                     </div>
                                 </div>
 
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Desde</label>
-                                        <DatePicker
-                                            date={startDate}
-                                            onSelect={setStartDate}
-                                            placeholder="Selecciona fecha inicio"
+                                {/* Search and Filters */}
+                                <div className="space-y-4">
+                                    {/* Search Input */}
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Buscar por fecha, usuario, descripción, tipo comprobante..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="pl-9 pr-9"
                                         />
+                                        {searchQuery && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                                                onClick={() => setSearchQuery('')}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        )}
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Hasta</label>
-                                        <DatePicker
-                                            date={endDate}
-                                            onSelect={setEndDate}
-                                            placeholder="Selecciona fecha fin"
-                                            disabled={(date) => startDate ? date < startDate : false}
-                                        />
+
+                                    {/* Date Filters */}
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Desde</label>
+                                            <DatePicker
+                                                date={startDate}
+                                                onSelect={setStartDate}
+                                                placeholder="Selecciona fecha inicio"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Hasta</label>
+                                            <DatePicker
+                                                date={endDate}
+                                                onSelect={setEndDate}
+                                                placeholder="Selecciona fecha fin"
+                                                disabled={(date) => startDate ? date < startDate : false}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

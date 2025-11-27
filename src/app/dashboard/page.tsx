@@ -1,8 +1,6 @@
 'use client'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { useState, useEffect } from 'react'
-import { getCurrentUser } from '@/services/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Camera, List, Settings, Info, TrendingUp, ArrowRight } from 'lucide-react'

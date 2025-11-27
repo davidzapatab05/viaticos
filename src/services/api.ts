@@ -1,4 +1,4 @@
-import { auth, initializeFirebase } from '../config/firebase'
+import { initializeFirebase } from '../config/firebase'
 import { toast } from '@/lib/use-toast'
 
 // API URL constante para producción
@@ -27,50 +27,70 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
   try {
     const token = await getAuthToken()
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...options.headers,
-      },
-    })
+    let lastError;
+    for (let i = 0; i < 3; i++) {
+      try {
+        const response = await fetch(`${API_URL}${endpoint}`, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            ...options.headers,
+          },
+        })
 
-    // Leer la respuesta primero
-    const data = await response.json()
+        // Si la respuesta es exitosa, salir del bucle
+        // Nota: fetch no lanza error en 4xx/5xx, solo en error de red
+        // Así que si llegamos aquí, la conexión fue exitosa
 
-    // Si la respuesta no es OK, verificar si tiene success: true (puede ser lista vacía)
-    if (!response.ok) {
-      // Si tiene success: true, retornarla (puede tener lista vacía por error de BD)
-      if (data.success === true) {
-        return data
-      }
+        // Leer la respuesta primero
+        const data = await response.json()
 
-      // Mejorar mensajes de error
-      if (response.status === 401) {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login'
+        // Si la respuesta no es OK, verificar si tiene success: true (puede ser lista vacía)
+        if (!response.ok) {
+          // Si tiene success: true, retornarla (puede tener lista vacía por error de BD)
+          if (data.success === true) {
+            return data
+          }
+
+          // Mejorar mensajes de error
+          if (response.status === 401) {
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login'
+            }
+            throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.')
+          }
+
+          throw new Error(data.message || data.error || 'Error en la solicitud')
         }
-        throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.')
+
+        if (data.success === false && data.error) {
+          throw new Error(data.error || data.message || 'Error en la solicitud')
+        }
+
+        const method = options.method?.toUpperCase()
+        if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+          toast({
+            title: "Éxito",
+            description: "Datos actualizados correctamente.",
+            variant: "success",
+          })
+        }
+
+        return data
+
+      } catch (error) {
+        console.warn(`Intento ${i + 1} fallido para ${endpoint}:`, error)
+        lastError = error
+        // Si es el último intento, no esperar
+        if (i === 2) break
+        // Esperar un poco antes de reintentar (backoff exponencial: 500ms, 1000ms)
+        await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)))
       }
-
-      throw new Error(data.message || data.error || 'Error en la solicitud')
     }
 
-    if (data.success === false && data.error) {
-      throw new Error(data.error || data.message || 'Error en la solicitud')
-    }
-
-    const method = options.method?.toUpperCase()
-    if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
-      toast({
-        title: "Éxito",
-        description: "Datos actualizados correctamente.",
-        variant: "success",
-      })
-    }
-
-    return data
+    console.error('Network error in apiRequest after 3 attempts:', lastError, 'URL:', `${API_URL}${endpoint}`)
+    throw new Error(`Error de conexión: ${(lastError as Error).message || 'No se pudo conectar con el servidor'}`)
   } catch (error) {
     // Si el error es de autenticación, propagarlo con mensaje claro y redirigir
     if (error instanceof Error && (error.message.includes('Usuario no autenticado') || error.message.includes('Sesión expirada'))) {
@@ -108,9 +128,7 @@ export async function uploadViatico(viaticoData: FormData) {
   return response.json()
 }
 
-export async function getTodaySummary() {
-  return apiRequest('/api/viaticos/today-summary', { method: 'GET' })
-}
+
 
 export async function getMisViaticos() {
   return apiRequest('/api/viaticos/mis-viaticos')
@@ -120,17 +138,11 @@ export async function getAllViaticos() {
   return apiRequest('/api/viaticos/all')
 }
 
-export async function getViaticosByUser(userId: string) {
-  return apiRequest(`/api/viaticos/user/${userId}`)
-}
 
-export async function getViaticosByDate(fecha: string) {
-  return apiRequest(`/api/viaticos/fecha/${fecha}`)
-}
 
-export async function createUserFolder() {
-  return apiRequest('/api/users', { method: 'POST', body: JSON.stringify({}) })
-}
+
+
+
 
 export async function getCurrentUser() {
   return apiRequest('/api/users/me', { method: 'GET' })
@@ -160,35 +172,13 @@ export async function setUserRole(uid: string, role: string) {
   })
 }
 
-export async function getOneDriveStructure() {
-  return apiRequest('/api/onedrive/structure', { method: 'GET' })
-}
 
-export async function verifyOneDriveStructure() {
-  return apiRequest('/api/onedrive/verify-structure', { method: 'GET' })
-}
 
-export async function ensureOneDriveFolders() {
-  return apiRequest('/api/onedrive/ensure', { method: 'POST' })
-}
 
-export async function ensureOneDriveFolderForUser(uid: string) {
-  const token = await getAuthToken()
-  const response = await fetch(`${API_URL}/api/onedrive/ensure-user/${uid}`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` },
-  })
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Error asegurando carpeta' }))
-    throw new Error(error.message || 'Error asegurando carpeta')
-  }
-  toast({
-    title: "Éxito",
-    description: "Carpeta de usuario asegurada correctamente.",
-    variant: "success",
-  })
-  return response.json()
-}
+
+
+
+
 
 export async function ensureMyOneDriveFolder() {
   const token = await getAuthToken()
@@ -200,37 +190,11 @@ export async function ensureMyOneDriveFolder() {
     const error = await response.json().catch(() => ({ message: 'Error asegurando carpeta' }))
     throw new Error(error.message || 'Error asegurando carpeta')
   }
-  toast({
-    title: "Éxito",
-    description: "Tu carpeta de OneDrive ha sido asegurada.",
-    variant: "success",
-  })
+  // Toast removed to avoid UI clutter during auto-verification
   return response.json()
 }
 
-export async function ejecutarMigracion() {
-  const token = await getAuthToken()
-  const response = await fetch(`${API_URL}/api/migrate`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  })
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Error ejecutando migración' }))
-    throw new Error(error.message || 'Error ejecutando migración')
-  }
-
-  toast({
-    title: "Éxito",
-    description: "Migración ejecutada correctamente.",
-    variant: "success",
-  })
-
-  return response.json()
-}
 
 export async function cleanupAnonymousUsers() {
   const token = await getAuthToken()
@@ -277,12 +241,7 @@ export async function closeDay(date: string) {
   })
 }
 
-export async function reopenDay() {
-  return apiRequest('/api/users/reopen-day', {
-    method: 'POST',
-    body: JSON.stringify({}),
-  })
-}
+
 
 export async function deleteUser(uid: string) {
   const token = await getAuthToken()

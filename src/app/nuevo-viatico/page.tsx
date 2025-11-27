@@ -34,17 +34,13 @@ export default function NuevoViaticoPage() {
 
   useEffect(() => {
     if (activeDateObj) {
-      const newDateStr = activeDateObj.toISOString().split('T')[0]
+      // Usar format de date-fns para mantener la fecha local (Perú) y evitar conversión a UTC
+      const newDateStr = format(activeDateObj, 'yyyy-MM-dd')
 
-      // Si es usuario normal, siempre sincronizar
-      if (appUser?.role !== 'admin' && appUser?.role !== 'super_admin') {
-        setActiveDate(newDateStr)
-      } else {
-        // Si es admin, solo inicializar si está vacío
-        setActiveDate(prev => prev || newDateStr)
-      }
+      // Siempre sincronizar la fecha activa calculada por el hook
+      setActiveDate(newDateStr)
     }
-  }, [activeDateObj, appUser])
+  }, [activeDateObj])
 
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<{ url: string; isPdf: boolean; name: string }[]>([])
@@ -257,10 +253,9 @@ export default function NuevoViaticoPage() {
 
       if (numeroComprobante) formData.append('numero_comprobante', numeroComprobante)
 
-      // Si es admin, usar la fecha seleccionada manualmente
-      if (appUser?.role === 'admin' || appUser?.role === 'super_admin') {
-        formData.append('fecha_manual', activeDate)
-      }
+      // Enviar SIEMPRE la fecha activa calculada (regla de las 10 AM)
+      // Esto asegura que el backend reciba la fecha correcta según la lógica del cliente (Perú)
+      formData.append('fecha_manual', activeDate)
 
       formData.append('createTxt', '1')
 
@@ -352,10 +347,10 @@ export default function NuevoViaticoPage() {
             </div>
 
             {/* Panel de Fecha Activa y Cierre */}
-            <Card className={`border-2 ${isGracePeriod ? 'border-orange-500 bg-orange-50' : 'border-primary/20 bg-primary/5'}`}>
+            <Card className={`border-2 ${isGracePeriod ? 'border-orange-500 bg-orange-950/40' : 'border-primary/20 bg-primary/5'}`}>
               <CardContent className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-full ${isGracePeriod ? 'bg-orange-100' : 'bg-primary/10'}`}>
+                  <div className={`p-3 rounded-full ${isGracePeriod ? 'bg-orange-900/40' : 'bg-primary/10'}`}>
                     <CalendarDays className={`h-8 w-8 ${isGracePeriod ? 'text-orange-600' : 'text-primary'}`} />
                   </div>
                   <div>
@@ -373,8 +368,8 @@ export default function NuevoViaticoPage() {
                         />
                       </div>
                     ) : (
-                      <div className="flex items-center h-10 px-3 py-2 border rounded-md bg-background">
-                        <span className={`text-sm ${isGracePeriod ? 'text-orange-700' : 'text-primary'}`}>
+                      <div className={`flex items-center h-10 px-3 py-2 border rounded-md ${isGracePeriod ? 'bg-orange-600 border-orange-600' : 'bg-background'}`}>
+                        <span className={`text-sm ${isGracePeriod ? 'text-white' : 'text-primary'}`}>
                           {activeDateObj ? format(activeDateObj, "EEEE d 'de' MMMM 'de' yyyy", { locale: es }) : activeDateDisplay}
                         </span>
                       </div>

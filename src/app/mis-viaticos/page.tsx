@@ -126,7 +126,7 @@ export default function MisViaticosPage() {
   const totalCount = viaticos.length
 
   const groupedByMonth = viaticos.reduce((acc, v) => {
-    const monthKey = format(new Date(v.fecha), 'MMMM yyyy', { locale: es })
+    const monthKey = format(new Date(v.fecha + 'T12:00:00'), 'MMMM yyyy', { locale: es })
     if (!acc[monthKey]) {
       acc[monthKey] = []
     }
@@ -271,7 +271,7 @@ export default function MisViaticosPage() {
                           {viaticos.map((viatico) => (
                             <TableRow key={viatico.id}>
                               <TableCell className="whitespace-nowrap">
-                                {format(new Date(viatico.fecha), 'dd/MM/yyyy')}
+                                {format(new Date(viatico.fecha + 'T12:00:00'), 'dd/MM/yyyy')}
                               </TableCell>
                               <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.para || '-'}</Badge></TableCell>
                               <TableCell className="whitespace-nowrap">{viatico.que_sustenta || 'VIATICO'}</TableCell>
@@ -328,7 +328,7 @@ export default function MisViaticosPage() {
                                     <p className="font-medium line-clamp-2">{viatico.descripcion || 'Sin descripción'}</p>
                                     <div className="flex items-center text-xs text-muted-foreground">
                                       <Badge variant="outline" className="mr-2 text-[10px] px-1 py-0 h-5">{viatico.tipo || 'otro'}</Badge>
-                                      {format(new Date(viatico.fecha), 'dd MMM, HH:mm', { locale: es })}
+                                      {format(new Date(viatico.fecha + 'T12:00:00'), 'dd MMM', { locale: es })}
                                     </div>
                                   </div>
                                   <div className="text-lg font-bold whitespace-nowrap">
