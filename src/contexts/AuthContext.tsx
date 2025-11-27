@@ -15,7 +15,7 @@ import {
 } from 'firebase/auth'
 import { initializeFirebase } from '../config/firebase'
 import { getMyUser } from '../services/api'
-import { unsubscribeFromPush } from '@/utils/push'
+
 
 interface AppUser {
   uid: string
@@ -115,31 +115,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
               setAppUser(myUser)
 
-              // Auto-subscribe to push notifications on login
-              try {
-                const { subscribeToPush } = await import('@/utils/push')
-                await subscribeToPush()
-                console.log('Push notifications auto-subscribed')
-              } catch (e) {
-                console.warn('Could not auto-subscribe to push notifications:', e)
-              }
+
             } else {
               // Si el usuario no existe en la BD (pero sí en Firebase), registrarlo
-              console.log('Usuario no encontrado en BD, registrando...')
+              // Si el usuario no existe en la BD (pero sí en Firebase), registrarlo
               try {
                 // Reintentar obtener usuario (se creará automáticamente en el backend)
                 const newUser = await getMyUser()
                 if (newUser) {
                   setAppUser(newUser)
 
-                  // Auto-subscribe to push notifications for new users
-                  try {
-                    const { subscribeToPush } = await import('@/utils/push')
-                    await subscribeToPush()
-                    console.log('Push notifications auto-subscribed for new user')
-                  } catch (e) {
-                    console.warn('Could not auto-subscribe to push notifications:', e)
-                  }
+
                 }
               } catch (e) {
                 console.warn('Error auto-registrando usuario:', e)
@@ -215,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true, user: result.user }
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
-        console.log('Usuario cerró el popup de autenticación')
+
         return { success: false, error: 'Inicio de sesión cancelado por el usuario' }
       }
       console.error('Error en signInWithMicrosoft:', error)
@@ -247,11 +233,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Intentar desuscribir push notifications antes de cerrar sesión
       // No bloqueamos el logout si falla
-      try {
-        await unsubscribeFromPush()
-      } catch (e) {
-        console.warn('Error unsubscribing push:', e)
-      }
+
 
       await firebaseSignOut(currentAuth)
       // Eliminar cookie al cerrar sesión

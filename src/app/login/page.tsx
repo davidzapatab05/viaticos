@@ -25,12 +25,7 @@ export default function LoginPage() {
         await new Promise(resolve => setTimeout(resolve, 500))
 
         try {
-          // Auto-suscribir a notificaciones push (silenciosamente)
-          const { subscribeToPush } = await import('@/utils/push')
-          await subscribeToPush().catch(err => {
-            // Ignorar errores de suscripción para no bloquear el flujo
-            console.warn('No se pudo suscribir a notificaciones:', err)
-          })
+
 
           const userData = await getCurrentUser()
           // Siempre redirigir al dashboard, los admins pueden ir al panel desde el menú

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { getCurrentUser } from '@/services/api'
 import { Loader2 } from 'lucide-react'
 
 interface RoleGuardProps {
@@ -12,15 +11,14 @@ interface RoleGuardProps {
   redirectTo?: string
 }
 
-export default function RoleGuard({ 
-  children, 
+export default function RoleGuard({
+  children,
   allowedRoles = ['admin', 'super_admin'],
-  redirectTo = '/dashboard' 
+  redirectTo = '/dashboard'
 }: RoleGuardProps) {
-  const { user, loading: authLoading } = useAuth()
+  const { user, appUser, loading: authLoading } = useAuth()
   const router = useRouter()
-  const [userRole, setUserRole] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [authorized, setAuthorized] = useState(false)
 
   useEffect(() => {
     if (!authLoading) {
@@ -29,28 +27,18 @@ export default function RoleGuard({
         return
       }
 
-      checkRole()
-    }
-  }, [user, authLoading, router])
-
-  async function checkRole() {
-    try {
-      const userData = await getCurrentUser()
-      const role = userData?.user?.role
-      setUserRole(role)
-
-      if (!allowedRoles.includes(role)) {
-        router.push(redirectTo)
-        return
+      // Si ya tenemos appUser, verificamos el rol directamente
+      if (appUser) {
+        if (allowedRoles.includes(appUser.role)) {
+          setAuthorized(true)
+        } else {
+          router.push(redirectTo)
+        }
       }
-    } catch (e) {
-      router.push(redirectTo)
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [user, appUser, authLoading, router, allowedRoles, redirectTo])
 
-  if (authLoading || loading) {
+  if (authLoading || (!authorized && user)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -58,7 +46,7 @@ export default function RoleGuard({
     )
   }
 
-  if (!user || !userRole || !allowedRoles.includes(userRole)) {
+  if (!authorized) {
     return null
   }
 

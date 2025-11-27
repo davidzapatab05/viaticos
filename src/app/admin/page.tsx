@@ -13,8 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Switch } from '@/components/ui/switch'
-import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, Trash2, Ban, CheckCircle2, Bell } from 'lucide-react'
+import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, Trash2, Ban, CheckCircle2 } from 'lucide-react'
 import Layout from '@/components/Layout'
 import RoleGuard from '@/components/RoleGuard'
 import ReportsView from '@/components/admin/ReportsView'
@@ -48,10 +47,9 @@ export default function AdminPage() {
   const [error, setError] = useState('')
   const [updating, setUpdating] = useState<string | null>(null)
   const { setLoading: setGlobalLoading, clearLoading } = useLoading()
-  const [oneDriveUrl, setOneDriveUrl] = useState<string | null>(null)
   const [userCount, setUserCount] = useState(0)
   const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
-  const isSuperAdmin = user?.email?.toLowerCase() === superAdminEmail?.toLowerCase();
+  const isSuperAdmin = user?.email?.toLowerCase() === superAdminEmail?.toLowerCase() || userRole === 'super_admin';
 
   useEffect(() => {
     if (user) {
@@ -75,25 +73,32 @@ export default function AdminPage() {
 
       setViaticos(viaticosData?.viaticos || [])
 
-      // Usar count si está disponible, sino usar users.length
-      const userCount = usersData?.count !== undefined ? usersData.count : (usersData?.users || []).length
+      // Filtrar usuarios válidos (excluyendo anonymous y dev)
+      const validUsers = (usersData?.users || []).filter((u: User) =>
+        u.uid !== 'anonymous' && u.uid !== 'dev-user' && !u.uid.startsWith('dev-')
+      )
 
-      // Filtrar super_admin del array de usuarios para la tabla si es necesario
-      const filteredUsers = (usersData?.users || []).filter((u: User) => {
-        // Ocultar super_admin si el usuario actual no es super_admin
-        if (!isSuperAdmin && u.role === 'super_admin') return false;
+      // Calcular conteo excluyendo al super admin (por email o rol)
+      const countExcludingSuperAdmin = validUsers.filter((u: User) =>
+        u.email?.toLowerCase() !== superAdminEmail?.toLowerCase() && u.role !== 'super_admin'
+      ).length
 
-        // Mantener todos los usuarios en la tabla (menos anonymous/dev)
-        return u.uid !== 'anonymous' && u.uid !== 'dev-user' && !u.uid.startsWith('dev-')
+      // Filtrar para la tabla
+      const filteredUsers = validUsers.filter((u: User) => {
+        // Si es super admin, ve a todos
+        if (isSuperAdmin) return true;
+        // Si el rol detectado es super_admin, ve a todos
+        if (userData?.user?.role === 'super_admin') return true;
+
+        // Si no es super admin, ocultar al super admin (por rol O email)
+        if (u.role === 'super_admin') return false;
+        if (u.email?.toLowerCase() === superAdminEmail?.toLowerCase()) return false;
+
+        return true;
       })
 
       setUsers(filteredUsers)
-
-      // Actualizar el conteo de usuarios (sin super_admin)
-      setUserCount(userCount)
-      // Instead, we should move the state definition up or just use users.length if sufficient
-      // But looking at the code, setUserCount is defined at line 336. 
-      // We need to move the state definition up.
+      setUserCount(countExcludingSuperAdmin)
 
     } catch (e) {
       setError('Error al cargar datos: ' + (e as Error).message)
@@ -240,80 +245,26 @@ export default function AdminPage() {
     }
   }
 
-  async function handleBroadcast() {
-    const result = await Swal.fire({
-      title: 'Enviar Alerta de Cierre',
-      text: 'Se enviará una notificación a TODOS los usuarios suscritos avisando que queda 1 hora.',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, enviar',
-      cancelButtonText: 'Cancelar'
-    })
-
-    if (!result.isConfirmed) return
-
-    setGlobalLoading('Enviando notificaciones...')
-    try {
-      const data = await apiRequest('/api/push/broadcast', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: '⏳ Cierre de Viáticos en 1 hora',
-          body: 'Recuerda registrar tus viáticos pendientes de ayer antes de las 10:00 AM.',
-          url: '/nuevo-viatico'
-        })
-      })
-
-      clearLoading()
-      Swal.fire('Enviado', `Notificaciones enviadas: ${data.sent}`, 'success')
-    } catch (e) {
-      clearLoading()
-      Swal.fire('Error', (e as Error).message, 'error')
-    }
-  }
-
   async function handleTestNotification() {
-    const result = await Swal.fire({
-      title: 'Probar Notificación',
-      html: `
-        <div style="text-align:left; line-height:1.6;">
-          <p>Se enviará una notificación de prueba con el mensaje real que se envía a las 9:00 AM:</p>
-          <div style="background:#f5f5f5; padding:12px; border-radius:8px; margin:12px 0;">
-            <p style="margin:0; font-weight:bold;">⏳ Cierre de Viáticos en 1 hora</p>
-            <p style="margin:4px 0 0 0; font-size:14px;">Recuerda registrar tus viáticos pendientes de ayer antes de las 10:00 AM.</p>
-          </div>
-          <p style="margin-top:12px; color:#666;">Esto te permite verificar cómo se ve la notificación en tus dispositivos.</p>
-        </div>
-      `,
-      icon: 'info',
-      showCancelButton: true,
-      confirmButtonText: 'Enviar prueba',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#2a9d8f'
-    })
+    if (!("Notification" in window)) {
+      Swal.fire('Error', 'Este navegador no soporta notificaciones de escritorio', 'error')
+      return
+    }
 
-    if (!result.isConfirmed) return
-
-    setGlobalLoading('Enviando notificación de prueba...')
-    try {
-      const data = await apiRequest('/api/test-notification', {
-        method: 'POST'
+    const showNotification = () => {
+      new Notification("⏳ Cierre de Viáticos en 1 hora", {
+        body: "Recuerda registrar tus viáticos pendientes de ayer antes de las 10:00 AM.",
+        icon: "/icons/icon-192.png"
       })
+    }
 
-      clearLoading()
-      Swal.fire({
-        title: 'Prueba Enviada',
-        html: `
-          <p>Notificación de prueba enviada exitosamente</p>
-          <p style="color:#666; font-size:14px; margin-top:8px;">
-            Enviadas: <strong>${data.sent}</strong> de ${data.total} suscripciones
-          </p>
-        `,
-        icon: 'success',
-        confirmButtonColor: '#2a9d8f'
-      })
-    } catch (e) {
-      clearLoading()
-      Swal.fire('Error', (e as Error).message, 'error')
+    if (Notification.permission === "granted") {
+      showNotification()
+    } else if (Notification.permission !== "denied") {
+      const permission = await Notification.requestPermission()
+      if (permission === "granted") {
+        showNotification()
+      }
     }
   }
 
@@ -422,11 +373,8 @@ export default function AdminPage() {
                 <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <CardTitle>Gestión de Usuarios</CardTitle>
                   <div className="flex flex-wrap gap-2">
-                    {(isSuperAdmin || userRole === 'admin') && (
+                    {isSuperAdmin && (
                       <>
-                        <Button onClick={handleBroadcast} variant="outline" size="sm">
-                          Alerta 1h
-                        </Button>
                         <Button onClick={handleTestNotification} variant="outline" size="sm">
                           Probar Notificación
                         </Button>
@@ -490,7 +438,11 @@ export default function AdminPage() {
                                       </>
                                     )}
                                   </Badge>
-                                  {userRole === 'super_admin' && u.role !== 'super_admin' && (
+                                  {/* Mostrar selector de estado si:
+                                      1. Soy super_admin Y el usuario NO es super_admin
+                                      2. O soy admin Y el usuario NO es super_admin
+                                  */}
+                                  {(isSuperAdmin || userRole === 'admin') && u.role !== 'super_admin' && (
                                     <Select
                                       value={u.estado || 'activo'}
                                       onValueChange={(newEstado) => handleStatusChange(u.uid, newEstado as 'activo' | 'inactivo')}

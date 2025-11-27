@@ -1,15 +1,11 @@
 import { useViaticoDeadline } from '@/hooks/useViaticoDeadline'
-import { Clock, Bell, BellRing } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/contexts/AuthContext'
-import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 export function CountdownBanner() {
-    const { isGracePeriod, timeLeft, activeDateDisplay, isLastHour } = useViaticoDeadline()
+    const { timeLeft, activeDateDisplay, isLastHour } = useViaticoDeadline()
     const router = useRouter()
-    const { appUser } = useAuth()
-    const { isSubscribed, subscribe, loading: subLoading } = usePushNotifications()
 
     // Si no hay tiempo restante (cargando o error), no mostrar
     if (!timeLeft) return null

@@ -63,30 +63,6 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
         return u ? (u.displayName || u.email) : uid
     }
 
-    // Aggregate viaticos by user
-    const userTotals = useMemo(() => {
-        const totals: Record<string, { userName: string, total: number, count: number, viaticos: Viatico[] }> = {}
-
-        viaticos.forEach(v => {
-            if (!totals[v.usuario_id]) {
-                totals[v.usuario_id] = {
-                    userName: getUserName(v.usuario_id),
-                    total: 0,
-                    count: 0,
-                    viaticos: []
-                }
-            }
-            const monto = typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto
-            totals[v.usuario_id].total += isNaN(monto) ? 0 : monto
-            totals[v.usuario_id].count += 1
-            totals[v.usuario_id].viaticos.push(v)
-        })
-
-        return Object.entries(totals)
-            .map(([userId, data]) => ({ userId, ...data }))
-            .sort((a, b) => b.total - a.total)
-    }, [viaticos, users])
-
     // Filter viaticos by date range and search query for "Por Registro" tab
     const filteredViaticos = useMemo(() => {
         return viaticos.filter(v => {
@@ -122,24 +98,70 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
         }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
     }, [viaticos, startDate, endDate, searchQuery, users])
 
+    // Aggregate viaticos by user (using filtered data to respect date range and search)
+    const userTotals = useMemo(() => {
+        const totals: Record<string, { userName: string, total: number, count: number, viaticos: Viatico[] }> = {}
+
+        // Use filteredViaticos instead of viaticos to respect the filters
+        filteredViaticos.forEach(v => {
+            if (!totals[v.usuario_id]) {
+                totals[v.usuario_id] = {
+                    userName: getUserName(v.usuario_id),
+                    total: 0,
+                    count: 0,
+                    viaticos: []
+                }
+            }
+            const monto = typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto
+            totals[v.usuario_id].total += isNaN(monto) ? 0 : monto
+            totals[v.usuario_id].count += 1
+            totals[v.usuario_id].viaticos.push(v)
+        })
+
+        return Object.entries(totals)
+            .map(([userId, data]) => ({ userId, ...data }))
+            .sort((a, b) => b.total - a.total)
+    }, [filteredViaticos, users])
+
     // Get selected user data
     const selectedUserData = useMemo(() => {
         if (!selectedUserId) return null
         return userTotals.find(u => u.userId === selectedUserId)
     }, [selectedUserId, userTotals])
 
+    // Helper to uppercase data
+    const toUpperCaseData = (data: any[]): any[] => {
+        return data.map(item => {
+            if (Array.isArray(item)) {
+                return item.map(val => typeof val === 'string' ? val.toUpperCase() : val)
+            }
+            if (typeof item === 'object' && item !== null) {
+                const newItem: any = {}
+                Object.keys(item).forEach(key => {
+                    const val = item[key]
+                    newItem[key] = typeof val === 'string' ? val.toUpperCase() : val
+                })
+                return newItem
+            }
+            return item
+        })
+    }
+
     // Export to Excel
     const exportToExcel = async (data: any[], filename: string) => {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Reporte');
 
+        // Transform data to uppercase
+        const upperData = toUpperCaseData(data)
+
         // Get headers from the first object
-        if (data.length > 0) {
-            const columns = Object.keys(data[0]).map(key => ({ header: key, key: key, width: 20 }));
+        if (upperData.length > 0) {
+            const columns = Object.keys(upperData[0]).map(key => ({ header: key.toUpperCase(), key: key, width: 20 }));
             worksheet.columns = columns;
         }
 
-        worksheet.addRows(data);
+        worksheet.addRows(upperData);
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -154,13 +176,17 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
     // Export to PDF
     const exportToPDF = (headers: string[], data: any[][], title: string) => {
         const doc = new jsPDF()
-        doc.text(title, 14, 15)
+        doc.text(title.toUpperCase(), 14, 15)
         doc.setFontSize(10)
-        doc.text(`Generado: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, 22)
+        doc.text(`GENERADO: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, 22)
+
+        // Transform data to uppercase
+        const upperData = toUpperCaseData(data)
+        const upperHeaders = headers.map(h => h.toUpperCase())
 
         doc.autoTable({
-            head: [headers],
-            body: data,
+            head: [upperHeaders],
+            body: upperData,
             startY: 30,
         })
 
@@ -174,6 +200,59 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
 
     return (
         <div className="space-y-4">
+            {/* Global Filters */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Filtros Globales</CardTitle>
+                    <CardDescription>Filtra por fecha, usuario o contenido para todos los reportes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {/* Search Input */}
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar por usuario, descripción, tipo comprobante..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 pr-9"
+                            />
+                            {searchQuery && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                                    onClick={() => setSearchQuery('')}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
+
+                        {/* Date Filters */}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Desde</label>
+                                <DatePicker
+                                    date={startDate}
+                                    onSelect={setStartDate}
+                                    placeholder="Selecciona fecha inicio"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Hasta</label>
+                                <DatePicker
+                                    date={endDate}
+                                    onSelect={setEndDate}
+                                    placeholder="Selecciona fecha fin"
+                                    disabled={(date) => startDate ? date < startDate : false}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             <Tabs defaultValue="usuarios" className="w-full">
                 <TabsList className="grid w-full max-w-md grid-cols-2">
                     <TabsTrigger value="usuarios">
@@ -194,7 +273,9 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                     <div>
                                         <CardTitle>Totales por Usuario</CardTitle>
-                                        <CardDescription>Haz clic en un usuario para ver su detalle</CardDescription>
+                                        <CardDescription>
+                                            {startDate || endDate ? 'Mostrando totales filtrados por fecha' : 'Mostrando totales históricos'}
+                                        </CardDescription>
                                     </div>
                                     <div className="flex gap-2">
                                         <Button
@@ -231,14 +312,14 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="rounded-md border overflow-x-auto">
+                                <div className="rounded-md border">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Usuario</TableHead>
-                                                <TableHead className="text-right">Cantidad</TableHead>
-                                                <TableHead className="text-right">Total</TableHead>
-                                                <TableHead className="text-right w-16"></TableHead>
+                                                <TableHead className="text-center">Cantidad Viáticos</TableHead>
+                                                <TableHead className="text-right">Total (S/)</TableHead>
+                                                <TableHead className="text-right">Acciones</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -249,19 +330,21 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                userTotals.map(user => (
-                                                    <TableRow
-                                                        key={user.userId}
-                                                        className="cursor-pointer hover:bg-muted/50"
-                                                        onClick={() => setSelectedUserId(user.userId)}
-                                                    >
+                                                userTotals.map((user) => (
+                                                    <TableRow key={user.userId}>
                                                         <TableCell className="font-medium">{user.userName}</TableCell>
-                                                        <TableCell className="text-right">{user.count}</TableCell>
-                                                        <TableCell className="text-right font-bold">
+                                                        <TableCell className="text-center">{user.count}</TableCell>
+                                                        <TableCell className="text-right">
                                                             S/ {user.total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </TableCell>
                                                         <TableCell className="text-right">
-                                                            <ChevronRight className="h-4 w-4 inline text-muted-foreground" />
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => setSelectedUserId(user.userId)}
+                                                            >
+                                                                <ChevronRight className="h-4 w-4" />
+                                                            </Button>
                                                         </TableCell>
                                                     </TableRow>
                                                 ))
@@ -275,22 +358,31 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                         <Card>
                             <CardHeader>
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                    <div>
-                                        <CardTitle>Detalle de {selectedUserData?.userName}</CardTitle>
-                                        <CardDescription>
-                                            Total: S/ {selectedUserData?.total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </CardDescription>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => setSelectedUserId(null)}
+                                        >
+                                            <ArrowLeft className="h-4 w-4" />
+                                        </Button>
+                                        <div>
+                                            <CardTitle>Detalle de Usuario: {selectedUserData?.userName}</CardTitle>
+                                            <CardDescription>
+                                                Total: S/ {selectedUserData?.total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                {' • '}
+                                                {selectedUserData?.count} registros
+                                            </CardDescription>
+                                        </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => setSelectedUserId(null)}>
-                                            <ArrowLeft className="h-4 w-4 sm:mr-2" />
-                                            <span className="hidden sm:inline">Volver</span>
-                                        </Button>
                                         <Button
                                             variant="outline"
                                             size="sm"
                                             onClick={() => {
-                                                const data = selectedUserData!.viaticos.map(v => {
+                                                if (!selectedUserData) return
+                                                const data = selectedUserData.viaticos.map(v => {
                                                     const fecha = parseISO(v.fecha)
                                                     return {
                                                         DIA: format(fecha, 'd'),
@@ -299,15 +391,15 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                         FECHA: format(fecha, 'dd/MM/yyyy'),
                                                         PARA: v.para || '',
                                                         'QUE SUSTENTA': v.que_sustenta || 'VIATICO',
-                                                        TRABAJADOR: selectedUserData!.userName,
+                                                        TRABAJADOR: selectedUserData.userName,
                                                         'TIPO COMPROBANTE': v.tipo_comprobante || '',
-                                                        RUC: v.numero_documento || '',
+                                                        'NUMERO DE DOCUMENTO': v.numero_documento || '',
                                                         'N° COMPROBANTE': v.numero_comprobante || '',
                                                         MONTO: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
                                                         DESCRIPCION: v.descripcion
                                                     }
                                                 })
-                                                exportToExcel(data, `Detalle_${selectedUserData!.userName}`)
+                                                exportToExcel(data, `Reporte_${selectedUserData.userName.replace(/ /g, '_')}`)
                                             }}
                                         >
                                             <FileSpreadsheet className="h-4 w-4 sm:mr-2 text-green-600" />
@@ -317,7 +409,8 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                             variant="outline"
                                             size="sm"
                                             onClick={() => {
-                                                const data = selectedUserData!.viaticos.map(v => {
+                                                if (!selectedUserData) return
+                                                const data = selectedUserData.viaticos.map(v => {
                                                     const fecha = parseISO(v.fecha)
                                                     return [
                                                         format(fecha, 'd'),
@@ -326,7 +419,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                         format(fecha, 'dd/MM/yyyy'),
                                                         v.para || '',
                                                         v.que_sustenta || 'VIATICO',
-                                                        selectedUserData!.userName,
+                                                        selectedUserData.userName,
                                                         v.tipo_comprobante || '',
                                                         v.numero_documento || '',
                                                         v.numero_comprobante || '',
@@ -334,7 +427,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                         v.descripcion || '-'
                                                     ]
                                                 })
-                                                exportToPDF(['Dia', 'Mes', 'Año', 'Fecha', 'Para', 'Que Sustenta', 'Trabajador', 'Tipo Comprobante', 'N° Documento', 'N° Comprobante', 'Monto', 'Descripción'], data, `Detalle ${selectedUserData!.userName}`)
+                                                exportToPDF(['Dia', 'Mes', 'Año', 'Fecha', 'Para', 'Que Sustenta', 'Trabajador', 'Tipo Comprobante', 'N° Documento', 'N° Comprobante', 'Monto', 'Descripción'], data, `Reporte ${selectedUserData.userName}`)
                                             }}
                                         >
                                             <FileText className="h-4 w-4 sm:mr-2 text-red-600" />
@@ -354,7 +447,6 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                 <TableHead>Fecha</TableHead>
                                                 <TableHead>Para</TableHead>
                                                 <TableHead>Que Sustenta</TableHead>
-                                                <TableHead>Trabajador</TableHead>
                                                 <TableHead>Tipo Comp.</TableHead>
                                                 <TableHead>N° Doc.</TableHead>
                                                 <TableHead>N° Comp.</TableHead>
@@ -372,7 +464,6 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                     <TableCell className="whitespace-nowrap">{format(parseISO(viatico.fecha), 'dd/MM/yyyy')}</TableCell>
                                                     <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.para || '-'}</Badge></TableCell>
                                                     <TableCell className="whitespace-nowrap">{viatico.que_sustenta || 'VIATICO'}</TableCell>
-                                                    <TableCell className="font-medium">{selectedUserData!.userName}</TableCell>
                                                     <TableCell><Badge variant="secondary" className="whitespace-nowrap">{viatico.tipo_comprobante || '-'}</Badge></TableCell>
                                                     <TableCell className="whitespace-nowrap">{viatico.numero_documento || '-'}</TableCell>
                                                     <TableCell className="whitespace-nowrap">{viatico.numero_comprobante || '-'}</TableCell>
@@ -386,10 +477,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation()
-                                                                    handleEdit(viatico)
-                                                                }}
+                                                                onClick={() => handleEdit(viatico)}
                                                             >
                                                                 <Pencil className="h-4 w-4" />
                                                             </Button>
@@ -397,10 +485,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation()
-                                                                    onDelete(viatico.id)
-                                                                }}
+                                                                onClick={() => onDelete(viatico.id)}
                                                             >
                                                                 <Trash2 className="h-4 w-4" />
                                                             </Button>
@@ -423,8 +508,10 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                             <div className="flex flex-col gap-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                     <div>
-                                        <CardTitle>Filtros</CardTitle>
-                                        <CardDescription>Filtra los viáticos por rango de fechas</CardDescription>
+                                        <CardTitle>Listado de Registros</CardTitle>
+                                        <CardDescription>
+                                            {filteredViaticos.length} registros encontrados
+                                        </CardDescription>
                                     </div>
                                     <div className="flex gap-2">
                                         <Button
@@ -442,7 +529,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                         'QUE SUSTENTA': v.que_sustenta || 'VIATICO',
                                                         TRABAJADOR: getUserName(v.usuario_id),
                                                         'TIPO COMPROBANTE': v.tipo_comprobante || '',
-                                                        RUC: v.numero_documento || '',
+                                                        'NUMERO DE DOCUMENTO': v.numero_documento || '',
                                                         'N° COMPROBANTE': v.numero_comprobante || '',
                                                         MONTO: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
                                                         DESCRIPCION: v.descripcion
@@ -491,56 +578,8 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                         </Button>
                                     </div>
                                 </div>
-
-                                {/* Search and Filters */}
-                                <div className="space-y-4">
-                                    {/* Search Input */}
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            placeholder="Buscar por fecha, usuario, descripción, tipo comprobante..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="pl-9 pr-9"
-                                        />
-                                        {searchQuery && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-                                                onClick={() => setSearchQuery('')}
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
-
-                                    {/* Date Filters */}
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Desde</label>
-                                            <DatePicker
-                                                date={startDate}
-                                                onSelect={setStartDate}
-                                                placeholder="Selecciona fecha inicio"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Hasta</label>
-                                            <DatePicker
-                                                date={endDate}
-                                                onSelect={setEndDate}
-                                                placeholder="Selecciona fecha fin"
-                                                disabled={(date) => startDate ? date < startDate : false}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </CardHeader>
-                    </Card>
-
-                    <Card>
                         <CardContent className="pt-6">
                             <div className="rounded-md border overflow-x-auto">
                                 <Table>

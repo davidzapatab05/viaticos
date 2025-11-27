@@ -36,30 +36,13 @@ CREATE TABLE IF NOT EXISTS user_roles (
 );
 
 -- Índice para búsquedas por email
-CREATE INDEX IF NOT EXISTS idx_user_roles_email ON user_roles(email);
-
--- =====================================================
--- Tabla: push_subscriptions
--- Almacena suscripciones de notificaciones push
--- =====================================================
-CREATE TABLE IF NOT EXISTS push_subscriptions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id TEXT NOT NULL,
-  subscription_json TEXT NOT NULL,
-  created_at INTEGER DEFAULT (unixepoch()),
-  updated_at INTEGER DEFAULT (unixepoch())
-);
-
--- Índice para búsquedas por usuario
-CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id);
-
 -- =====================================================
 -- Tabla: config (opcional)
 -- Para almacenar configuraciones del sistema
 -- =====================================================
-CREATE TABLE IF NOT EXISTS config (
-  key TEXT PRIMARY KEY,
-  value TEXT NOT NULL,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
-);
+-- CREATE TABLE IF NOT EXISTS config (
+--   key TEXT PRIMARY KEY,
+--   value TEXT NOT NULL,
+--   created_at TEXT DEFAULT (datetime('now')),
+--   updated_at TEXT DEFAULT (datetime('now'))
+-- );

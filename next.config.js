@@ -1,6 +1,6 @@
 const path = require('path')
 
-// process.env.SERWIST_SUPPRESS_TURBOPACK_WARNING = "1";
+process.env.SERWIST_SUPPRESS_TURBOPACK_WARNING = "1";
 
 const withSerwist = require("@serwist/next").default({
   swSrc: "src/app/sw.ts",
@@ -24,6 +24,14 @@ const nextConfig = {
   },
   // Configurar el root del proyecto para evitar warning de múltiples lockfiles
   outputFileTracingRoot: path.join(__dirname),
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
+      },
+    },
+  },
 }
 
 module.exports = withSerwist(nextConfig)

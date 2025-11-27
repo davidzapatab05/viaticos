@@ -1,4 +1,4 @@
-﻿import webpush from 'web-push'
+﻿
 
 /**
  * Cloudflare Worker completo de viÃ¡ticos
@@ -94,12 +94,7 @@ async function verifyFirebaseToken(token, env) {
           const email = user.email || decodedToken?.email || 'unknown@example.com'
           const displayName = user.displayName || user.name || decodedToken?.displayName || user.displayName || null
 
-          console.log('Firebase user data:', {
-            uid: user.localId || user.uid || decodedToken?.uid,
-            email,
-            displayName,
-            providerUserInfo: user.providerUserInfo
-          })
+
 
           return {
             uid: user.localId || user.uid || decodedToken?.uid,
@@ -270,7 +265,7 @@ async function ensureViaticosTable(env) {
     ).first();
 
     if (!table) {
-      console.log("Creando tabla viaticos (no existÃ­a)");
+
 
       await env.DB.prepare(
         `CREATE TABLE viaticos (
@@ -320,20 +315,7 @@ async function ensureUserRolesTable(env) {
   } catch (e) { console.warn('No se pudo asegurar la tabla user_roles:', e.message) }
 }
 
-async function ensurePushSubscriptionsTable(env) {
-  try {
-    await env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS push_subscriptions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        subscription TEXT NOT NULL,
-        created_at TEXT DEFAULT (datetime('now'))
-      )
-    `).run()
-  } catch (e) {
-    console.warn('Error creating push_subscriptions table:', e)
-  }
-}
+
 
 // ===================== Limpieza de Usuarios =====================
 async function cleanupAnonymousUsers(env) {
@@ -645,7 +627,7 @@ export default {
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') return handleCORS(request, env)
     const url = new URL(request.url), path = url.pathname
-    console.log(`Received request: ${request.method} ${path}`)
+
 
     try {
       const authHeader = request.headers.get('Authorization')
@@ -695,12 +677,7 @@ export default {
           const role = await getUserRole(env, user.uid, user.email)
 
           // CORREGIDO: Log para debugging
-          console.log('Registrando usuario:', {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            role
-          })
+
 
           const success = await setUserRole(
             env,
@@ -779,28 +756,8 @@ export default {
 
 
 
-      // POST /api/notifications/subscribe
-      if (path === '/api/notifications/subscribe' && request.method === 'POST') {
-        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-        try {
-          const subscription = await request.json()
-          await ensurePushSubscriptionsTable(env)
 
-          // Check if exists
-          const existing = await env.DB.prepare('SELECT id FROM push_subscriptions WHERE user_id = ? AND subscription = ?')
-            .bind(user.uid, JSON.stringify(subscription)).first()
-
-          if (!existing) {
-            await env.DB.prepare('INSERT INTO push_subscriptions (user_id, subscription) VALUES (?, ?)')
-              .bind(user.uid, JSON.stringify(subscription)).run()
-          }
-
-          return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        } catch (e) {
-          return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-      }
 
 
       // DELETE /api/users/:uid (eliminar usuario y su carpeta - admin o super_admin)
@@ -959,7 +916,7 @@ export default {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
         try {
-          await ensureUserRolesTable(env)
+          // await ensureUserRolesTable(env) // Eliminado por redundancia, solo si falla el SELECT podríamos intentar crearla
 
           // 1. Obtener datos actuales del usuario de la BD
           let userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
@@ -970,17 +927,21 @@ export default {
 
           // 3. Si el usuario NO existe, registrarlo
           if (!userData) {
+            await ensureUserRolesTable(env) // Solo asegurar tabla si vamos a escribir
             await setUserRole(env, user.uid, role, 'activo', 1, user.email, user.displayName)
             // Recargar datos después de insertar
             userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
           } else {
-            // Si existe, solo actualizar email/displayName si no son genéricos
+            // Si existe, solo actualizar email/displayName si han cambiado y no son genéricos
             const newEmail = (user.email && user.email !== 'unknown@example.com') ? user.email : userData.email
             const newDisplayName = (user.displayName && user.displayName !== 'Anonimo') ? user.displayName : userData.displayName
 
-            await setUserRole(env, user.uid, role, userData.estado, 1, newEmail, newDisplayName)
-            // Recargar datos actualizados
-            userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+            // Verificar si hay cambios reales antes de hacer UPDATE
+            if (newEmail !== userData.email || newDisplayName !== userData.displayName) {
+              await setUserRole(env, user.uid, role, userData.estado, 1, newEmail, newDisplayName)
+              // Recargar datos actualizados
+              userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
+            }
           }
 
           return new Response(JSON.stringify({
@@ -1081,27 +1042,34 @@ export default {
         const uploadedFiles = [];
         const viaticoId = `v_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        // Carpeta Ãºnica incluyendo el ID para evitar colisiones y facilitar borrado
-        const uniqueFolderDate = `${formattedDateTime}_${viaticoId}`;
+        // Carpeta base: viaticos/{YYYY-MM-DD}/{DisplayName}/{YYYY-MM-DD_HH-MM-SS}_{ViaticoID}
+        // Usamos la fecha REAL para el nombre de la subcarpeta para ordenar correctamente
+        const actualYear = getPart(peruDateParts, 'year');
+        const actualMonth = getPart(peruDateParts, 'month');
+        const actualDay = getPart(peruDateParts, 'day');
+        const actualHour = getPart(peruTimeParts, 'hour');
+        const actualMinute = getPart(peruTimeParts, 'minute');
+        const actualSecond = getPart(peruTimeParts, 'second');
 
-        async function uploadToOneDrive(fileBuffer, fileName, mimeType, userId, dateFolder, env, userEmail, userDisplayName, fullDateTimeFolder) {
+        const timestampPrefix = `${actualYear}-${actualMonth}-${actualDay}_${actualHour}-${actualMinute}-${actualSecond}`;
+        const subfolderName = `${timestampPrefix}_${viaticoId}`;
+
+        // Sanitizar nombre de usuario
+        const safeDisplayName = (user.displayName || user.email.split('@')[0] || 'usuario')
+          .replace(/[^a-zA-Z0-9\s._-]/g, '')
+          .trim()
+          .replace(/\s+/g, ' ')
+          .substring(0, 50);
+
+        // Path completo de la carpeta del viático
+        const viaticoFolderPath = `viaticos/${dbFormattedDate}/${safeDisplayName}/${subfolderName}`;
+
+
+        async function uploadToOneDrive(fileBuffer, fileName, mimeType, env, targetFolderPath) {
           const accessToken = await getOneDriveAccessToken(env);
 
-          // Sanitizar nombre de usuario para la carpeta
-          const safeDisplayName = (userDisplayName || userEmail.split('@')[0] || 'usuario')
-            .replace(/[^a-zA-Z0-9\s._-]/g, '')
-            .trim()
-            .replace(/\s+/g, '_')
-            .substring(0, 40);
+          const fullPath = `${targetFolderPath}/${fileName}`;
 
-          const uidShort = userId.substring(0, 8);
-          const userFolderName = `${safeDisplayName}_${uidShort}`;
-
-          // Usar la carpeta con fecha y hora completa
-          const datedFolderPath = fullDateTimeFolder ? `${userFolderName}/${fullDateTimeFolder}` : `${userFolderName}/${dateFolder}`;
-          const fullPath = `viaticos/${datedFolderPath}/${fileName}`;
-
-          console.log(`Subiendo archivo a: ${fullPath}`);
           const response = await fetch(`https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${fullPath}:/content`, {
             method: 'PUT',
             headers: {
@@ -1121,44 +1089,33 @@ export default {
           return {
             url: data.webUrl,
             id: data.id,
-            folderPath: fullPath
+            folderPath: targetFolderPath
           };
         }
 
-        async function createTxtFile(env, userId, userEmail, userDisplayName, fullDateTimeFolder, viaticoData) {
+        async function createTxtFile(env, targetFolderPath, viaticoId, viaticoData) {
           const accessToken = await getOneDriveAccessToken(env);
 
-          const safeDisplayName = (userDisplayName || userEmail.split('@')[0] || 'usuario')
-            .replace(/[^a-zA-Z0-9\s._-]/g, '')
-            .trim()
-            .replace(/\s+/g, '_')
-            .substring(0, 40);
-
-          const uidShort = userId.substring(0, 8);
-          const userFolderName = `${safeDisplayName}_${uidShort}`;
-          const datedFolderPath = `${userFolderName}/${fullDateTimeFolder}`;
-
-          const txtFileName = `detalle_viatico.txt`;
-          const fullPath = `viaticos/${datedFolderPath}/${txtFileName}`;
+          const txtFileName = `${viaticoId}_detalle.txt`;
+          const fullPath = `${targetFolderPath}/${txtFileName}`;
 
           const txtContent = `
           DETALLE DE VIATICO
           ==================
+          ID: ${viaticoId}
           Día: ${viaticoData.dia}
           Mes: ${viaticoData.mes}
           Año: ${viaticoData.año}
           Fecha: ${viaticoData.fecha}
           Para: ${viaticoData.para || 'N/A'}
           Que Sustenta: ${viaticoData.queSustenta}
-          Trabajador: ${userDisplayName || userEmail}
+          Trabajador: ${viaticoData.trabajador}
           Tipo Comp.: ${viaticoData.tipoComprobante || 'N/A'}
           N° Doc.: ${viaticoData.numeroDocumento || 'N/A'}
           N° Comp.: ${viaticoData.numeroComprobante || 'N/A'}
           Monto: S/ ${parseFloat(viaticoData.monto).toFixed(2)}
           Descripción: ${viaticoData.descripcion || '(Sin Descripción)'}
             `.trim();
-
-          console.log(`Creando TXT en: ${fullPath}`);
 
           const response = await fetch(`https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${fullPath}:/content`, {
             method: 'PUT',
@@ -1178,19 +1135,15 @@ export default {
           for (const file of fotos) {
             const imageBuffer = await file.arrayBuffer()
             const mimeToExt = { 'image/jpeg': '.jpg', 'image/jpg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'application/pdf': '.pdf' }
-            const fileName = `${formattedDateTime}_${Math.random().toString(36).substr(2, 5)}${mimeToExt[file.type] || '.bin'}`
+            // Nombre: random.ext (ya no necesitamos prefijo de hora porque está en la carpeta)
+            const fileName = `${viaticoId}_${Math.random().toString(36).substr(2, 5)}${mimeToExt[file.type] || '.bin'}`
 
-            // Usamos uniqueFolderDate en lugar de formattedDateTime puro
             const oneDriveData = await uploadToOneDrive(
               imageBuffer,
               fileName,
               file.type,
-              user.uid,
-              dbFormattedDate,
               env,
-              user.email,
-              user.displayName,
-              uniqueFolderDate
+              viaticoFolderPath
             )
 
             uploadedFiles.push(oneDriveData.url);
@@ -1198,7 +1151,7 @@ export default {
 
           // Crear el archivo TXT una sola vez
           if (createTxt) {
-            await createTxtFile(env, user.uid, user.email, user.displayName, uniqueFolderDate, {
+            await createTxtFile(env, viaticoFolderPath, viaticoId, {
               id: viaticoId,
               dia: formattedDate.split('/')[0],
               mes: formattedDate.split('/')[1],
@@ -1206,6 +1159,7 @@ export default {
               fecha: formattedDate,
               para: formData.get('para'),
               queSustenta: 'VIATICO',
+              trabajador: user.displayName || user.email,
               tipoComprobante: formData.get('tipo_comprobante'),
               numeroDocumento: formData.get('numero_documento'),
               numeroComprobante: formData.get('numero_comprobante'),
@@ -1219,13 +1173,9 @@ export default {
           const archivosMetadata = JSON.stringify(uploadedFiles);
 
           // Construir el path de la carpeta para guardarlo en DB
-          const safeDisplayName = (user.displayName || user.email.split('@')[0] || 'usuario')
-            .replace(/[^a-zA-Z0-9\s._-]/g, '')
-            .trim()
-            .replace(/\s+/g, '_')
-            .substring(0, 40);
-          const uidShort = user.uid.substring(0, 8);
-          const folderPath = `viaticos/${safeDisplayName}_${uidShort}/${uniqueFolderDate}`;
+          // Guardamos el path de la carpeta del usuario en esa fecha
+          // AHORA guardamos el path específico del viático
+          const folderPath = viaticoFolderPath;
 
           await ensureViaticosTable(env)
 
@@ -1288,21 +1238,70 @@ export default {
             const accessToken = await getOneDriveAccessToken(env);
 
             if (viatico.folder_path) {
-              // Si tenemos el path exacto de la carpeta, borramos esa carpeta
-              console.log(`Eliminando carpeta de OneDrive: ${viatico.folder_path}`);
+              // folder_path ahora es la carpeta compartida del usuario en esa fecha: viaticos/YYYY-MM-DD/User
+              // NO podemos borrar la carpeta entera porque puede tener otros viáticos.
+              // Debemos buscar archivos que contengan el viaticoId y borrarlos.
 
-              const deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${viatico.folder_path}`;
-              const deleteResponse = await fetch(deleteUrl, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${accessToken}` }
-              });
+              // NUEVA LÓGICA: Verificar si es una subcarpeta dedicada
+              // Si el folder_path termina con el viaticoId (o contiene el timestamp_id), es una subcarpeta dedicada
+              const isDedicatedSubfolder = viatico.folder_path.split('/').pop().includes(viaticoId);
 
-              if (!deleteResponse.ok) {
-                console.error('Error respuesta OneDrive DELETE:', await deleteResponse.text());
+              if (isDedicatedSubfolder) {
+                // Borrar la carpeta entera del viático
+                const deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${viatico.folder_path}`;
+                const deleteResponse = await fetch(deleteUrl, {
+                  method: 'DELETE',
+                  headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+
+                if (deleteResponse.ok || deleteResponse.status === 404) {
+                  // Si se borró correctamente, verificar si la carpeta padre (Usuario) quedó vacía
+                  const parentPath = viatico.folder_path.split('/').slice(0, -1).join('/');
+
+                  const listParentUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${parentPath}:/children`;
+                  const listParentResponse = await fetch(listParentUrl, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                  });
+
+                  if (listParentResponse.ok) {
+                    const parentData = await listParentResponse.json();
+                    if (parentData.value && parentData.value.length === 0) {
+                      // Carpeta padre vacía, borrarla también
+                      const deleteParentUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${parentPath}`;
+                      await fetch(deleteParentUrl, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                      });
+                    }
+                  }
+                } else {
+                  console.error('Error borrando carpeta de viático:', await deleteResponse.text());
+                }
+
+              } else {
+                // LÓGICA ANTIGUA (Retrocompatibilidad): Borrar archivos individuales por ID
+                const listUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${viatico.folder_path}:/children`;
+                const listResponse = await fetch(listUrl, {
+                  headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+
+                if (listResponse.ok) {
+                  const data = await listResponse.json();
+                  const files = data.value || [];
+
+                  // Filtrar archivos que pertenecen a este viático
+                  const filesToDelete = files.filter(f => f.name.includes(viaticoId));
+
+                  // Borrar cada archivo encontrado
+                  await Promise.all(filesToDelete.map(async (file) => {
+                    const deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/items/${file.id}`;
+                    await fetch(deleteUrl, {
+                      method: 'DELETE',
+                      headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                  }));
+                }
               }
-
-            } else {
-              console.warn('ViÃ¡tico sin folder_path, saltando eliminaciÃ³n de archivos para evitar daÃ±os colaterales.');
             }
           } catch (onedriveError) {
             console.error('Error eliminando de OneDrive (continuando con DB):', onedriveError);
@@ -1415,7 +1414,7 @@ export default {
         }
 
         try {
-          await ensureViaticosTable(env);
+          // await ensureViaticosTable(env); // Eliminado por redundancia
 
           const sql = `
             SELECT
@@ -1433,16 +1432,13 @@ export default {
               created_at,
               updated_at
             FROM viaticos
+            ORDER BY fecha DESC, created_at DESC
           `;
 
           const rows = await env.DB.prepare(sql).all();
 
-          // Orden descendente por fecha
-          const viaticos = (rows.results || []).sort((a, b) => {
-            const dateA = new Date(a.fecha).getTime();
-            const dateB = new Date(b.fecha).getTime();
-            return dateB - dateA;
-          });
+          // Ya viene ordenado por SQL
+          const viaticos = rows.results || [];
 
           return new Response(JSON.stringify({ success: true, viaticos }), {
             status: 200,
@@ -1483,7 +1479,7 @@ export default {
 
           await ensureViaticosTable(env);
 
-          console.log(`Ejecutando consulta para mis-viaticos, UID: ${user.uid}`);
+
 
           const rows = await env.DB.prepare(`
             SELECT 
@@ -1580,7 +1576,9 @@ export default {
       if (path === '/api/users' && request.method === 'GET') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         if (!(await isAdmin(env, user.uid, user.email))) return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        await ensureUserRolesTable(env)
+        if (!(await isAdmin(env, user.uid, user.email))) return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        // ensureUserRolesTable(env) - Eliminado por redundancia, se asume creado al inicio o en login
 
         // CORREGIDO: Usar SELECT explícito en lugar de SELECT * para evitar problemas
         const rows = await env.DB.prepare(`
@@ -1635,7 +1633,7 @@ export default {
 
       // GET /api/config/super-admin-email
       if (path === '/api/config/super-admin-email' && request.method === 'GET') {
-        console.log('Handling /api/config/super-admin-email');
+
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
         return new Response(JSON.stringify({
@@ -1697,185 +1695,6 @@ export default {
       }
 
 
-      // GET /api/push/vapid-public-key
-      if (path === '/api/push/vapid-public-key' && request.method === 'GET') {
-        return new Response(JSON.stringify({
-          publicKey: env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-
-      // POST /api/push/subscribe
-      if (path === '/api/push/subscribe' && request.method === 'POST') {
-        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        const user = await verifyFirebaseToken(token, env)
-        if (!user) return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-        try {
-          const subscription = await request.json()
-          const endpoint = subscription.endpoint
-
-          if (!endpoint) {
-            return new Response(JSON.stringify({ error: 'Endpoint de suscripción requerido' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-          }
-
-          // Check if subscription already exists (deduplication for multi-device/user switching)
-          // We use json_extract to find if this specific endpoint is already registered
-          const existing = await env.DB.prepare(
-            "SELECT id FROM push_subscriptions WHERE json_extract(subscription_json, '$.endpoint') = ?"
-          ).bind(endpoint).first()
-
-          if (existing) {
-            // Update existing subscription (e.g. user changed)
-            await env.DB.prepare(
-              'UPDATE push_subscriptions SET user_id = ?, subscription_json = ?, updated_at = unixepoch() WHERE id = ?'
-            ).bind(user.uid, JSON.stringify(subscription), existing.id).run()
-          } else {
-            // Create new subscription
-            await env.DB.prepare(
-              'INSERT INTO push_subscriptions (user_id, subscription_json) VALUES (?, ?)'
-            ).bind(user.uid, JSON.stringify(subscription)).run()
-          }
-
-          return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        } catch (error) {
-          return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-      }
-
-
-      // POST /api/push/unsubscribe
-      if (path === '/api/push/unsubscribe' && request.method === 'POST') {
-        try {
-          const { endpoint } = await request.json()
-          if (!endpoint) return new Response(JSON.stringify({ error: 'Endpoint requerido' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-          // We use json_extract to find and delete the specific subscription
-          await env.DB.prepare(
-            "DELETE FROM push_subscriptions WHERE json_extract(subscription_json, '$.endpoint') = ?"
-          ).bind(endpoint).run()
-
-          return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        } catch (error) {
-          return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-      }
-
-      // POST /api/push/broadcast (Admin only)
-      if (path === '/api/push/broadcast' && request.method === 'POST') {
-        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        const user = await verifyFirebaseToken(token, env)
-        if (!user) return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-        const isSA = await isSuperAdmin(env, user.uid, user.email)
-        const isAdmin = isSA || (await env.DB.prepare('SELECT role FROM user_roles WHERE user_id = ?').bind(user.uid).first())?.role === 'admin'
-
-        if (!isAdmin) return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-        try {
-          const { title, body, url } = await request.json()
-
-          webpush.setVapidDetails(
-            env.VAPID_SUBJECT || 'mailto:admin@example.com',
-            env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-            env.VAPID_PRIVATE_KEY
-          );
-
-          const subscriptions = await env.DB.prepare('SELECT * FROM push_subscriptions').all();
-          const subs = subscriptions.results || [];
-
-          const notificationPayload = JSON.stringify({
-            title: title || 'Notificación',
-            body: body || '',
-            url: url || '/'
-          });
-
-          const results = await Promise.allSettled(subs.map(async sub => {
-            try {
-              const subData = JSON.parse(sub.subscription_json);
-              await webpush.sendNotification({
-                endpoint: subData.endpoint,
-                keys: subData.keys
-              }, notificationPayload);
-              return { success: true, id: sub.id };
-            } catch (err) {
-              if (err.statusCode === 410 || err.statusCode === 404) {
-                await env.DB.prepare('DELETE FROM push_subscriptions WHERE id = ?').bind(sub.id).run();
-                return { success: false, id: sub.id, error: 'Subscription expired and deleted' };
-              }
-              throw err;
-            }
-          }));
-
-          const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
-
-          return new Response(JSON.stringify({
-            success: true,
-            sent: successCount,
-            total: subs.length
-          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        } catch (error) {
-          console.error('Broadcast error:', error);
-          return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-      }
-
-      // POST /api/test-notification (Test push notifications - super_admin only)
-      if (path === '/api/test-notification' && request.method === 'POST') {
-        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-        const user = await verifyFirebaseToken(token, env)
-        if (!user) return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-        const isSA = await isSuperAdmin(env, user.uid, user.email)
-        if (!isSA) return new Response(JSON.stringify({ error: 'Acceso denegado. Solo super_admin puede probar notificaciones.' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-        try {
-          webpush.setVapidDetails(
-            env.VAPID_SUBJECT,
-            env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-            env.VAPID_PRIVATE_KEY
-          );
-
-          const subscriptions = await env.DB.prepare('SELECT * FROM push_subscriptions WHERE user_id = ?').bind(user.uid).all();
-          const subs = subscriptions.results || [];
-
-          // Usar el mismo mensaje que se envía en el cron job de 9 AM
-          const notificationPayload = JSON.stringify({
-            title: '⏳ Cierre de Viáticos en 1 hora',
-            body: 'Recuerda registrar tus viáticos pendientes de ayer antes de las 10:00 AM.',
-            url: '/nuevo-viatico'
-          });
-
-          const results = await Promise.allSettled(subs.map(async sub => {
-            try {
-              const subData = JSON.parse(sub.subscription_json);
-              await webpush.sendNotification({
-                endpoint: subData.endpoint,
-                keys: subData.keys
-              }, notificationPayload);
-              return { success: true, id: sub.id };
-            } catch (err) {
-              if (err.statusCode === 410 || err.statusCode === 404) {
-                await env.DB.prepare('DELETE FROM push_subscriptions WHERE id = ?').bind(sub.id).run();
-                return { success: false, id: sub.id, error: 'Subscription expired and deleted' };
-              }
-              throw err;
-            }
-          }));
-
-          const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
-
-          return new Response(JSON.stringify({
-            success: true,
-            message: `Notificación de prueba enviada a ${successCount} de ${subs.length} suscripciones`,
-            sent: successCount,
-            total: subs.length
-          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        } catch (e) {
-          console.error('Error en test-notification:', e);
-          return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-      }
 
       return new Response(JSON.stringify({ error: 'Ruta no encontrada' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     } catch (error) {
@@ -1884,60 +1703,11 @@ export default {
     }
   },
   async scheduled(event, env, ctx) {
-    console.log("Cron triggered:", event.cron);
+
 
     if (event.cron === "0 0 * * *") {
       await cleanupAnonymousUsers(env);
     }
 
-    if (event.cron === "0 14 * * *") {
-      // 9 AM Peru - Send notifications
-      try {
-        webpush.setVapidDetails(
-          env.VAPID_SUBJECT,
-          env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-          env.VAPID_PRIVATE_KEY
-        );
-
-        // Obtener todas las suscripciones
-        // TODO: Filtrar solo usuarios que no han registrado viáticos hoy?
-        // Por ahora enviamos a todos como recordatorio general
-        const subscriptions = await env.DB.prepare('SELECT * FROM push_subscriptions').all();
-        const subs = subscriptions.results || [];
-
-        const notificationPayload = JSON.stringify({
-          title: '⏳ Cierre de Viáticos en 1 hora',
-          body: 'Recuerda registrar tus viáticos pendientes de ayer antes de las 10:00 AM.',
-          url: '/nuevo-viatico'
-        });
-
-        const promises = subs.map(sub => {
-          try {
-            const subData = JSON.parse(sub.subscription_json);
-            const pushConfig = {
-              endpoint: subData.endpoint,
-              keys: subData.keys
-            };
-
-            return webpush.sendNotification(pushConfig, notificationPayload)
-              .catch(err => {
-                if (err.statusCode === 410 || err.statusCode === 404) {
-                  // Delete invalid subscription
-                  return env.DB.prepare('DELETE FROM push_subscriptions WHERE id = ?').bind(sub.id).run();
-                }
-                console.error('Error sending push:', err);
-              });
-          } catch (e) {
-            console.error('Error parsing subscription:', e);
-            return Promise.resolve();
-          }
-        });
-
-        await Promise.all(promises);
-        console.log(`Sent notifications to ${subs.length} users`);
-      } catch (e) {
-        console.error('Error in scheduled notification:', e);
-      }
-    }
   }
 }
