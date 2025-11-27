@@ -1,2 +1,0 @@
-:HL["/_next/static/css/580bf2a565a87324.css","style"]
-0:{"buildId":"T2IgAxhtAm8E8kHgmvqYL","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"mis-viaticos","paramType":null,"paramKey":"mis-viaticos","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":false}},"isRootLayout":true},"staleTime":300}

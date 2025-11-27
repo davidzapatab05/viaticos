@@ -49,6 +49,7 @@ export default function AdminPage() {
   const [updating, setUpdating] = useState<string | null>(null)
   const { setLoading: setGlobalLoading, clearLoading } = useLoading()
   const [oneDriveUrl, setOneDriveUrl] = useState<string | null>(null)
+  const [userCount, setUserCount] = useState(0)
   const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
   const isSuperAdmin = user?.email?.toLowerCase() === superAdminEmail?.toLowerCase();
 
@@ -89,7 +90,7 @@ export default function AdminPage() {
       setUsers(filteredUsers)
 
       // Actualizar el conteo de usuarios (sin super_admin)
-      // setUserCount(userCount) // Removed because setUserCount is defined later
+      setUserCount(userCount)
       // Instead, we should move the state definition up or just use users.length if sufficient
       // But looking at the code, setUserCount is defined at line 336. 
       // We need to move the state definition up.
@@ -322,8 +323,7 @@ export default function AdminPage() {
     return sum + (isNaN(monto) ? 0 : monto)
   }, 0)
 
-  // Usar userCount en lugar de users.length
-  const [userCount, setUserCount] = useState(0)
+
 
   return (
     <RoleGuard allowedRoles={['admin', 'super_admin']}>
@@ -422,7 +422,7 @@ export default function AdminPage() {
                 <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <CardTitle>Gestión de Usuarios</CardTitle>
                   <div className="flex flex-wrap gap-2">
-                    {isSuperAdmin && (
+                    {(isSuperAdmin || userRole === 'admin') && (
                       <>
                         <Button onClick={handleBroadcast} variant="outline" size="sm">
                           Alerta 1h
