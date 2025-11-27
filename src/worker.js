@@ -1327,23 +1327,40 @@ export default {
         }
       }
 
-      // DELETE /api/viaticos/:id (eliminar viÃ¡tico y archivos - admin/super_admin)
+      // DELETE /api/viaticos/:id (eliminar viÃ¡tico y archivos - admin o propio usuario)
       if (path.startsWith('/api/viaticos/') && request.method === 'DELETE') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-        // Verificar permisos (admin o super_admin)
-        if (!(await isAdmin(env, user.uid, user.email))) {
-          return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
 
         const viaticoId = path.split('/').pop();
 
         try {
-          // Obtener info del viÃ¡tico para saber quÃ© borrar
+          // Obtener info del viÃ¡tico para saber quÃ© borrar y verificar propiedad
           const viatico = await env.DB.prepare('SELECT * FROM viaticos WHERE id = ?').bind(viaticoId).first();
 
           if (!viatico) {
             return new Response(JSON.stringify({ error: 'ViÃ¡tico no encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+
+          // Verificar permisos: admin o dueÃ±o del viÃ¡tico
+          const isOwner = viatico.usuario_id === user.uid;
+          const isUserAdmin = await isAdmin(env, user.uid, user.email);
+
+          if (!isOwner && !isUserAdmin) {
+            return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          // Enforce 10 AM cutoff for non-admins
+          if (!isUserAdmin) {
+            const viaticoDate = new Date(viatico.fecha + 'T00:00:00-05:00'); // Assuming stored as YYYY-MM-DD
+            const cutoffDate = new Date(viaticoDate);
+            cutoffDate.setDate(cutoffDate.getDate() + 1); // Next day
+            cutoffDate.setHours(10, 0, 0, 0); // 10:00 AM
+
+            const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Lima" }));
+
+            if (now > cutoffDate) {
+              return new Response(JSON.stringify({ error: 'El tiempo límite para eliminar este viático ha expirado (10:00 AM del día siguiente).' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
           }
 
           // Intentar borrar de OneDrive
@@ -1381,6 +1398,80 @@ export default {
 
         } catch (error) {
           return new Response(JSON.stringify({ success: false, error: error.message || 'Error eliminando viÃ¡tico' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // PUT /api/viaticos/:id (actualizar viÃ¡tico - admin o propio usuario)
+      if (path.startsWith('/api/viaticos/') && request.method === 'PUT') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        const viaticoId = path.split('/').pop();
+
+        try {
+          const formData = await request.json(); // Esperamos JSON para actualizaciones simples
+
+          // Obtener viÃ¡tico existente
+          const viatico = await env.DB.prepare('SELECT * FROM viaticos WHERE id = ?').bind(viaticoId).first();
+
+          if (!viatico) {
+            return new Response(JSON.stringify({ error: 'ViÃ¡tico no encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+
+          // Verificar permisos
+          const isOwner = viatico.usuario_id === user.uid;
+          const isUserAdmin = await isAdmin(env, user.uid, user.email);
+
+          if (!isOwner && !isUserAdmin) {
+            return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          // Enforce 10 AM cutoff for non-admins
+          if (!isUserAdmin) {
+            const viaticoDate = new Date(viatico.fecha + 'T00:00:00-05:00');
+            const cutoffDate = new Date(viaticoDate);
+            cutoffDate.setDate(cutoffDate.getDate() + 1); // Next day
+            cutoffDate.setHours(10, 0, 0, 0); // 10:00 AM
+
+            const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Lima" }));
+
+            if (now > cutoffDate) {
+              return new Response(JSON.stringify({ error: 'El tiempo límite para editar este viático ha expirado (10:00 AM del día siguiente).' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
+          }
+
+          // Campos actualizables
+          const updates = [];
+          const values = [];
+
+          if (formData.fecha !== undefined) { updates.push('fecha = ?'); values.push(formData.fecha); }
+          if (formData.monto !== undefined) { updates.push('monto = ?'); values.push(parseFloat(formData.monto)); }
+          if (formData.descripcion !== undefined) { updates.push('descripcion = ?'); values.push(formData.descripcion); }
+          if (formData.para !== undefined) { updates.push('para = ?'); values.push(formData.para); }
+          if (formData.que_sustenta !== undefined) { updates.push('que_sustenta = ?'); values.push(formData.que_sustenta); }
+          if (formData.tipo_comprobante !== undefined) { updates.push('tipo_comprobante = ?'); values.push(formData.tipo_comprobante); }
+          if (formData.numero_documento !== undefined) { updates.push('numero_documento = ?'); values.push(formData.numero_documento); }
+          if (formData.numero_comprobante !== undefined) { updates.push('numero_comprobante = ?'); values.push(formData.numero_comprobante); }
+
+          updates.push('updated_at = ?');
+          values.push(getPeruDateTime());
+
+          if (updates.length > 1) { // Al menos updated_at siempre estÃ¡
+            const query = `UPDATE viaticos SET ${updates.join(', ')} WHERE id = ?`;
+            values.push(viaticoId);
+            await env.DB.prepare(query).bind(...values).run();
+          }
+
+          return new Response(JSON.stringify({ success: true, message: 'ViÃ¡tico actualizado correctamente' }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+
+        } catch (error) {
+          console.error('Error actualizando viÃ¡tico:', error);
+          return new Response(JSON.stringify({ success: false, error: error.message || 'Error actualizando viÃ¡tico' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });

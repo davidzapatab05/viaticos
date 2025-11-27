@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext' // CORREGIDO: cambiar de @/hooks/useAuth a @/contexts/AuthContext
-import { getMisViaticos } from '@/services/api'
+import { useAuth } from '@/contexts/AuthContext'
+import { getMisViaticos, deleteViatico } from '@/services/api'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,9 +13,11 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import Link from 'next/link'
-import { RefreshCw, Eye, Receipt, Loader2, FileText, DollarSign, Grid3x3, Table2, TrendingUp, ArrowRight } from 'lucide-react'
+import { RefreshCw, Receipt, Loader2, FileText, DollarSign, TrendingUp, ArrowRight, Pencil, Trash2 } from 'lucide-react'
 import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
+import { EditViaticoDialog } from '@/components/EditViaticoDialog'
+
 interface Viatico {
   id: string
   fecha: string
@@ -35,6 +37,8 @@ export default function MisViaticosPage() {
   const [viaticos, setViaticos] = useState<Viatico[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [editingViatico, setEditingViatico] = useState<Viatico | null>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   const router = useRouter()
 
@@ -51,12 +55,7 @@ export default function MisViaticosPage() {
   }, [user, authLoading, appUser])
 
   const loadViaticos = async () => {
-    // No cargar si aún está verificando autenticación
-    if (authLoading) {
-      return
-    }
-
-    // Si no hay usuario, AuthGuard se encargará de redirigir
+    if (authLoading) return
     if (!user) {
       setLoading(false)
       return
@@ -65,13 +64,10 @@ export default function MisViaticosPage() {
     try {
       setLoading(true)
       setError('')
-
       const data = await getMisViaticos()
       setViaticos(data.viaticos || [])
     } catch (err) {
       const errorMessage = (err as Error).message || 'Error al cargar los viáticos'
-
-      // Si el error es de autenticación, mostrar mensaje más claro
       if (errorMessage.includes('no autenticado') || errorMessage.includes('No autorizado') || errorMessage.includes('Sesión expirada')) {
         setError('Sesión expirada. Por favor, inicia sesión nuevamente.')
       } else {
@@ -80,6 +76,25 @@ export default function MisViaticosPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás seguro de eliminar este viático? Esta acción no se puede deshacer.')) return
+
+    try {
+      setLoading(true)
+      await deleteViatico(id)
+      await loadViaticos()
+    } catch (err) {
+      alert('Error al eliminar viático: ' + (err as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEdit = (viatico: Viatico) => {
+    setEditingViatico(viatico)
+    setIsEditDialogOpen(true)
   }
 
   const total = viaticos.reduce((sum, v) => sum + parseFloat(String(v.monto || 0)), 0)
@@ -94,7 +109,6 @@ export default function MisViaticosPage() {
     return acc
   }, {} as Record<string, Viatico[]>)
 
-  // Mostrar loading mientras se verifica autenticación
   if (authLoading || !appUser) {
     return (
       <Layout>
@@ -217,32 +231,25 @@ export default function MisViaticosPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Día</TableHead>
-                            <TableHead>Mes</TableHead>
-                            <TableHead>Año</TableHead>
                             <TableHead>Fecha</TableHead>
                             <TableHead>Para</TableHead>
                             <TableHead>Que Sustenta</TableHead>
-                            <TableHead>Trabajador</TableHead>
                             <TableHead>Tipo Comp.</TableHead>
                             <TableHead>N° Doc.</TableHead>
                             <TableHead>N° Comp.</TableHead>
                             <TableHead className="text-right">Monto</TableHead>
                             <TableHead>Descripción</TableHead>
+                            <TableHead className="text-right">Acciones</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {viaticos.map((viatico) => (
                             <TableRow key={viatico.id}>
-                              <TableCell>{format(new Date(viatico.fecha), 'd')}</TableCell>
-                              <TableCell>{format(new Date(viatico.fecha), 'M')}</TableCell>
-                              <TableCell>{format(new Date(viatico.fecha), 'yyyy')}</TableCell>
                               <TableCell className="whitespace-nowrap">
                                 {format(new Date(viatico.fecha), 'dd/MM/yyyy')}
                               </TableCell>
                               <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.para || '-'}</Badge></TableCell>
                               <TableCell className="whitespace-nowrap">{viatico.que_sustenta || 'VIATICO'}</TableCell>
-                              <TableCell className="font-medium">{appUser?.displayName || user?.email}</TableCell>
                               <TableCell><Badge variant="secondary" className="whitespace-nowrap">{viatico.tipo_comprobante || '-'}</Badge></TableCell>
                               <TableCell className="whitespace-nowrap">{viatico.numero_documento || '-'}</TableCell>
                               <TableCell className="whitespace-nowrap">{viatico.numero_comprobante || '-'}</TableCell>
@@ -258,6 +265,16 @@ export default function MisViaticosPage() {
                                     <p className="max-w-xs">{viatico.descripcion}</p>
                                   </TooltipContent>
                                 </Tooltip>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="ghost" size="icon" onClick={() => handleEdit(viatico)}>
+                                    <Pencil className="h-4 w-4 text-blue-500" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" onClick={() => handleDelete(viatico.id)}>
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -293,6 +310,16 @@ export default function MisViaticosPage() {
                                     S/ {parseFloat(String(viatico.monto || 0)).toFixed(2)}
                                   </div>
                                 </div>
+                                <div className="flex justify-end gap-2 mt-2 pt-2 border-t">
+                                  <Button variant="ghost" size="sm" onClick={() => handleEdit(viatico)}>
+                                    <Pencil className="h-4 w-4 mr-2 text-blue-500" />
+                                    Editar
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDelete(viatico.id)}>
+                                    <Trash2 className="h-4 w-4 mr-2 text-red-500" />
+                                    Eliminar
+                                  </Button>
+                                </div>
                               </CardContent>
                             </Card>
                           ))}
@@ -305,6 +332,12 @@ export default function MisViaticosPage() {
             )}
           </div>
         </TooltipProvider >
+        <EditViaticoDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          viatico={editingViatico}
+          onSuccess={loadViaticos}
+        />
       </Layout >
     </AuthGuard >
   )

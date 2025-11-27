@@ -308,26 +308,16 @@ export async function deleteUser(uid: string) {
   return response.json()
 }
 
+
+export async function updateViatico(id: string, updates: any) {
+  return apiRequest(`/api/viaticos/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  })
+}
+
 export async function deleteViatico(id: string) {
-  const token = await getAuthToken()
-  const response = await fetch(`${API_URL}/api/viaticos/${id}`, {
+  return apiRequest(`/api/viaticos/${id}`, {
     method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
   })
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Error eliminando viático' }))
-    throw new Error(error.message || 'Error eliminando viático')
-  }
-
-  toast({
-    title: "Éxito",
-    description: "Viático eliminado correctamente.",
-    variant: "success",
-  })
-
-  return response.json()
 }

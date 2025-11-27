@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,10 +7,11 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { Badge } from '@/components/ui/badge'
 import { format, startOfDay, endOfDay, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Trash2, FileSpreadsheet, FileText, ArrowLeft, ChevronRight, User, List } from 'lucide-react'
+import { Trash2, FileSpreadsheet, FileText, ArrowLeft, ChevronRight, User, List, Pencil } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
+import { EditViaticoDialog } from '@/components/EditViaticoDialog'
 
 declare module 'jspdf' {
     interface jsPDF {
@@ -46,12 +45,15 @@ interface ReportsViewProps {
     viaticos: Viatico[]
     users: User[]
     onDelete: (id: string) => Promise<void>
+    onUpdate?: () => void
 }
 
-export default function ReportsView({ viaticos, users, onDelete }: ReportsViewProps) {
+export default function ReportsView({ viaticos, users, onDelete, onUpdate }: ReportsViewProps) {
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
     const [startDate, setStartDate] = useState<Date | undefined>()
     const [endDate, setEndDate] = useState<Date | undefined>()
+    const [editingViatico, setEditingViatico] = useState<Viatico | null>(null)
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
     // Helper to get user name
     const getUserName = (uid: string) => {
@@ -129,6 +131,11 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
         })
 
         doc.save(`${title.replace(/ /g, '_')}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`)
+    }
+
+    const handleEdit = (viatico: Viatico) => {
+        setEditingViatico(viatico)
+        setIsEditDialogOpen(true)
     }
 
     return (
@@ -319,7 +326,7 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                                 <TableHead>N° Comp.</TableHead>
                                                 <TableHead className="text-right">Monto</TableHead>
                                                 <TableHead className="hidden md:table-cell">Descripción</TableHead>
-                                                <TableHead className="text-right w-16"></TableHead>
+                                                <TableHead className="text-right">Acciones</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -340,17 +347,30 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                                     </TableCell>
                                                     <TableCell className="hidden md:table-cell max-w-xs truncate">{viatico.descripcion || '-'}</TableCell>
                                                     <TableCell className="text-right">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation()
-                                                                onDelete(viatico.id)
-                                                            }}
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    handleEdit(viatico)
+                                                                }}
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    onDelete(viatico.id)
+                                                                }}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -479,7 +499,7 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                             <TableHead>N° Comp.</TableHead>
                                             <TableHead className="text-right">Monto</TableHead>
                                             <TableHead className="hidden md:table-cell">Descripción</TableHead>
-                                            <TableHead className="text-right w-16"></TableHead>
+                                            <TableHead className="text-right">Acciones</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -507,14 +527,24 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                                                     </TableCell>
                                                     <TableCell className="hidden md:table-cell max-w-xs truncate">{viatico.descripcion || '-'}</TableCell>
                                                     <TableCell className="text-right">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                            onClick={() => onDelete(viatico.id)}
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                                                onClick={() => handleEdit(viatico)}
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                onClick={() => onDelete(viatico.id)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
                                             ))
@@ -526,6 +556,14 @@ export default function ReportsView({ viaticos, users, onDelete }: ReportsViewPr
                     </Card>
                 </TabsContent>
             </Tabs>
+            <EditViaticoDialog
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                viatico={editingViatico}
+                onSuccess={() => {
+                    onUpdate?.()
+                }}
+            />
         </div>
     )
 }

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { uploadViatico, getCurrentUser, closeDay } from '@/services/api'
@@ -18,6 +20,7 @@ import { FileCheck, Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, Info,
 import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
 
+import { DatePicker } from '@/components/ui/date-picker'
 import { useViaticoDeadline } from '@/hooks/useViaticoDeadline'
 
 export default function NuevoViaticoPage() {
@@ -27,7 +30,21 @@ export default function NuevoViaticoPage() {
   // Usar el hook global para la lógica de fechas y deadline
   const { activeDate: activeDateObj, activeDateDisplay, timeLeft, isGracePeriod } = useViaticoDeadline()
   // Convertir activeDateObj a string YYYY-MM-DD para uso interno
-  const activeDate = activeDateObj ? activeDateObj.toISOString().split('T')[0] : ''
+  const [activeDate, setActiveDate] = useState(activeDateObj ? activeDateObj.toISOString().split('T')[0] : '')
+
+  useEffect(() => {
+    if (activeDateObj) {
+      const newDateStr = activeDateObj.toISOString().split('T')[0]
+
+      // Si es usuario normal, siempre sincronizar
+      if (appUser?.role !== 'admin' && appUser?.role !== 'super_admin') {
+        setActiveDate(newDateStr)
+      } else {
+        // Si es admin, solo inicializar si está vacío
+        setActiveDate(prev => prev || newDateStr)
+      }
+    }
+  }, [activeDateObj, appUser])
 
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<{ url: string; isPdf: boolean; name: string }[]>([])
@@ -238,6 +255,13 @@ export default function NuevoViaticoPage() {
       if (numeroDocumento) formData.append('numero_documento', numeroDocumento)
       if (numeroComprobante) formData.append('numero_comprobante', numeroComprobante)
 
+      if (numeroComprobante) formData.append('numero_comprobante', numeroComprobante)
+
+      // Si es admin, usar la fecha seleccionada manualmente
+      if (appUser?.role === 'admin' || appUser?.role === 'super_admin') {
+        formData.append('fecha_manual', activeDate)
+      }
+
       formData.append('createTxt', '1')
 
       await uploadViatico(formData)
@@ -321,7 +345,25 @@ export default function NuevoViaticoPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Fecha de Registro Activa</p>
-                    <h2 className={`text-3xl font-bold ${isGracePeriod ? 'text-orange-700' : 'text-primary'}`}>{activeDateDisplay}</h2>
+
+                    {appUser?.role === 'admin' || appUser?.role === 'super_admin' ? (
+                      <div className="flex items-center gap-2">
+                        <DatePicker
+                          date={activeDate ? new Date(activeDate + 'T12:00:00') : undefined} // Adding time to avoid timezone issues
+                          onSelect={(date) => {
+                            if (date) {
+                              setActiveDate(date.toISOString().split('T')[0])
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-center h-10 px-3 py-2 border rounded-md bg-background">
+                        <span className={`text-sm ${isGracePeriod ? 'text-orange-700' : 'text-primary'}`}>
+                          {activeDateObj ? format(activeDateObj, "EEEE d 'de' MMMM 'de' yyyy", { locale: es }) : activeDateDisplay}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -494,16 +536,18 @@ export default function NuevoViaticoPage() {
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="numero_comprobante">Número de Comprobante</Label>
-                        <Input
-                          id="numero_comprobante"
-                          type="text"
-                          value={numeroComprobante}
-                          onChange={(e) => setNumeroComprobante(e.target.value)}
-                          placeholder="Ej: 001-12345"
-                        />
-                      </div>
+                      {tipoComprobante && tipoComprobante !== 'SIN COMPROBANTE' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="numero_comprobante">Número de Comprobante</Label>
+                          <Input
+                            id="numero_comprobante"
+                            type="text"
+                            value={numeroComprobante}
+                            onChange={(e) => setNumeroComprobante(e.target.value)}
+                            placeholder="Ej: 001-12345"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

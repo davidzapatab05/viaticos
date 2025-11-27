@@ -280,6 +280,13 @@ Proyecto privado - Todos los derechos reservados
 
 ## 🔄 Historial de Versiones
 
+### v1.1.0 (2025-11-26)
+- ✅ Edición de viáticos con validación de fecha (10 AM cutoff)
+- ✅ Override de fecha para administradores
+- ✅ Restricciones de seguridad en gestión de roles
+- ✅ Mejoras de UI/UX (SweetAlert2, Placeholders dinámicos)
+- 🐛 Corrección de bugs y estabilidad
+
 ### v1.0.0 (2025-01-22)
 - ✅ Sistema de autenticación con Firebase
 - ✅ Gestión de usuarios con roles
@@ -295,4 +302,4 @@ Para reportar bugs o solicitar features, contactar al administrador del sistema.
 
 ---
 
-**Última actualización**: 2025-01-22
+**Última actualización**: 2025-11-26

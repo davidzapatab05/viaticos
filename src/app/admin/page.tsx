@@ -459,8 +459,14 @@ export default function AdminPage() {
                                 <Select
                                   value={u.role}
                                   onValueChange={(newRole) => handleRoleChange(u.uid, newRole)}
-                                  disabled={userRole !== 'super_admin' || u.role === 'super_admin'}
-                                // disabled={updating === u.uid || (userRole !== 'super_admin' && u.role === 'super_admin')}
+                                  disabled={
+                                    // No se puede editar a sí mismo
+                                    u.uid === user?.uid ||
+                                    // No se puede editar el rol de super_admin
+                                    u.role === 'super_admin' ||
+                                    // Solo super_admin puede editar roles de admin
+                                    (u.role === 'admin' && userRole !== 'super_admin')
+                                  }
                                 >
                                   <SelectTrigger className="w-40">
                                     {updating === u.uid ? (

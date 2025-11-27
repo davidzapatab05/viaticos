@@ -250,6 +250,8 @@ __turbopack_context__.s([
     ()=>setUserRole,
     "setUserStatus",
     ()=>setUserStatus,
+    "updateViatico",
+    ()=>updateViatico,
     "uploadViatico",
     ()=>uploadViatico,
     "verifyOneDriveStructure",
@@ -556,27 +558,16 @@ async function deleteUser(uid) {
     });
     return response.json();
 }
+async function updateViatico(id, updates) {
+    return apiRequest(`/api/viaticos/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+    });
+}
 async function deleteViatico(id) {
-    const token = await getAuthToken();
-    const response = await fetch(`${API_URL}/api/viaticos/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
+    return apiRequest(`/api/viaticos/${id}`, {
+        method: 'DELETE'
     });
-    if (!response.ok) {
-        const error = await response.json().catch(()=>({
-                message: 'Error eliminando viático'
-            }));
-        throw new Error(error.message || 'Error eliminando viático');
-    }
-    (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$use$2d$toast$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["toast"])({
-        title: "Éxito",
-        description: "Viático eliminado correctamente.",
-        variant: "success"
-    });
-    return response.json();
 }
 }),
 "[project]/src/contexts/AuthContext.tsx [app-ssr] (ecmascript)", ((__turbopack_context__) => {

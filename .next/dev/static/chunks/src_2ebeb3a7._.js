@@ -715,11 +715,30 @@ function useViaticoDeadline() {
                         return; // Detener ejecución para evitar actualizaciones de estado en componente desmontado
                     }
                     previousGracePeriod.current = gracePeriodActive;
-                    setActiveDate(effectiveDate);
-                    setActiveDateDisplay((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$format$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__format$3e$__["format"])(effectiveDate, "EEEE d 'de' MMMM", {
-                        locale: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$locale$2f$es$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__es$3e$__["es"]
-                    }));
-                    setIsGracePeriod(gracePeriodActive);
+                    // Solo actualizar el estado si la fecha ha cambiado (evitar re-renders innecesarios)
+                    setActiveDate({
+                        "useViaticoDeadline.useEffect.calculateActiveDate": (prevDate)=>{
+                            if (prevDate.getTime() !== effectiveDate.getTime()) {
+                                return effectiveDate;
+                            }
+                            return prevDate;
+                        }
+                    }["useViaticoDeadline.useEffect.calculateActiveDate"]);
+                    setActiveDateDisplay({
+                        "useViaticoDeadline.useEffect.calculateActiveDate": (prevDisplay)=>{
+                            const newDisplay = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$format$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__format$3e$__["format"])(effectiveDate, "EEEE d 'de' MMMM", {
+                                locale: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$esm$2f$locale$2f$es$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__es$3e$__["es"]
+                            });
+                            if (prevDisplay !== newDisplay) return newDisplay;
+                            return prevDisplay;
+                        }
+                    }["useViaticoDeadline.useEffect.calculateActiveDate"]);
+                    setIsGracePeriod({
+                        "useViaticoDeadline.useEffect.calculateActiveDate": (prevGrace)=>{
+                            if (prevGrace !== gracePeriodActive) return gracePeriodActive;
+                            return prevGrace;
+                        }
+                    }["useViaticoDeadline.useEffect.calculateActiveDate"]);
                     if (gracePeriodActive) {
                         // Caso 1: Periodo de gracia (antes de las 10 AM, registrando para ayer)
                         // Deadline: Hoy 10:00 AM

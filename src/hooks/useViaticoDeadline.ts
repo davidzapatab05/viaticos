@@ -63,9 +63,24 @@ export function useViaticoDeadline() {
             }
             previousGracePeriod.current = gracePeriodActive
 
-            setActiveDate(effectiveDate)
-            setActiveDateDisplay(format(effectiveDate, "EEEE d 'de' MMMM", { locale: es }))
-            setIsGracePeriod(gracePeriodActive)
+            // Solo actualizar el estado si la fecha ha cambiado (evitar re-renders innecesarios)
+            setActiveDate(prevDate => {
+                if (prevDate.getTime() !== effectiveDate.getTime()) {
+                    return effectiveDate
+                }
+                return prevDate
+            })
+
+            setActiveDateDisplay(prevDisplay => {
+                const newDisplay = format(effectiveDate, "EEEE d 'de' MMMM", { locale: es })
+                if (prevDisplay !== newDisplay) return newDisplay
+                return prevDisplay
+            })
+
+            setIsGracePeriod(prevGrace => {
+                if (prevGrace !== gracePeriodActive) return gracePeriodActive
+                return prevGrace
+            })
 
             if (gracePeriodActive) {
                 // Caso 1: Periodo de gracia (antes de las 10 AM, registrando para ayer)
