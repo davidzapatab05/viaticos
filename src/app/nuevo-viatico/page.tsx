@@ -609,7 +609,7 @@ export default function NuevoViaticoPage() {
                       <CheckCircle2 className="h-4 w-4" />
                       <AlertTitle>Éxito</AlertTitle>
                       <AlertDescription>
-                        Viático registrado correctamente. Redirigiendo...
+                        Viático registrado correctamente. Puedes registrar otro.
                       </AlertDescription>
                     </Alert>
                   )}
