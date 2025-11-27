@@ -282,7 +282,7 @@ export default function NuevoViaticoPage() {
         <Layout>
           <div className="max-w-5xl mx-auto space-y-6">
             <Card>
-              <CardContent className="p-20">
+              <CardContent className="p-6 sm:p-20">
                 <div className="flex flex-col items-center justify-center text-center space-y-4">
                   <Loader2 className="h-12 w-12 animate-spin text-primary" />
                   <p className="text-muted-foreground">Cargando...</p>

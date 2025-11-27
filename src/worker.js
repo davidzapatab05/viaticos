@@ -226,7 +226,6 @@ async function ensureViaticosTable(env) {
           id TEXT PRIMARY KEY,
           usuario_id TEXT NOT NULL,
           fecha TEXT NOT NULL,
-          tipo TEXT NOT NULL,
           monto REAL NOT NULL,
           descripcion TEXT,
           folder_path TEXT,
@@ -1102,7 +1101,6 @@ export default {
         const foto = formData.get('foto')
         const monto = formData.get('monto')
         const descripcion = formData.get('descripcion')
-        const tipo = (formData.get('tipo') || 'otro').toString()
         // Por defecto, createTxt es true si no se especifica, o si el valor es '1'
         const createTxt = formData.get('createTxt') === null || formData.get('createTxt') === '1'
 
@@ -1310,8 +1308,8 @@ export default {
           await ensureViaticosTable(env)
 
           // Insertar en la base de datos incluyendo folder_path
-          await env.DB.prepare(`INSERT INTO viaticos (id, usuario_id, fecha, tipo, monto, descripcion, folder_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-            .bind(viaticoId, user.uid, dbFormattedDate, tipo, parseFloat(monto), descripcion || '', folderPath, getPeruDateTime(), getPeruDateTime())
+          await env.DB.prepare(`INSERT INTO viaticos (id, usuario_id, fecha, monto, descripcion, folder_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+            .bind(viaticoId, user.uid, dbFormattedDate, parseFloat(monto), descripcion || '', folderPath, getPeruDateTime(), getPeruDateTime())
             .run()
 
           return new Response(JSON.stringify({

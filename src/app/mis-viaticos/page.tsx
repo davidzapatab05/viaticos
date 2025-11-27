@@ -227,7 +227,7 @@ export default function MisViaticosPage() {
                       <CardTitle>Lista de Viáticos</CardTitle>
                       <CardDescription>Vista detallada de todos tus viáticos</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>

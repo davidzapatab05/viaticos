@@ -100,9 +100,9 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
                 <form onSubmit={handleSubmit} className="grid gap-4 py-4">
                     {/* Admin Date Override */}
                     {(appUser?.role === 'admin' || appUser?.role === 'super_admin') && (
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label className="text-right">Fecha</Label>
-                            <div className="col-span-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                            <Label className="text-left sm:text-right">Fecha</Label>
+                            <div className="col-span-1 sm:col-span-3">
                                 <DatePicker
                                     date={formData.fecha ? new Date(formData.fecha + 'T12:00:00') : undefined}
                                     onSelect={(date) => {
@@ -115,8 +115,8 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
                         </div>
                     )}
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="monto" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                        <Label htmlFor="monto" className="text-left sm:text-right">
                             Monto
                         </Label>
                         <Input
@@ -125,28 +125,28 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
                             step="0.01"
                             value={formData.monto}
                             onChange={(e) => handleChange('monto', e.target.value)}
-                            className="col-span-3"
+                            className="col-span-1 sm:col-span-3"
                             required
                         />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="descripcion" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                        <Label htmlFor="descripcion" className="text-left sm:text-right">
                             Descripción
                         </Label>
                         <Textarea
                             id="descripcion"
                             value={formData.descripcion}
                             onChange={(e) => handleChange('descripcion', e.target.value)}
-                            className="col-span-3"
+                            className="col-span-1 sm:col-span-3"
                             required
                         />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="para" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                        <Label htmlFor="para" className="text-left sm:text-right">
                             Para
                         </Label>
                         <Select value={formData.para as string} onValueChange={(val) => handleChange('para', val)}>
-                            <SelectTrigger className="col-span-3">
+                            <SelectTrigger className="col-span-1 sm:col-span-3">
                                 <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
                             <SelectContent>
@@ -155,12 +155,12 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="tipo_comprobante" className="text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                        <Label htmlFor="tipo_comprobante" className="text-left sm:text-right">
                             Tipo Comp.
                         </Label>
                         <Select value={formData.tipo_comprobante as string} onValueChange={(val) => handleChange('tipo_comprobante', val)}>
-                            <SelectTrigger className="col-span-3">
+                            <SelectTrigger className="col-span-1 sm:col-span-3">
                                 <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
                             <SelectContent>
@@ -173,27 +173,27 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
                     </div>
                     {formData.tipo_comprobante && formData.tipo_comprobante !== 'SIN COMPROBANTE' && (
                         <>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="numero_documento" className="text-right">
+                            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                                <Label htmlFor="numero_documento" className="text-left sm:text-right">
                                     {formData.tipo_comprobante === 'BOLETA' ? 'N° DNI' : 'N° RUC'}
                                 </Label>
                                 <Input
                                     id="numero_documento"
                                     value={formData.numero_documento}
                                     onChange={(e) => handleChange('numero_documento', e.target.value)}
-                                    className="col-span-3"
+                                    className="col-span-1 sm:col-span-3"
                                     placeholder={formData.tipo_comprobante === 'BOLETA' ? 'Ej: 12345678' : 'Ej: 20123456789'}
                                 />
                             </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="numero_comprobante" className="text-right">
+                            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                                <Label htmlFor="numero_comprobante" className="text-left sm:text-right">
                                     N° Comp.
                                 </Label>
                                 <Input
                                     id="numero_comprobante"
                                     value={formData.numero_comprobante}
                                     onChange={(e) => handleChange('numero_comprobante', e.target.value)}
-                                    className="col-span-3"
+                                    className="col-span-1 sm:col-span-3"
                                     placeholder="Serie-Número"
                                 />
                             </div>

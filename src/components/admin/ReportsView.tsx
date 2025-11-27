@@ -197,7 +197,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="rounded-md border">
+                                <div className="rounded-md border overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -310,7 +310,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="rounded-md border">
+                                <div className="rounded-md border overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -483,7 +483,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
 
                     <Card>
                         <CardContent className="pt-6">
-                            <div className="rounded-md border">
+                            <div className="rounded-md border overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>

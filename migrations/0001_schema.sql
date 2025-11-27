@@ -1,6 +1,4 @@
--- Esquema Inicial Completo (Reconstrucción)
-
--- 1. Tabla de Roles de Usuario
+-- Esquema Consolidado
 DROP TABLE IF EXISTS user_roles;
 CREATE TABLE user_roles (
   user_id TEXT PRIMARY KEY,
@@ -9,6 +7,7 @@ CREATE TABLE user_roles (
   crear_carpeta INTEGER DEFAULT 1,
   email TEXT,
   displayName TEXT,
+  last_closed_date TEXT,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );
@@ -17,7 +16,6 @@ CREATE INDEX IF NOT EXISTS idx_user_roles_email ON user_roles(email);
 CREATE INDEX IF NOT EXISTS idx_user_roles_role ON user_roles(role);
 CREATE INDEX IF NOT EXISTS idx_user_roles_estado ON user_roles(estado);
 
--- 2. Tabla de Viáticos (Estructura Final)
 DROP TABLE IF EXISTS viaticos;
 CREATE TABLE viaticos (
     id TEXT PRIMARY KEY,
