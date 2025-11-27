@@ -266,13 +266,28 @@ export default function NuevoViaticoPage() {
 
       await uploadViatico(formData)
       setSuccess(true)
+      resetForm()
       setTimeout(() => {
-        router.push('/mis-viaticos')
-      }, 2000)
+        setSuccess(false)
+      }, 3000)
     } catch (err) {
       setError((err as Error).message || 'Error al subir el viático')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const resetForm = () => {
+    setFiles([])
+    setPreviews([])
+    setMonto('')
+    setDescripcion('')
+    setPara('')
+    setTipoComprobante('')
+    setNumeroDocumento('')
+    setNumeroComprobante('')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
 
@@ -662,6 +677,16 @@ export default function NuevoViaticoPage() {
             </Dialog>
           </div>
         </TooltipProvider >
+
+        {/* Blocking Loading Overlay */}
+        {loading && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <p className="text-lg font-medium text-foreground">Registrando viático...</p>
+            </div>
+          </div>
+        )}
       </Layout >
     </AuthGuard >
   )
