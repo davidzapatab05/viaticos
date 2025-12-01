@@ -5,7 +5,7 @@ import Swal from 'sweetalert2'
 import { useToast } from "@/lib/use-toast"
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getAllViaticos, getAllUsers, setUserRole as apiSetUserRole, getCurrentUser, cleanupAnonymousUsers, setUserStatus, deleteUser, deleteViatico, apiRequest } from '@/services/api'
+import { getAllViaticos, getAllUsers, setUserRole as apiSetUserRole, getCurrentUser, cleanupAnonymousUsers, setUserStatus, deleteUser, deleteViatico, apiRequest, triggerManualBackup } from '@/services/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,7 +13,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, Trash2, Ban, CheckCircle2 } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { DatePicker } from '@/components/ui/date-picker'
+import { format } from 'date-fns'
+import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, Trash2, Ban, CheckCircle2, DatabaseBackup } from 'lucide-react'
 import Layout from '@/components/Layout'
 import RoleGuard from '@/components/RoleGuard'
 import ReportsView from '@/components/admin/ReportsView'
@@ -50,6 +55,11 @@ export default function AdminPage() {
   const [userCount, setUserCount] = useState(0)
   const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
   const isSuperAdmin = user?.email?.toLowerCase() === superAdminEmail?.toLowerCase() || userRole === 'super_admin';
+
+  // Backup Dialog State
+  const [isBackupDialogOpen, setIsBackupDialogOpen] = useState(false)
+  const [backupStartDate, setBackupStartDate] = useState<Date | undefined>()
+  const [backupEndDate, setBackupEndDate] = useState<Date | undefined>()
 
   useEffect(() => {
     if (user) {
@@ -166,6 +176,8 @@ export default function AdminPage() {
         confirmButton: 'rounded-md px-4 py-2',
         cancelButton: 'rounded-md px-4 py-2',
       },
+      background: '#1f2937',
+      color: '#fff'
     })
 
     if (!result.isConfirmed) return
@@ -180,6 +192,8 @@ export default function AdminPage() {
         text: 'El usuario fue eliminado correctamente.',
         icon: 'success',
         confirmButtonColor: '#2a9d8f',
+        background: '#1f2937',
+        color: '#fff'
       })
 
       await loadData()
@@ -190,6 +204,8 @@ export default function AdminPage() {
         text: 'Error al eliminar usuario: ' + (e as Error).message,
         icon: 'error',
         confirmButtonColor: '#d62828',
+        background: '#1f2937',
+        color: '#fff'
       })
     }
   }
@@ -203,20 +219,30 @@ export default function AdminPage() {
       confirmButtonText: 'Sí, limpiar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#d33',
+      background: '#1f2937',
+      color: '#fff'
     })
 
     if (!result.isConfirmed) return
 
     try {
       const data = await cleanupAnonymousUsers()
-      Swal.fire(
-        'Completado',
-        `Usuarios eliminados: ${data.deletedUsers}<br>Viáticos eliminados: ${data.deletedViaticos}`,
-        'success'
-      )
+      Swal.fire({
+        title: 'Completado',
+        html: `Usuarios eliminados: ${data.deletedUsers}<br>Viáticos eliminados: ${data.deletedViaticos}`,
+        icon: 'success',
+        background: '#1f2937',
+        color: '#fff'
+      })
       await loadData()
     } catch (e) {
-      Swal.fire('Error', (e as Error).message || 'Error ejecutando limpieza', 'error')
+      Swal.fire({
+        title: 'Error',
+        text: (e as Error).message || 'Error ejecutando limpieza',
+        icon: 'error',
+        background: '#1f2937',
+        color: '#fff'
+      })
     }
   }
 
@@ -229,6 +255,8 @@ export default function AdminPage() {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#d33',
+      background: '#1f2937',
+      color: '#fff'
     })
 
     if (!result.isConfirmed) return
@@ -237,17 +265,84 @@ export default function AdminPage() {
     try {
       await deleteViatico(id)
       clearLoading()
-      await Swal.fire('Eliminado', 'El viático ha sido eliminado.', 'success')
+      await Swal.fire({
+        title: 'Eliminado',
+        text: 'El viático ha sido eliminado.',
+        icon: 'success',
+        background: '#1f2937',
+        color: '#fff'
+      })
       await loadData()
     } catch (e) {
       clearLoading()
-      await Swal.fire('Error', (e as Error).message || 'Error al eliminar viático', 'error')
+      await Swal.fire({
+        title: 'Error',
+        text: (e as Error).message || 'Error al eliminar viático',
+        icon: 'error',
+        background: '#1f2937',
+        color: '#fff'
+      })
+    }
+  }
+
+  function handleManualBackup() {
+    setIsBackupDialogOpen(true)
+  }
+
+  async function executeManualBackup() {
+    if (!backupStartDate || !backupEndDate) {
+      toast({ title: "Error", description: "Ambas fechas son requeridas", variant: "destructive" })
+      return
+    }
+
+    setGlobalLoading('Generando backup y limpiando BD...')
+    setIsBackupDialogOpen(false)
+
+    try {
+      const startStr = format(backupStartDate, 'yyyy-MM-dd')
+      const endStr = format(backupEndDate, 'yyyy-MM-dd')
+
+      const result = await triggerManualBackup(startStr, endStr)
+      clearLoading()
+
+      await Swal.fire({
+        title: 'Backup Completado',
+        html: `
+          <div class="text-left">
+            <p>Se ha generado el archivo: <b>${result.backupFile}</b></p>
+            <p>Registros eliminados: <b>${result.deletedCount}</b></p>
+          </div>
+        `,
+        icon: 'success',
+        background: '#1f2937',
+        color: '#fff'
+      })
+
+      setBackupStartDate(undefined)
+      setBackupEndDate(undefined)
+
+      await loadData()
+    } catch (e) {
+      clearLoading()
+      await Swal.fire({
+        title: 'Error',
+        text: (e as Error).message || 'Error al generar backup',
+        icon: 'error',
+        background: '#1f2937',
+        color: '#fff'
+      })
     }
   }
 
   async function handleTestNotification() {
     if (!("Notification" in window)) {
-      Swal.fire('Error', 'Este navegador no soporta notificaciones de escritorio', 'error')
+      Swal.fire({
+        title: 'Error',
+        text: 'Este navegador no soporta notificaciones de escritorio',
+        icon: 'error',
+        background: '#1f2937',
+        color: '#fff'
+      })
       return
     }
 
@@ -375,6 +470,10 @@ export default function AdminPage() {
                   <div className="flex flex-wrap gap-2">
                     {isSuperAdmin && (
                       <>
+                        <Button onClick={handleManualBackup} variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
+                          <DatabaseBackup className="h-4 w-4 mr-2" />
+                          Backup Manual
+                        </Button>
                         <Button onClick={handleTestNotification} variant="outline" size="sm">
                           Probar Notificación
                         </Button>
@@ -509,6 +608,54 @@ export default function AdminPage() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          <Dialog open={isBackupDialogOpen} onOpenChange={setIsBackupDialogOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Backup Manual</DialogTitle>
+                <DialogDescription>
+                  Selecciona el rango de fechas para respaldar y <b>ELIMINAR</b> de la base de datos.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label>Fecha Inicio</Label>
+                  <DatePicker
+                    date={backupStartDate}
+                    onSelect={setBackupStartDate}
+                    placeholder="Selecciona fecha inicio"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Fecha Fin</Label>
+                  <DatePicker
+                    date={backupEndDate}
+                    onSelect={setBackupEndDate}
+                    placeholder="Selecciona fecha fin"
+                    disabled={(date) => backupStartDate ? date < backupStartDate : false}
+                  />
+                </div>
+
+                <Alert variant="destructive" className="bg-yellow-900/20 border-yellow-600/50 text-yellow-500">
+                  <div className="flex items-start gap-2">
+                    <Shield className="h-4 w-4 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-bold mb-1">Advertencia</p>
+                      Esta acción generará un archivo SQL en OneDrive y luego <b>ELIMINARÁ</b> los registros de viáticos del rango seleccionado.
+                    </div>
+                  </div>
+                </Alert>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsBackupDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={executeManualBackup}>
+                  Iniciar Backup
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </Layout >
     </RoleGuard >

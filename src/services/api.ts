@@ -283,3 +283,22 @@ export async function unsubscribeFromNotifications(endpoint: string) {
     body: JSON.stringify({ endpoint }),
   })
 }
+
+export async function triggerManualBackup(startDate: string, endDate: string) {
+  const token = await getAuthToken()
+  const response = await fetch(`${API_URL}/api/backup/manual`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ startDate, endDate }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Error ejecutando backup' }))
+    throw new Error(error.message || 'Error ejecutando backup')
+  }
+
+  return response.json()
+}

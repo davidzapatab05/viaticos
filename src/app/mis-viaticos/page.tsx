@@ -82,7 +82,9 @@ export default function MisViaticosPage() {
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
+      background: '#1f2937',
+      color: '#fff'
     })
 
     if (!result.isConfirmed) return
@@ -97,14 +99,18 @@ export default function MisViaticosPage() {
         text: 'El viático ha sido eliminado correctamente',
         icon: 'success',
         timer: 1500,
-        showConfirmButton: false
+        showConfirmButton: false,
+        background: '#1f2937',
+        color: '#fff'
       })
     } catch (err) {
       await Swal.fire({
         title: 'Error',
         text: 'Error al eliminar viático: ' + (err as Error).message,
         icon: 'error',
-        confirmButtonColor: '#ef4444'
+        confirmButtonColor: '#ef4444',
+        background: '#1f2937',
+        color: '#fff'
       })
     } finally {
       setLoading(false)

@@ -640,9 +640,9 @@ async function executeBackupAndCleanup(env, startDate, endDate, backupName) {
     const usersRes = await env.DB.prepare(`SELECT * FROM user_roles`).all();
     const users = usersRes.results || [];
 
-    if (viaticos.length === 0 && users.length === 0) {
-      console.log(`No hay registros para ${backupName}. Saltando backup.`);
-      return { success: true, message: 'No hay registros para respaldar', count: 0 };
+    if (viaticos.length === 0) {
+      console.log(`No hay viaticos para ${backupName}. Saltando backup.`);
+      return { success: true, message: 'No hay viaticos para respaldar', count: 0 };
     }
 
     console.log(`Encontrados: ${viaticos.length} viaticos, ${users.length} usuarios.`);
@@ -821,10 +821,13 @@ export default {
           const { startDate, endDate } = body;
 
           if (!startDate || !endDate) {
-            return new Response(JSON.stringify(result), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          } else {
-            return new Response(JSON.stringify(result), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return new Response(JSON.stringify({ success: false, error: 'Fechas de inicio y fin son requeridas' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
+
+          const backupName = `backup_${startDate}_${endDate}`;
+          const result = await executeBackupAndCleanup(env, startDate, endDate, backupName);
+
+          return new Response(JSON.stringify(result), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         } catch (error) {
           return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }

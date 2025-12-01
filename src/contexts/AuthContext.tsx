@@ -109,7 +109,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   title: 'Cuenta Inactiva',
                   text: 'Tu cuenta ha sido desactivada por un administrador. Contacta a soporte para más información.',
                   icon: 'error',
-                  confirmButtonColor: '#ea580c'
+                  confirmButtonColor: '#ea580c',
+                  background: '#1f2937',
+                  color: '#fff'
                 })
                 return
               }

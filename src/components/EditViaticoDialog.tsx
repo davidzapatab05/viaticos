@@ -74,7 +74,9 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
                 text: 'El viático ha sido actualizado correctamente.',
                 icon: 'success',
                 timer: 1500,
-                showConfirmButton: false
+                showConfirmButton: false,
+                background: '#1f2937',
+                color: '#fff'
             })
         } catch (error) {
             clearLoading()
@@ -82,7 +84,9 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
                 title: 'Error',
                 text: (error as Error).message || 'Error al actualizar viático',
                 icon: 'error',
-                confirmButtonColor: '#ef4444'
+                confirmButtonColor: '#ef4444',
+                background: '#1f2937',
+                color: '#fff'
             })
         }
     }

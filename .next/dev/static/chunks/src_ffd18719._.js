@@ -267,6 +267,8 @@ __turbopack_context__.s([
     ()=>setUserStatus,
     "subscribeToNotifications",
     ()=>subscribeToNotifications,
+    "triggerManualBackup",
+    ()=>triggerManualBackup,
     "unsubscribeFromNotifications",
     ()=>unsubscribeFromNotifications,
     "updateViatico",
@@ -513,6 +515,27 @@ async function unsubscribeFromNotifications(endpoint) {
         })
     });
 }
+async function triggerManualBackup(startDate, endDate) {
+    const token = await getAuthToken();
+    const response = await fetch(`${API_URL}/api/backup/manual`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            startDate,
+            endDate
+        })
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(()=>({
+                message: 'Error ejecutando backup'
+            }));
+        throw new Error(error.message || 'Error ejecutando backup');
+    }
+    return response.json();
+}
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }
@@ -621,7 +644,9 @@ function AuthProvider({ children }) {
                                                     title: 'Cuenta Inactiva',
                                                     text: 'Tu cuenta ha sido desactivada por un administrador. Contacta a soporte para más información.',
                                                     icon: 'error',
-                                                    confirmButtonColor: '#ea580c'
+                                                    confirmButtonColor: '#ea580c',
+                                                    background: '#1f2937',
+                                                    color: '#fff'
                                                 });
                                                 return;
                                             }
@@ -802,7 +827,7 @@ function AuthProvider({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/src/contexts/AuthContext.tsx",
-        lineNumber: 258,
+        lineNumber: 260,
         columnNumber: 5
     }, this);
 }
