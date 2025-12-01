@@ -134,6 +134,27 @@ export default function MisViaticosPage() {
     return acc
   }, {} as Record<string, Viatico[]>)
 
+  // Helper para verificar si se puede editar/eliminar (Regla de las 10 AM)
+  const canEditOrDelete = (fechaViatico: string, role?: string) => {
+    if (role === 'admin' || role === 'super_admin') return true
+
+    // Fecha del viático (YYYY-MM-DD)
+    // Agregar hora para evitar problemas de timezone al convertir
+    const viaticoDate = new Date(fechaViatico + 'T00:00:00')
+
+    // Fecha límite: Día siguiente a las 10:00 AM
+    const cutoffDate = new Date(viaticoDate)
+    cutoffDate.setDate(cutoffDate.getDate() + 1)
+    cutoffDate.setHours(10, 0, 0, 0)
+
+    // Hora actual (simulada en cliente, idealmente usar hora del servidor o timezone explícito)
+    // Para consistencia con el usuario en Perú, usamos la hora local del navegador
+    // asumiendo que el usuario está en Perú.
+    const now = new Date()
+
+    return now <= cutoffDate
+  }
+
   if (authLoading || !appUser) {
     return (
       <Layout>
@@ -268,41 +289,46 @@ export default function MisViaticosPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {viaticos.map((viatico) => (
-                            <TableRow key={viatico.id}>
-                              <TableCell className="whitespace-nowrap">
-                                {format(new Date(viatico.fecha + 'T12:00:00'), 'dd/MM/yyyy')}
-                              </TableCell>
-                              <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.para || '-'}</Badge></TableCell>
-                              <TableCell className="whitespace-nowrap">{viatico.que_sustenta || 'VIATICO'}</TableCell>
-                              <TableCell><Badge variant="secondary" className="whitespace-nowrap">{viatico.tipo_comprobante || '-'}</Badge></TableCell>
-                              <TableCell className="whitespace-nowrap">{viatico.numero_documento || '-'}</TableCell>
-                              <TableCell className="whitespace-nowrap">{viatico.numero_comprobante || '-'}</TableCell>
-                              <TableCell className="text-right font-medium whitespace-nowrap">
-                                S/ {parseFloat(String(viatico.monto || 0)).toFixed(2)}
-                              </TableCell>
-                              <TableCell className="max-w-xs truncate">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span className="truncate block">{viatico.descripcion}</span>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="max-w-xs">{viatico.descripcion}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button variant="ghost" size="icon" onClick={() => handleEdit(viatico)}>
-                                    <Pencil className="h-4 w-4 text-blue-500" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" onClick={() => handleDelete(viatico.id)}>
-                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {viaticos.map((viatico) => {
+                            const canModify = canEditOrDelete(viatico.fecha, appUser?.role)
+                            return (
+                              <TableRow key={viatico.id}>
+                                <TableCell className="whitespace-nowrap">
+                                  {format(new Date(viatico.fecha + 'T12:00:00'), 'dd/MM/yyyy')}
+                                </TableCell>
+                                <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.para || '-'}</Badge></TableCell>
+                                <TableCell className="whitespace-nowrap">{viatico.que_sustenta || 'VIATICO'}</TableCell>
+                                <TableCell><Badge variant="secondary" className="whitespace-nowrap">{viatico.tipo_comprobante || '-'}</Badge></TableCell>
+                                <TableCell className="whitespace-nowrap">{viatico.numero_documento || '-'}</TableCell>
+                                <TableCell className="whitespace-nowrap">{viatico.numero_comprobante || '-'}</TableCell>
+                                <TableCell className="text-right font-medium whitespace-nowrap">
+                                  S/ {parseFloat(String(viatico.monto || 0)).toFixed(2)}
+                                </TableCell>
+                                <TableCell className="max-w-xs truncate">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="truncate block">{viatico.descripcion}</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="max-w-xs">{viatico.descripcion}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {canModify && (
+                                    <div className="flex justify-end gap-2">
+                                      <Button variant="ghost" size="icon" onClick={() => handleEdit(viatico)}>
+                                        <Pencil className="h-4 w-4 text-blue-500" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" onClick={() => handleDelete(viatico.id)}>
+                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
                         </TableBody>
                       </Table>
                     </CardContent>
@@ -320,34 +346,39 @@ export default function MisViaticosPage() {
                           <Badge variant="secondary">S/ {monthTotal.toFixed(2)}</Badge>
                         </div>
                         <div className="grid gap-3">
-                          {monthViaticos.map((viatico) => (
-                            <Card key={viatico.id}>
-                              <CardContent className="p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                  <div className="space-y-1">
-                                    <p className="font-medium line-clamp-2">{viatico.descripcion || 'Sin descripción'}</p>
-                                    <div className="flex items-center text-xs text-muted-foreground">
-                                      <Badge variant="outline" className="mr-2 text-[10px] px-1 py-0 h-5">{viatico.tipo || 'otro'}</Badge>
-                                      {format(new Date(viatico.fecha + 'T12:00:00'), 'dd MMM', { locale: es })}
+                          {monthViaticos.map((viatico) => {
+                            const canModify = canEditOrDelete(viatico.fecha, appUser?.role)
+                            return (
+                              <Card key={viatico.id}>
+                                <CardContent className="p-4">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div className="space-y-1">
+                                      <p className="font-medium line-clamp-2">{viatico.descripcion || 'Sin descripción'}</p>
+                                      <div className="flex items-center text-xs text-muted-foreground">
+                                        <Badge variant="outline" className="mr-2 text-[10px] px-1 py-0 h-5">{viatico.tipo || 'otro'}</Badge>
+                                        {format(new Date(viatico.fecha + 'T12:00:00'), 'dd MMM', { locale: es })}
+                                      </div>
+                                    </div>
+                                    <div className="text-lg font-bold whitespace-nowrap">
+                                      S/ {parseFloat(String(viatico.monto || 0)).toFixed(2)}
                                     </div>
                                   </div>
-                                  <div className="text-lg font-bold whitespace-nowrap">
-                                    S/ {parseFloat(String(viatico.monto || 0)).toFixed(2)}
-                                  </div>
-                                </div>
-                                <div className="flex justify-end gap-2 mt-2 pt-2 border-t">
-                                  <Button variant="ghost" size="sm" onClick={() => handleEdit(viatico)}>
-                                    <Pencil className="h-4 w-4 mr-2 text-blue-500" />
-                                    Editar
-                                  </Button>
-                                  <Button variant="ghost" size="sm" onClick={() => handleDelete(viatico.id)}>
-                                    <Trash2 className="h-4 w-4 mr-2 text-red-500" />
-                                    Eliminar
-                                  </Button>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
+                                  {canModify && (
+                                    <div className="flex justify-end gap-2 mt-2 pt-2 border-t">
+                                      <Button variant="ghost" size="sm" onClick={() => handleEdit(viatico)}>
+                                        <Pencil className="h-4 w-4 mr-2 text-blue-500" />
+                                        Editar
+                                      </Button>
+                                      <Button variant="ghost" size="sm" onClick={() => handleDelete(viatico.id)}>
+                                        <Trash2 className="h-4 w-4 mr-2 text-red-500" />
+                                        Eliminar
+                                      </Button>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            )
+                          })}
                         </div>
                       </div>
                     )
