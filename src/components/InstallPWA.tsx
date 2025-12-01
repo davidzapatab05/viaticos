@@ -19,6 +19,12 @@ export function InstallPWA() {
         return () => window.removeEventListener('beforeinstallprompt', handler)
     }, [])
 
+    const isStandalone = typeof window !== 'undefined' && (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone ||
+        document.referrer.includes('android-app://')
+    )
+
     const onClick = (evt: React.MouseEvent) => {
         evt.preventDefault()
         if (!promptInstall) {
@@ -27,7 +33,7 @@ export function InstallPWA() {
         promptInstall.prompt()
     }
 
-    if (!supportsPWA) {
+    if (!supportsPWA || isStandalone) {
         return null
     }
 
