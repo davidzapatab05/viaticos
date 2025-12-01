@@ -748,10 +748,10 @@ async function processMonthlyBackup(env) {
   const backupName = `backup_${targetYear}-${monthStr}`;
 
   // Calcular rango de fechas para el query
-  // Inicio: 1er dÃ­a del mes 00:00:00
-  const startDate = `${targetYear}-${monthStr}-01 00:00:00`;
+  // Inicio: 1er dÃ­a del mes (YYYY-MM-DD) - SIN HORA para que la comparaciÃ³n de strings funcione con fechas sin hora
+  const startDate = `${targetYear}-${monthStr}-01`;
 
-  // Fin: Ãšltimo dÃ­a del mes 23:59:59
+  // Fin: Ãšltimo dÃ­a del mes 23:59:59 (para incluir cualquier registro con hora si existiera)
   const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
   const endDate = `${targetYear}-${monthStr}-${lastDay} 23:59:59`;
 
@@ -821,19 +821,6 @@ export default {
           const { startDate, endDate } = body;
 
           if (!startDate || !endDate) {
-            return new Response(JSON.stringify({ error: 'Se requieren startDate y endDate (YYYY-MM-DD)' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          }
-
-          // Nombre personalizado para el backup manual
-          const backupName = `manual_backup_${startDate}_to_${endDate}`;
-
-          // Asegurar formato de fecha completo para la consulta
-          const fullStartDate = startDate.includes(' ') ? startDate : `${startDate} 00:00:00`;
-          const fullEndDate = endDate.includes(' ') ? endDate : `${endDate} 23:59:59`;
-
-          const result = await executeBackupAndCleanup(env, fullStartDate, fullEndDate, backupName);
-
-          if (result.success) {
             return new Response(JSON.stringify(result), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           } else {
             return new Response(JSON.stringify(result), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
