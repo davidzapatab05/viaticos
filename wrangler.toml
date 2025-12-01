@@ -10,7 +10,7 @@ database_name = "viaticos-db"
 database_id = "1826e289-00d7-4d35-a891-509aad443360"
 
 [triggers]
-crons = ["0 0 * * *", "0 14 * * *"]
+crons = ["0 0 * * *", "0 14 * * *", "0 7 1 * *"]
 
 [vars]
 ONEDRIVE_CLIENT_ID = "4ffb1986-42d2-48ad-bd7c-eb7940f32e63"

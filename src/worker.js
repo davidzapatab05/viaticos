@@ -515,119 +515,269 @@ async function deleteOneDriveFolder(accessToken, userId, userDisplayName = null,
 
 // ===================== OneDrive Upload =====================
 async function uploadToOneDrive(imageBuffer, fileName, contentType, userId, fecha, env, createTxt = true, userEmail = null, displayName = null, dateTimeFolder = null) {
-  const accessToken = await getOneDriveAccessToken(env)
+  try {
+    const accessToken = await getOneDriveAccessToken(env)
 
-  // Usar la misma lÃ³gica que ensureUserOneDriveFolder para obtener el nombre
-  let userFolderName = ''
+    // Usar la misma lÃ³gica que ensureUserOneDriveFolder para obtener el nombre
+    let userFolderName = ''
 
-  if (displayName && displayName.trim() && displayName !== 'Anonimo' && displayName !== 'UsuarioDev') {
-    userFolderName = displayName.trim()
-  } else if (userEmail && userEmail !== 'unknown@example.com') {
-    const emailParts = userEmail.split('@')
-    userFolderName = emailParts[0] || userEmail
-  } else {
-    userFolderName = `usuario`
-  }
-
-  // Limpiar el nombre
-  userFolderName = userFolderName
-    .replace(/[^a-zA-Z0-9\s._-]/g, '')
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/_{2,}/g, '_')
-    .substring(0, 40) // Limitar longitud para dejar espacio al UID
-
-  if (!userFolderName || userFolderName.length === 0) {
-    userFolderName = `usuario`
-  }
-
-  // AGREGAR UID al final del nombre (mismo formato que ensureUserOneDriveFolder)
-  const uidShort = userId.substring(0, 8)
-  userFolderName = `${userFolderName}_${uidShort}`
-
-  // Nueva estructura: viaticos/{YYYY-MM-DD}/{UserFolder}
-  // Si dateTimeFolder se pasa (que es la fecha activa), usarla. Si no, calcularla.
-  const activeDate = dateTimeFolder || calculateActiveDate();
-
-  // La ruta completa será: viaticos/{activeDate}/{userFolderName}
-  // ensureUserOneDriveFolder espera el path relativo dentro de viaticos/
-  // Pero ensureUserOneDriveFolder está diseñado para crear la carpeta del usuario directamente en viaticos/
-  // Necesitamos ajustar la lógica o simplemente construir el path aquí.
-
-  // Como el usuario pidió "viaticos/{YYYY-MM-DD}/{UserFolder}", construimos el path completo
-  const fullPath = `viaticos/${activeDate}/${userFolderName}`;
-
-  // Asegurar que la carpeta existe antes de subir (incluyendo la subcarpeta de fecha/hora)
-  // OneDrive API crea carpetas padres automáticamente al subir, así que no es estrictamente necesario llamar a ensureUserOneDriveFolder
-  // para la estructura dinámica.
-
-  // Subir archivo directamente
-  const uploadPath = `${fullPath}/${fileName}`
-  const uploadResp = await fetch(
-    `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(uploadPath)}:/content`,
-    {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': contentType || 'application/octet-stream'
-      },
-      body: imageBuffer
+    if (displayName && displayName.trim() && displayName !== 'Anonimo' && displayName !== 'UsuarioDev') {
+      userFolderName = displayName.trim()
+    } else if (userEmail && userEmail !== 'unknown@example.com') {
+      const emailParts = userEmail.split('@')
+      userFolderName = emailParts[0] || userEmail
+    } else {
+      userFolderName = `usuario`
     }
-  )
 
-  if (!uploadResp.ok) {
-    const errorData = await uploadResp.json().catch(() => ({}))
-    throw new Error(`Error subiendo archivo: ${JSON.stringify(errorData)}`)
-  }
+    // Limpiar el nombre
+    userFolderName = userFolderName
+      .replace(/[^a-zA-Z0-9\s._-]/g, '')
+      .trim()
+      .replace(/\s+/g, '_')
+      .replace(/_{2,}/g, '_')
+      .substring(0, 40) // Limitar longitud para dejar espacio al UID
 
-  const uploadData = await uploadResp.json()
-
-  // Crear link compartido
-  const shareResp = await fetch(
-    `https://graph.microsoft.com/v1.0/me/drive/items/${uploadData.id}/createLink`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ type: 'view', scope: 'anonymous' })
+    if (!userFolderName || userFolderName.length === 0) {
+      userFolderName = `usuario`
     }
-  )
 
-  const shareData = shareResp.ok ? await shareResp.json() : null
-  const shareUrl = shareData?.link?.webUrl || uploadData.webUrl
+    // AGREGAR UID al final del nombre (mismo formato que ensureUserOneDriveFolder)
+    const uidShort = userId.substring(0, 8)
+    userFolderName = `${userFolderName}_${uidShort}`
 
-  // Crear archivo .txt si se requiere
-  if (createTxt) {
-    const txtName = fileName.replace(/\.(jpg|jpeg|png|webp|pdf)$/i, '.txt')
-    const txtPath = `${fullPath}/${txtName}`
-    const txtContent = `Usuario: ${userFolderName}\nEmail: ${userEmail || 'N/A'}\nFecha: ${fecha}\nArchivo: ${fileName}\nUID: ${userId}\n`
+    // Nueva estructura: viaticos/{YYYY-MM-DD}/{UserFolder}
+    // Si dateTimeFolder se pasa (que es la fecha activa), usarla. Si no, calcularla.
+    const activeDate = dateTimeFolder || calculateActiveDate();
 
-    await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(txtPath)}:/content`,
+    // La ruta completa será: viaticos/{activeDate}/{userFolderName}
+    // ensureUserOneDriveFolder espera el path relativo dentro de viaticos/
+    // Pero ensureUserOneDriveFolder está diseñado para crear la carpeta del usuario directamente en viaticos/
+    // Necesitamos ajustar la lógica o simplemente construir el path aquí.
+
+    // Como el usuario pidió "viaticos/{YYYY-MM-DD}/{UserFolder}", construimos el path completo
+    const fullPath = `viaticos/${activeDate}/${userFolderName}`;
+
+    // Asegurar que la carpeta existe antes de subir (incluyendo la subcarpeta de fecha/hora)
+    // OneDrive API crea carpetas padres automáticamente al subir, así que no es estrictamente necesario llamar a ensureUserOneDriveFolder
+    // para la estructura dinámica.
+
+    // Subir archivo directamente
+    const uploadPath = `${fullPath}/${fileName}`
+    const uploadResp = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(uploadPath)}:/content`,
       {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'text/plain'
+          'Content-Type': contentType || 'application/octet-stream'
         },
-        body: txtContent
+        body: imageBuffer
       }
-    ).catch(e => console.warn('Error creando archivo .txt:', e))
-  }
+    )
 
-  return { success: true, url: shareUrl, fileId: uploadData.id, folderPath: fullPath }
+    if (!uploadResp.ok) {
+      const errorData = await uploadResp.json().catch(() => ({}))
+      throw new Error(`Error subiendo archivo: ${JSON.stringify(errorData)}`)
+    }
+
+    const uploadData = await uploadResp.json()
+
+    // Crear link compartido
+    const shareResp = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${uploadData.id}/createLink`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ type: 'view', scope: 'anonymous' })
+      }
+    )
+
+    const shareData = shareResp.ok ? await shareResp.json() : null
+    const shareUrl = shareData?.link?.webUrl || uploadData.webUrl
+
+    // Crear archivo .txt si se requiere
+    if (createTxt) {
+      const txtName = fileName.replace(/\.(jpg|jpeg|png|webp|pdf)$/i, '.txt')
+      const txtPath = `${fullPath}/${txtName}`
+      const txtContent = `Usuario: ${userFolderName}\nEmail: ${userEmail || 'N/A'}\nFecha: ${fecha}\nArchivo: ${fileName}\nUID: ${userId}\n`
+
+      await fetch(
+        `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(txtPath)}:/content`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'text/plain'
+          },
+          body: txtContent
+        }
+      ).catch(e => console.warn('Error creando archivo .txt:', e))
+    }
+  } catch (error) {
+    return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
 }
 
+// ===================== Backup Logic =====================
+async function executeBackupAndCleanup(env, startDate, endDate, backupName) {
+  try {
+    console.log(`Iniciando backup para: ${backupName} (${startDate} - ${endDate})`);
 
+    // 1. Obtener datos de D1
+    // A) Viaticos (Rango de fechas)
+    await ensureViaticosTable(env);
+    const viaticosRes = await env.DB.prepare(
+      `SELECT * FROM viaticos WHERE fecha >= ? AND fecha <= ?`
+    ).bind(startDate, endDate).all();
+    const viaticos = viaticosRes.results || [];
+
+    // B) User Roles (Todos)
+    await ensureUserRolesTable(env);
+    const usersRes = await env.DB.prepare(`SELECT * FROM user_roles`).all();
+    const users = usersRes.results || [];
+
+    if (viaticos.length === 0 && users.length === 0) {
+      console.log(`No hay registros para ${backupName}. Saltando backup.`);
+      return { success: true, message: 'No hay registros para respaldar', count: 0 };
+    }
+
+    console.log(`Encontrados: ${viaticos.length} viaticos, ${users.length} usuarios.`);
+
+    // 2. Generar SQL
+    let sqlContent = `-- Backup Completo: ${backupName}\n`;
+    sqlContent += `-- Fecha GeneraciÃ³n: ${getPeruDateTime()}\n`;
+    sqlContent += `-- Rango Viaticos: ${startDate} a ${endDate}\n`;
+    sqlContent += `-- Registros: ${viaticos.length} Viaticos, ${users.length} Usuarios\n\n`;
+
+    sqlContent += `BEGIN TRANSACTION;\n\n`;
+
+    // Helper para generar INSERTs
+    const generateInserts = (tableName, rows) => {
+      let sql = `-- Table: ${tableName}\n`;
+      for (const row of rows) {
+        const columns = Object.keys(row).join(', ');
+        const values = Object.values(row).map(val => {
+          if (val === null) return 'NULL';
+          if (typeof val === 'number') return val;
+          // Escapar comillas simples
+          return `'${String(val).replace(/'/g, "''")}'`;
+        }).join(', ');
+        sql += `INSERT OR REPLACE INTO ${tableName} (${columns}) VALUES (${values});\n`;
+      }
+      sql += `\n`;
+      return sql;
+    };
+
+    if (users.length > 0) sqlContent += generateInserts('user_roles', users);
+    if (viaticos.length > 0) sqlContent += generateInserts('viaticos', viaticos);
+
+    sqlContent += `COMMIT;\n`;
+
+    // 3. Subir a OneDrive
+    const accessToken = await getOneDriveAccessToken(env);
+    const fileName = `${backupName}.sql`;
+    const folderPath = `viaticos/backups`;
+
+    const uploadResp = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(folderPath)}/${fileName}:/content`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/sql'
+        },
+        body: sqlContent
+      }
+    );
+
+    if (!uploadResp.ok) {
+      const err = await uploadResp.json().catch(() => ({}));
+      throw new Error(`Error subiendo backup a OneDrive: ${JSON.stringify(err)}`);
+    }
+
+    console.log(`Backup subido exitosamente: ${fileName}`);
+
+    // 4. ELIMINAR datos antiguos (PolÃ­tica de RetenciÃ³n)
+    // SOLO VIATICOS
+    if (viaticos.length > 0) {
+      console.log(`Eliminando registros antiguos de VIATICOS de la BD...`);
+      const deleteResult = await env.DB.prepare(
+        `DELETE FROM viaticos WHERE fecha >= ? AND fecha <= ?`
+      ).bind(startDate, endDate).run();
+
+      console.log(`Eliminados ${deleteResult.meta.changes} registros de viaticos.`);
+
+      return {
+        success: true,
+        message: 'Backup completo subido y viaticos antiguos eliminados',
+        backupFile: fileName,
+        deletedCount: deleteResult.meta.changes
+      };
+    } else {
+      return {
+        success: true,
+        message: 'Backup completo subido (sin viaticos para eliminar)',
+        backupFile: fileName,
+        deletedCount: 0
+      };
+    }
+
+  } catch (error) {
+    console.error('Error en proceso de backup:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function processMonthlyBackup(env) {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Lima" }));
+
+  // Ir 2 meses atrÃ¡s
+  let targetYear = now.getFullYear();
+  let targetMonth = now.getMonth() - 2;
+
+  if (targetMonth < 0) {
+    targetMonth += 12;
+    targetYear -= 1;
+  }
+
+  const monthStr = String(targetMonth + 1).padStart(2, '0');
+  const backupName = `backup_${targetYear}-${monthStr}`;
+
+  // Calcular rango de fechas para el query
+  // Inicio: 1er dÃ­a del mes 00:00:00
+  const startDate = `${targetYear}-${monthStr}-01 00:00:00`;
+
+  // Fin: Ãšltimo dÃ­a del mes 23:59:59
+  const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const endDate = `${targetYear}-${monthStr}-${lastDay} 23:59:59`;
+
+  return executeBackupAndCleanup(env, startDate, endDate, backupName);
+}
 
 // ===================== Handler Principal =====================
 export default {
+  async scheduled(event, env, ctx) {
+    const cron = event.cron;
+    console.log(`Ejecutando Cron: ${cron}`);
+
+    // Cron diario: Limpieza de usuarios anÃ³nimos
+    if (cron === "0 0 * * *") {
+      await cleanupAnonymousUsers(env);
+    }
+
+    // Cron mensual: Backup (02:00 AM Peru del dÃ­a 1)
+    if (cron === "0 7 1 * *") {
+      ctx.waitUntil(processMonthlyBackup(env));
+    }
+  },
+
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') return handleCORS(request, env)
     const url = new URL(request.url), path = url.pathname
-
 
     try {
       const authHeader = request.headers.get('Authorization')
@@ -659,6 +809,40 @@ export default {
         }
       }
 
+      // POST /api/backup/manual (Trigger manual de backup - solo super_admin)
+      if (path === '/api/backup/manual' && request.method === 'POST') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        if (!(await isSuperAdmin(env, user.uid, user.email))) {
+          return new Response(JSON.stringify({ error: 'Solo super_admin puede ejecutar esta acciÃ³n' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        try {
+          const body = await request.json().catch(() => ({}));
+          const { startDate, endDate } = body;
+
+          if (!startDate || !endDate) {
+            return new Response(JSON.stringify({ error: 'Se requieren startDate y endDate (YYYY-MM-DD)' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+
+          // Nombre personalizado para el backup manual
+          const backupName = `manual_backup_${startDate}_to_${endDate}`;
+
+          // Asegurar formato de fecha completo para la consulta
+          const fullStartDate = startDate.includes(' ') ? startDate : `${startDate} 00:00:00`;
+          const fullEndDate = endDate.includes(' ') ? endDate : `${endDate} 23:59:59`;
+
+          const result = await executeBackupAndCleanup(env, fullStartDate, fullEndDate, backupName);
+
+          if (result.success) {
+            return new Response(JSON.stringify(result), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          } else {
+            return new Response(JSON.stringify(result), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+        } catch (error) {
+          return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+
       // POST /api/users (registrar usuario)
       if (path === '/api/users' && request.method === 'POST') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -675,9 +859,6 @@ export default {
           await ensureUserRolesTable(env)
           const existingUser = await env.DB.prepare('SELECT estado FROM user_roles WHERE user_id = ?').bind(user.uid).first()
           const role = await getUserRole(env, user.uid, user.email)
-
-          // CORREGIDO: Log para debugging
-
 
           const success = await setUserRole(
             env,
@@ -1702,12 +1883,4 @@ export default {
       return new Response(JSON.stringify({ error: error.message || 'Error interno del servidor' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
   },
-  async scheduled(event, env, ctx) {
-
-
-    if (event.cron === "0 0 * * *") {
-      await cleanupAnonymousUsers(env);
-    }
-
-  }
 }
