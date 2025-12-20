@@ -29,6 +29,11 @@ interface Gasto {
     medio_pago?: string
     entidad?: string
     numero_operacion?: string
+    de?: string
+    motivo?: string
+    para_quien_impuesto?: string
+    mes_sueldo?: string
+    codigo_devolucion?: string
     created_at: string
 }
 
@@ -156,7 +161,7 @@ export default function GastosReportsView({ gastos, users, onDelete, onUpdate }:
 
         // Get headers from the first object
         if (upperData.length > 0) {
-            const columns = Object.keys(upperData[0]).map(key => ({ header: key.toUpperCase(), key: key, width: 20 }));
+            const columns = Object.keys(upperData[0]).map(key => ({ header: key.toUpperCase(), key: key, width: 25 }));
             worksheet.columns = columns;
         }
 
@@ -384,16 +389,20 @@ export default function GastosReportsView({ gastos, users, onDelete, onUpdate }:
                                                 const data = selectedUserData.gastos.map(g => {
                                                     const fecha = parseISO(g.fecha)
                                                     return {
-                                                        Día: format(fecha, 'd'),
-                                                        Mes: format(fecha, 'MMMM', { locale: es }).toUpperCase(),
-                                                        Año: format(fecha, 'yyyy'),
-                                                        Fecha: format(fecha, 'dd/MM/yyyy'),
-                                                        Trabajador: selectedUserData.userName,
-                                                        'Medio Pago': (g.medio_pago || '').toUpperCase(),
-                                                        Entidad: (g.entidad || '').toUpperCase(),
-                                                        'N° Operación': (g.numero_operacion || '').toUpperCase(),
-                                                        Monto: typeof g.monto === 'string' ? parseFloat(g.monto) : g.monto,
-                                                        Descripción: (g.descripcion || '').toUpperCase()
+                                                        DIA: format(fecha, 'd'),
+                                                        MES: format(fecha, 'MMMM', { locale: es }).toUpperCase(),
+                                                        AÑO: format(fecha, 'yyyy'),
+                                                        FECHA: format(fecha, 'dd/MM/yyyy'),
+                                                        DE: (g.de || '').toUpperCase(),
+                                                        MOTIVO: (g.motivo || '').toUpperCase(),
+                                                        'PARA | QUIEN IMPUESTO': getUserName(g.usuario_id),
+                                                        'MES SUELDO': (g.mes_sueldo || '').toUpperCase(),
+                                                        'CODIGO PARA DEVOLUCION': (g.codigo_devolucion || '').toUpperCase(),
+                                                        'MEDIO DE PAGO': (g.medio_pago || '').toUpperCase(),
+                                                        ENTIDAD: (g.entidad || '').toUpperCase(),
+                                                        'N° DE OPERACION': (g.numero_operacion || '').toUpperCase(),
+                                                        MONTO: typeof g.monto === 'string' ? parseFloat(g.monto) : g.monto,
+                                                        DESCRIPCION: (g.descripcion || '').toUpperCase()
                                                     }
                                                 })
                                                 exportToExcel(data, `REPORTE_GASTOS_${selectedUserData.userName.replace(/ /g, '_')}`)
@@ -512,16 +521,20 @@ export default function GastosReportsView({ gastos, users, onDelete, onUpdate }:
                                                 const data = filteredGastos.map(g => {
                                                     const fecha = parseISO(g.fecha)
                                                     return {
-                                                        Día: format(fecha, 'd'),
-                                                        Mes: format(fecha, 'MMMM', { locale: es }).toUpperCase(),
-                                                        Año: format(fecha, 'yyyy'),
-                                                        Fecha: format(fecha, 'dd/MM/yyyy'),
-                                                        Trabajador: getUserName(g.usuario_id),
-                                                        'Medio Pago': (g.medio_pago || '').toUpperCase(),
-                                                        Entidad: (g.entidad || '').toUpperCase(),
-                                                        'N° Operación': (g.numero_operacion || '').toUpperCase(),
-                                                        Monto: typeof g.monto === 'string' ? parseFloat(g.monto) : g.monto,
-                                                        Descripción: (g.descripcion || '').toUpperCase()
+                                                        DIA: format(fecha, 'd'),
+                                                        MES: format(fecha, 'MMMM', { locale: es }).toUpperCase(),
+                                                        AÑO: format(fecha, 'yyyy'),
+                                                        FECHA: format(fecha, 'dd/MM/yyyy'),
+                                                        DE: (g.de || '').toUpperCase(),
+                                                        MOTIVO: (g.motivo || '').toUpperCase(),
+                                                        'PARA | QUIEN IMPUESTO': getUserName(g.usuario_id),
+                                                        'MES SUELDO': (g.mes_sueldo || '').toUpperCase(),
+                                                        'CODIGO PARA DEVOLUCION': (g.codigo_devolucion || '').toUpperCase(),
+                                                        'MEDIO DE PAGO': (g.medio_pago || '').toUpperCase(),
+                                                        ENTIDAD: (g.entidad || '').toUpperCase(),
+                                                        'N° DE OPERACION': (g.numero_operacion || '').toUpperCase(),
+                                                        MONTO: typeof g.monto === 'string' ? parseFloat(g.monto) : g.monto,
+                                                        DESCRIPCION: (g.descripcion || '').toUpperCase()
                                                     }
                                                 })
                                                 let filename = 'REPORTE_GASTOS_POR_REGISTRO'

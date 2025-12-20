@@ -1385,7 +1385,7 @@ export default {
               fecha: formattedDate,
               para: formData.get('para'),
               queSustenta: 'VIATICO',
-              trabajador: user.displayName || user.email,
+              trabajador: effectiveDisplayName.toUpperCase(),
               tipoComprobante: formData.get('tipo_comprobante'),
               numeroDocumento: formData.get('numero_documento'),
               numeroComprobante: formData.get('numero_comprobante'),
@@ -1443,7 +1443,7 @@ export default {
         // Campos fijos/calculados
         const de = 'FAMAVE'
         const motivo = 'VIATICO'
-        const paraQuienImpuesto = user.displayName || user.email
+        let paraQuienImpuesto = user.displayName || user.email
         const mesSueldo = ''
         const codigoDevolucion = ''
 
@@ -1508,6 +1508,9 @@ export default {
         // Obtener displayName actualizado de la BD
         const dbUser = await env.DB.prepare('SELECT displayName FROM user_roles WHERE user_id = ?').bind(user.uid).first();
         const effectiveDisplayName = dbUser?.displayName || user.displayName || user.email.split('@')[0] || 'usuario';
+
+        // Actualizar paraQuienImpuesto con el nombre de la BD
+        paraQuienImpuesto = effectiveDisplayName.toUpperCase();
 
         const safeDisplayName = effectiveDisplayName
           .replace(/[^a-zA-Z0-9\s._-]/g, '')

@@ -24,15 +24,6 @@ const nextConfig = {
   },
   // Configurar el root del proyecto para evitar warning de múltiples lockfiles
   outputFileTracingRoot: path.join(__dirname),
-  turbopack: {
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
-  },
 }
 
 module.exports = withSerwist(nextConfig)
-// module.exports = nextConfig
