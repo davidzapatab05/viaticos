@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Camera, List, Settings, Info, TrendingUp, ArrowRight } from 'lucide-react'
+import { Camera, List, Settings, Info, TrendingUp, ArrowRight, DollarSign, FileText } from 'lucide-react'
 import Link from 'next/link'
 import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
@@ -26,6 +26,20 @@ export default function DashboardPage() {
       description: 'Consulta y gestiona todos tus registros',
       icon: List,
       link: '/mis-viaticos',
+    })
+
+    cards.push({
+      title: 'Nuevo Gasto',
+      description: 'Registra un nuevo gasto con foto o PDF',
+      icon: DollarSign,
+      link: '/nuevo-gasto',
+    })
+
+    cards.push({
+      title: 'Mis Gastos',
+      description: 'Consulta y gestiona todos tus gastos',
+      icon: FileText,
+      link: '/mis-gastos',
     })
   }
 

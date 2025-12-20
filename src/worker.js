@@ -174,7 +174,7 @@ async function setUserRole(env, uid, role, estado = 'activo', crearCarpeta = 1, 
     await ensureUserRolesTable(env)
 
     // Verificar si el usuario ya existe
-    const existing = await env.DB.prepare('SELECT user_id FROM user_roles WHERE user_id = ?').bind(uid).first()
+    const existing = await env.DB.prepare('SELECT user_id, displayName FROM user_roles WHERE user_id = ?').bind(uid).first()
 
     if (existing) {
       // Usuario existente: SOLO actualizar email y displayName si no son genéricos
@@ -187,9 +187,16 @@ async function setUserRole(env, uid, role, estado = 'activo', crearCarpeta = 1, 
         updateValues.push(email)
       }
 
-      if (displayName && displayName !== 'Anonimo') {
-        updateFields.push('displayName = ?')
-        updateValues.push(displayName)
+      // SOLO actualizar displayName si en la BD es inválido (null, vacío, Anonimo)
+      // Esto previene que el login sobrescriba un nombre validado manualmente
+      const currentDbName = existing.displayName;
+      const isCurrentNameValid = currentDbName && currentDbName !== 'Anonimo' && currentDbName !== 'UsuarioDev';
+
+      if (displayName && displayName !== 'Anonimo' && displayName !== 'UsuarioDev') {
+        if (!isCurrentNameValid) {
+          updateFields.push('displayName = ?')
+          updateValues.push(displayName)
+        }
       }
 
       if (updateFields.length > 0) {
@@ -282,6 +289,39 @@ async function ensureViaticosTable(env) {
     }
   } catch (err) {
     console.error("Error asegurando tabla viaticos:", err.message);
+  }
+}
+
+async function ensureGastosTable(env) {
+  try {
+    const table = await env.DB.prepare(
+      `SELECT name FROM sqlite_master WHERE type='table' AND name='gastos'`
+    ).first();
+
+    if (!table) {
+      await env.DB.prepare(
+        `CREATE TABLE gastos (
+          id TEXT PRIMARY KEY,
+          usuario_id TEXT NOT NULL,
+          fecha TEXT NOT NULL,
+          de TEXT DEFAULT 'FAMAVE',
+          motivo TEXT DEFAULT 'VIATICO',
+          para_quien_impuesto TEXT,
+          mes_sueldo TEXT,
+          codigo_devolucion TEXT,
+          medio_pago TEXT,
+          entidad TEXT,
+          numero_operacion TEXT,
+          monto REAL NOT NULL,
+          descripcion TEXT,
+          folder_path TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now'))
+        )`
+      ).run();
+    }
+  } catch (err) {
+    console.error("Error asegurando tabla gastos:", err.message);
   }
 }
 
@@ -1193,6 +1233,16 @@ export default {
           activeDateString = todayString;
         }
 
+        // Admin override (Permitir fecha manual para admins)
+        const isAdminUser = await isAdmin(env, user.uid, user.email);
+        const fechaManual = formData.get('fecha_manual');
+        if (isAdminUser && fechaManual) {
+          // Validar formato YYYY-MM-DD
+          if (/^\d{4}-\d{2}-\d{2}$/.test(fechaManual)) {
+            activeDateString = fechaManual;
+          }
+        }
+
         // Usar activeDateString para la base de datos y carpetas
         const dbFormattedDate = activeDateString; // YYYY-MM-DD
 
@@ -1225,12 +1275,17 @@ export default {
         const timestampPrefix = `${actualYear}-${actualMonth}-${actualDay}_${actualHour}-${actualMinute}-${actualSecond}`;
         const subfolderName = `${timestampPrefix}_${viaticoId}`;
 
+        // Obtener displayName actualizado de la BD
+        const dbUser = await env.DB.prepare('SELECT displayName FROM user_roles WHERE user_id = ?').bind(user.uid).first();
+        const effectiveDisplayName = dbUser?.displayName || user.displayName || user.email.split('@')[0] || 'usuario';
+
         // Sanitizar nombre de usuario
-        const safeDisplayName = (user.displayName || user.email.split('@')[0] || 'usuario')
+        const safeDisplayName = effectiveDisplayName
           .replace(/[^a-zA-Z0-9\s._-]/g, '')
           .trim()
           .replace(/\s+/g, ' ')
-          .substring(0, 50);
+          .substring(0, 50)
+          .toUpperCase();
 
         // Path completo de la carpeta del viático
         const viaticoFolderPath = `viaticos/${dbFormattedDate}/${safeDisplayName}/${subfolderName}`;
@@ -1365,6 +1420,391 @@ export default {
         } catch (error) {
           console.error('Error procesando viÃ¡tico:', error);
           return new Response(JSON.stringify({ error: error.message || 'Error procesando viÃ¡tico' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
+      // POST /api/gastos (crear nuevo gasto)
+      if (path === '/api/gastos' && request.method === 'POST') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        const isActive = await isUserActive(env, user.uid, user.email)
+        if (!isActive) {
+          return new Response(JSON.stringify({ error: 'Tu cuenta ha sido desactivada.' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        const formData = await request.formData()
+        const foto = formData.get('foto')
+        const monto = formData.get('monto')
+        const descripcion = formData.get('descripcion')
+        const medioPago = formData.get('medio_pago')
+        const entidad = formData.get('entidad')
+        const numeroOperacion = formData.get('numero_operacion')
+
+        // Campos fijos/calculados
+        const de = 'FAMAVE'
+        const motivo = 'VIATICO'
+        const paraQuienImpuesto = user.displayName || user.email
+        const mesSueldo = ''
+        const codigoDevolucion = ''
+
+        // Lógica de FECHA ACTIVA (Cierre automático a las 10 AM) - Igual que viaticos
+        const now = new Date();
+        const dateOptions = { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' };
+        const timeOptions = { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+
+        const peruDateParts = new Intl.DateTimeFormat('es-PE', dateOptions).formatToParts(now);
+        const peruTimeParts = new Intl.DateTimeFormat('es-PE', timeOptions).formatToParts(now);
+
+        const getPart = (parts, type) => parts.find(p => p.type === type).value;
+
+        const year = parseInt(getPart(peruDateParts, 'year'));
+        const month = parseInt(getPart(peruDateParts, 'month'));
+        const day = parseInt(getPart(peruDateParts, 'day'));
+        const hour = parseInt(getPart(peruTimeParts, 'hour'));
+
+        const todayString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        const yesterdayDate = new Date(year, month - 1, day - 1);
+        const yesterdayString = `${yesterdayDate.getFullYear()}-${(yesterdayDate.getMonth() + 1).toString().padStart(2, '0')}-${yesterdayDate.getDate().toString().padStart(2, '0')}`;
+
+        let activeDateString = todayString;
+        if (hour < 10) {
+          activeDateString = yesterdayString;
+        } else {
+          activeDateString = todayString;
+        }
+
+        // Admin override
+        const isAdminUser = await isAdmin(env, user.uid, user.email);
+        const fechaManual = formData.get('fecha_manual');
+        if (isAdminUser && fechaManual) {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(fechaManual)) {
+            activeDateString = fechaManual;
+          }
+        }
+
+        const dbFormattedDate = activeDateString;
+        const [actYear, actMonth, actDay] = activeDateString.split('-');
+        const formattedDate = `${actDay}/${actMonth}/${actYear}`;
+
+        if (!foto || !monto) {
+          return new Response(JSON.stringify({ error: 'Datos incompletos: falta foto o monto.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        const fotos = formData.getAll('foto');
+        const uploadedFiles = [];
+        const gastoId = `g_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Carpeta base: gastos/{YYYY-MM-DD}/{DisplayName}/{YYYY-MM-DD_HH-MM-SS}_{GastoID}
+        const actualYear = getPart(peruDateParts, 'year');
+        const actualMonth = getPart(peruDateParts, 'month');
+        const actualDay = getPart(peruDateParts, 'day');
+        const actualHour = getPart(peruTimeParts, 'hour');
+        const actualMinute = getPart(peruTimeParts, 'minute');
+        const actualSecond = getPart(peruTimeParts, 'second');
+
+        const timestampPrefix = `${actualYear}-${actualMonth}-${actualDay}_${actualHour}-${actualMinute}-${actualSecond}`;
+        const subfolderName = `${timestampPrefix}_${gastoId}`;
+
+        // Obtener displayName actualizado de la BD
+        const dbUser = await env.DB.prepare('SELECT displayName FROM user_roles WHERE user_id = ?').bind(user.uid).first();
+        const effectiveDisplayName = dbUser?.displayName || user.displayName || user.email.split('@')[0] || 'usuario';
+
+        const safeDisplayName = effectiveDisplayName
+          .replace(/[^a-zA-Z0-9\s._-]/g, '')
+          .trim()
+          .replace(/\s+/g, ' ')
+          .substring(0, 50)
+          .toUpperCase();
+
+        let gastoFolderPath = `gastos/${dbFormattedDate}/${safeDisplayName}/${subfolderName}`;
+
+        // Si existe el ID de carpeta, ajustamos el path para que sea relativo a esa carpeta (quitamos 'gastos/')
+        if (env.ONEDRIVE_GASTOS_FOLFER_ID) {
+          gastoFolderPath = `${dbFormattedDate}/${safeDisplayName}/${subfolderName}`;
+        }
+
+        async function uploadToOneDrive(fileBuffer, fileName, mimeType, env, targetFolderPath) {
+          const accessToken = await getOneDriveAccessToken(env);
+          const fullPath = `${targetFolderPath}/${fileName}`;
+
+          let url = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${fullPath}:/content`;
+
+          // Si tenemos el ID de la carpeta de GASTOS, usamos ese ID como raíz
+          if (env.ONEDRIVE_GASTOS_FOLFER_ID) {
+            url = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/items/${env.ONEDRIVE_GASTOS_FOLFER_ID}:/${fullPath}:/content`;
+          }
+
+          const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': mimeType,
+            },
+            body: fileBuffer
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error subiendo a OneDrive:', errorText);
+            throw new Error(`Error subiendo a OneDrive: ${response.status} ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          return {
+            url: data.webUrl,
+            id: data.id,
+            folderPath: targetFolderPath
+          };
+        }
+
+        try {
+          for (const file of fotos) {
+            const imageBuffer = await file.arrayBuffer()
+            const mimeToExt = { 'image/jpeg': '.jpg', 'image/jpg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'application/pdf': '.pdf' }
+            const fileName = `${gastoId}_${Math.random().toString(36).substr(2, 5)}${mimeToExt[file.type] || '.bin'}`
+
+            const oneDriveData = await uploadToOneDrive(
+              imageBuffer,
+              fileName,
+              file.type,
+              env,
+              gastoFolderPath
+            )
+            uploadedFiles.push(oneDriveData.url);
+          }
+
+          // Crear TXT con detalle
+          const txtFileName = `${gastoId}_detalle.txt`;
+          const txtContent = `
+          DETALLE DE GASTO
+          ================
+          ID: ${gastoId}
+          Fecha: ${formattedDate}
+          De: ${de}
+          Motivo: ${motivo}
+          Para (Impuesto): ${paraQuienImpuesto}
+          Medio Pago: ${medioPago || 'N/A'}
+          Entidad: ${entidad || 'N/A'}
+          N° Operación: ${numeroOperacion || 'N/A'}
+          Monto: S/ ${parseFloat(monto).toFixed(2)}
+          Descripción: ${descripcion || '(Sin Descripción)'}
+          `.trim();
+
+          const accessToken = await getOneDriveAccessToken(env);
+
+          let txtUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${gastoFolderPath}/${txtFileName}:/content`;
+          if (env.ONEDRIVE_GASTOS_FOLFER_ID) {
+            txtUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/items/${env.ONEDRIVE_GASTOS_FOLFER_ID}:/${gastoFolderPath}/${txtFileName}:/content`;
+          }
+
+          await fetch(txtUrl, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'text/plain' },
+            body: txtContent
+          }).catch(e => console.error('Error creando TXT:', e));
+
+          const mainUrl = uploadedFiles[0];
+
+          await ensureGastosTable(env)
+
+          await env.DB.prepare(`INSERT INTO gastos (id, usuario_id, fecha, de, motivo, para_quien_impuesto, mes_sueldo, codigo_devolucion, medio_pago, entidad, numero_operacion, monto, descripcion, folder_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+            .bind(gastoId, user.uid, dbFormattedDate, de, motivo, paraQuienImpuesto, mesSueldo, codigoDevolucion, medioPago || null, entidad || null, numeroOperacion || null, parseFloat(monto), descripcion || '', gastoFolderPath, getPeruDateTime(), getPeruDateTime())
+            .run()
+
+          return new Response(JSON.stringify({
+            success: true,
+            id: gastoId,
+            url_onedrive: mainUrl,
+            folderPath: gastoFolderPath
+          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        } catch (error) {
+          console.error('Error procesando gasto:', error);
+          return new Response(JSON.stringify({ error: error.message || 'Error procesando gasto' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
+      // GET /api/gastos (listar gastos del usuario)
+      if (path === '/api/gastos' && request.method === 'GET') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        try {
+          await ensureGastosTable(env)
+
+          // Si es admin/super_admin ve todo? O solo lo suyo? "Mis Gastos" implica lo suyo.
+          // Pero el usuario pidió "Mis Gastos". Asumo que es solo para el usuario logueado.
+          // Si quisieran ver todo, sería otro endpoint o filtro.
+
+          const results = await env.DB.prepare('SELECT * FROM gastos WHERE usuario_id = ? ORDER BY fecha DESC, created_at DESC').bind(user.uid).all()
+
+          return new Response(JSON.stringify({
+            success: true,
+            gastos: results.results || []
+          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (error) {
+          return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
+      // GET /api/gastos/all (listar TODOS los gastos - solo admin)
+      if (path === '/api/gastos/all' && request.method === 'GET') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        const user = await verifyFirebaseToken(token, env)
+        if (!user) return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        if (!(await isAdmin(env, user.uid, user.email))) return new Response(JSON.stringify({ error: 'No tienes permisos de administrador' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        try {
+          await ensureGastosTable(env)
+          const results = await env.DB.prepare('SELECT * FROM gastos ORDER BY fecha DESC, created_at DESC').all()
+          return new Response(JSON.stringify({
+            success: true,
+            gastos: results.results || []
+          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (error) {
+          return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
+      // DELETE /api/gastos/:id (eliminar gasto y archivos - admin o propio usuario)
+      if (path.startsWith('/api/gastos/') && request.method === 'DELETE') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        const gastoId = path.split('/').pop();
+
+        try {
+          const gasto = await env.DB.prepare('SELECT * FROM gastos WHERE id = ?').bind(gastoId).first();
+
+          if (!gasto) {
+            return new Response(JSON.stringify({ error: 'Gasto no encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+
+          const isOwner = gasto.usuario_id === user.uid;
+          const isUserAdmin = await isAdmin(env, user.uid, user.email);
+
+          if (!isOwner && !isUserAdmin) {
+            return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          if (!isUserAdmin) {
+            const gastoDate = new Date(gasto.fecha + 'T00:00:00-05:00');
+            const cutoffDate = new Date(gastoDate);
+            cutoffDate.setDate(cutoffDate.getDate() + 1);
+            cutoffDate.setHours(10, 0, 0, 0);
+
+            const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Lima" }));
+
+            if (now > cutoffDate) {
+              return new Response(JSON.stringify({ error: 'El tiempo límite para eliminar este gasto ha expirado (10:00 AM del día siguiente).' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
+          }
+
+          try {
+            const accessToken = await getOneDriveAccessToken(env);
+            if (gasto.folder_path) {
+              const isDedicatedSubfolder = gasto.folder_path.split('/').pop().includes(gastoId);
+
+              let deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${gasto.folder_path}`;
+              if (env.ONEDRIVE_GASTOS_FOLFER_ID) {
+                deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/items/${env.ONEDRIVE_GASTOS_FOLFER_ID}:/${gasto.folder_path}`;
+              }
+
+              if (isDedicatedSubfolder) {
+                const deleteResponse = await fetch(deleteUrl, {
+                  method: 'DELETE',
+                  headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+
+                if (deleteResponse.ok || deleteResponse.status === 404) {
+                  // Check parent folder logic if needed, but for now just deleting the dedicated folder is enough
+                } else {
+                  console.error('Error borrando carpeta de gasto:', await deleteResponse.text());
+                }
+              }
+            }
+          } catch (onedriveError) {
+            console.error('Error eliminando de OneDrive (continuando con DB):', onedriveError);
+          }
+
+          await env.DB.prepare('DELETE FROM gastos WHERE id = ?').bind(gastoId).run();
+
+          return new Response(JSON.stringify({ success: true, message: 'Gasto eliminado correctamente' }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+
+        } catch (error) {
+          return new Response(JSON.stringify({ success: false, error: error.message || 'Error eliminando gasto' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // PUT /api/gastos/:id (actualizar gasto - admin o propio usuario)
+      if (path.startsWith('/api/gastos/') && request.method === 'PUT') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        const gastoId = path.split('/').pop();
+
+        try {
+          const formData = await request.json();
+          const gasto = await env.DB.prepare('SELECT * FROM gastos WHERE id = ?').bind(gastoId).first();
+
+          if (!gasto) {
+            return new Response(JSON.stringify({ error: 'Gasto no encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+
+          const isOwner = gasto.usuario_id === user.uid;
+          const isUserAdmin = await isAdmin(env, user.uid, user.email);
+
+          if (!isOwner && !isUserAdmin) {
+            return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          if (!isUserAdmin) {
+            const gastoDate = new Date(gasto.fecha + 'T00:00:00-05:00');
+            const cutoffDate = new Date(gastoDate);
+            cutoffDate.setDate(cutoffDate.getDate() + 1);
+            cutoffDate.setHours(10, 0, 0, 0);
+
+            const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Lima" }));
+
+            if (now > cutoffDate) {
+              return new Response(JSON.stringify({ error: 'El tiempo límite para editar este gasto ha expirado (10:00 AM del día siguiente).' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
+          }
+
+          const updates = [];
+          const values = [];
+
+          if (formData.fecha !== undefined) { updates.push('fecha = ?'); values.push(formData.fecha); }
+          if (formData.monto !== undefined) { updates.push('monto = ?'); values.push(parseFloat(formData.monto)); }
+          if (formData.descripcion !== undefined) { updates.push('descripcion = ?'); values.push(formData.descripcion); }
+          if (formData.medio_pago !== undefined) { updates.push('medio_pago = ?'); values.push(formData.medio_pago); }
+          if (formData.entidad !== undefined) { updates.push('entidad = ?'); values.push(formData.entidad); }
+          if (formData.numero_operacion !== undefined) { updates.push('numero_operacion = ?'); values.push(formData.numero_operacion); }
+
+          updates.push('updated_at = ?');
+          values.push(getPeruDateTime());
+
+          if (updates.length > 1) { // At least one field + updated_at
+            values.push(gastoId);
+            await env.DB.prepare(`UPDATE gastos SET ${updates.join(', ')} WHERE id = ?`)
+              .bind(...values)
+              .run();
+          }
+
+          return new Response(JSON.stringify({ success: true, message: 'Gasto actualizado correctamente' }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+
+        } catch (error) {
+          return new Response(JSON.stringify({ success: false, error: error.message || 'Error actualizando gasto' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
         }
       }
 
@@ -1721,9 +2161,17 @@ export default {
         if (!userData) {
           await setUserRole(env, user.uid, role, 'activo', 1, user.email, user.displayName)
         } else {
-          // No sobrescribir email/displayName si ya existen y los del token son genéricos
-          const newEmail = (user.email && user.email !== 'unknown@example.com') ? user.email : userData.email
-          const newDisplayName = (user.displayName && user.displayName !== 'Anonimo') ? user.displayName : userData.displayName
+          // No sobrescribir email/displayName si ya existen en BD (prioridad a lo manual)
+          // Solo actualizar si en BD es nulo/genérico y el token trae algo mejor
+          const dbNameValid = userData.displayName && userData.displayName !== 'Anonimo';
+          const tokenNameValid = user.displayName && user.displayName !== 'Anonimo';
+          // Si ya es válido en BD, pasamos null para NO actualizar (y evitar sobrescribir con data stale)
+          // Si no es válido en BD, usamos el del token o 'Anonimo'
+          const newDisplayName = dbNameValid ? null : (tokenNameValid ? user.displayName : 'Anonimo');
+
+          const dbEmailValid = userData.email && userData.email !== 'unknown@example.com';
+          const tokenEmailValid = user.email && user.email !== 'unknown@example.com';
+          const newEmail = dbEmailValid ? null : (tokenEmailValid ? user.email : 'unknown@example.com');
 
           await setUserRole(env, user.uid, role, userData.estado, 1, newEmail, newDisplayName)
         }
@@ -1801,6 +2249,106 @@ export default {
       }
 
 
+
+
+      // PUT /api/users/:uid/role (actualizar rol - solo admin)
+      if (path.match(/\/api\/users\/[^/]+\/role$/) && request.method === 'PUT') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        const parts = path.split('/')
+        const targetUid = parts[parts.length - 2] // .../users/:uid/role
+
+        const user = await verifyFirebaseToken(token, env)
+        if (!user) return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        // Solo admin puede cambiar roles
+        if (!(await isAdmin(env, user.uid, user.email))) return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        try {
+          const body = await request.json()
+          const { role } = body
+
+          if (!role) return new Response(JSON.stringify({ error: 'Rol requerido' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+          // Usar la función helper setUserRole (que ya existe)
+          // Nota: setUserRole requiere (env, uid, role, estado, crearCarpeta, email, displayName)
+          // Pero aquí solo queremos actualizar el rol.
+          // Mejor hacemos un UPDATE directo para no sobrescribir otros campos accidentalmente
+
+          await env.DB.prepare('UPDATE user_roles SET role = ?, updated_at = ? WHERE user_id = ?')
+            .bind(role, getPeruDateTime(), targetUid)
+            .run()
+
+          return new Response(JSON.stringify({ success: true, message: 'Rol actualizado' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (error) {
+          return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
+      // PUT /api/users/:uid/status (actualizar estado - solo admin)
+      if (path.match(/\/api\/users\/[^/]+\/status$/) && request.method === 'PUT') {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        const parts = path.split('/')
+        const targetUid = parts[parts.length - 2]
+
+        const user = await verifyFirebaseToken(token, env)
+        if (!user) return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        if (!(await isAdmin(env, user.uid, user.email))) return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        try {
+          const body = await request.json()
+          const { estado } = body
+
+          if (!estado) return new Response(JSON.stringify({ error: 'Estado requerido' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+          await setUserStatus(env, targetUid, estado)
+
+          return new Response(JSON.stringify({ success: true, message: 'Estado actualizado' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (error) {
+          return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
+      // PUT /api/users/:uid (actualizar usuario - solo admin)
+      // Asegurarse de que NO coincida con /role o /status
+      if (path.startsWith('/api/users/') && request.method === 'PUT' && !path.endsWith('/role') && !path.endsWith('/status')) {
+        if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        const targetUid = path.split('/').pop()
+        const user = await verifyFirebaseToken(token, env)
+        if (!user) return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        if (!(await isAdmin(env, user.uid, user.email))) return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        try {
+          const body = await request.json()
+          const { displayName } = body
+
+          if (!displayName) {
+            return new Response(JSON.stringify({ error: 'Nombre es requerido' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          // Verificar si el usuario existe
+          const existingUser = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(targetUid).first()
+          if (!existingUser) {
+            return new Response(JSON.stringify({ error: 'Usuario no encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          await env.DB.prepare('UPDATE user_roles SET displayName = ?, updated_at = ? WHERE user_id = ?')
+            .bind(displayName, getPeruDateTime(), targetUid)
+            .run()
+
+          return new Response(JSON.stringify({
+            success: true,
+            message: 'Usuario actualizado correctamente'
+          }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        } catch (error) {
+          return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
 
       // GET /api/config/super-admin-email
       if (path === '/api/config/super-admin-email' && request.method === 'GET') {

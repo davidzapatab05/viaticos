@@ -129,10 +129,43 @@ export async function uploadViatico(viaticoData: FormData) {
   return response.json()
 }
 
+export async function uploadGasto(gastoData: FormData) {
+  const token = await getAuthToken()
+
+  const response = await fetch(`${API_URL}/api/gastos`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: gastoData,
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Error al subir gasto' }))
+    throw new Error(error.message || 'Error al subir gasto')
+  }
+
+  toast({
+    title: "Éxito",
+    description: "Gasto subido correctamente.",
+    variant: "success",
+  })
+
+  return response.json()
+}
+
 
 
 export async function getMisViaticos() {
   return apiRequest('/api/viaticos/mis-viaticos')
+}
+
+export async function getMisGastos() {
+  return apiRequest('/api/gastos')
+}
+
+export async function getAllGastos() {
+  return apiRequest('/api/gastos/all')
 }
 
 export async function getAllViaticos() {
@@ -252,6 +285,25 @@ export async function deleteUser(uid: string) {
 }
 
 
+export async function updateUser(uid: string, data: { displayName: string }) {
+  const token = await getAuthToken()
+  const response = await fetch(`${API_URL}/api/users/${uid}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Error actualizando usuario' }))
+    throw new Error(error.error || error.message || 'Error actualizando usuario')
+  }
+
+  return response.json()
+}
+
 export async function updateViatico(id: string, updates: any) {
   return apiRequest(`/api/viaticos/${id}`, {
     method: 'PUT',
@@ -261,6 +313,19 @@ export async function updateViatico(id: string, updates: any) {
 
 export async function deleteViatico(id: string) {
   return apiRequest(`/api/viaticos/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function updateGasto(id: string, updates: any) {
+  return apiRequest(`/api/gastos/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  })
+}
+
+export async function deleteGasto(id: string) {
+  return apiRequest(`/api/gastos/${id}`, {
     method: 'DELETE',
   })
 }

@@ -3,5 +3,9 @@
   "/dashboard/page": "app/dashboard/page.js",
   "/login/page": "app/login/page.js",
   "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
+  "/mis-gastos/page": "app/mis-gastos/page.js",
+  "/mis-viaticos/page": "app/mis-viaticos/page.js",
+  "/nuevo-gasto/page": "app/nuevo-gasto/page.js",
+  "/nuevo-viatico/page": "app/nuevo-viatico/page.js",
   "/page": "app/page.js"
 }

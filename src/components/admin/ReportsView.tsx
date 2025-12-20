@@ -59,8 +59,12 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
 
     // Helper to get user name
     const getUserName = (uid: string) => {
+        if (!uid || uid.trim() === '') return 'USUARIO SIN ID'
         const u = users.find(user => user.uid === uid)
-        return u ? (u.displayName || u.email) : uid
+        if (u) {
+            return (u.displayName || u.email || 'USUARIO SIN NOMBRE').toUpperCase()
+        }
+        return `USUARIO NO ENCONTRADO (${uid})`.toUpperCase()
     }
 
     // Filter viaticos by date range and search query for "Por Registro" tab
@@ -80,7 +84,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
 
             // Search filter
             if (searchQuery.trim()) {
-                const query = searchQuery.toLowerCase()
+                const query = searchQuery.toUpperCase()
                 const searchableFields = [
                     v.fecha,
                     v.para || '',
@@ -89,7 +93,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                     v.numero_comprobante || '',
                     v.descripcion || '',
                     getUserName(v.usuario_id)
-                ].join(' ').toLowerCase()
+                ].join(' ').toUpperCase()
 
                 if (!searchableFields.includes(query)) return false
             }
@@ -157,7 +161,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
 
         // Get headers from the first object
         if (upperData.length > 0) {
-            const columns = Object.keys(upperData[0]).map(key => ({ header: key.toUpperCase(), key: key, width: 20 }));
+            const columns = Object.keys(upperData[0]).map(key => ({ header: key, key: key, width: 20 }));
             worksheet.columns = columns;
         }
 
@@ -182,7 +186,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
 
         // Transform data to uppercase
         const upperData = toUpperCaseData(data)
-        const upperHeaders = headers.map(h => h.toUpperCase())
+        const upperHeaders = headers
 
         doc.autoTable({
             head: [upperHeaders],
@@ -215,7 +219,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                 placeholder="Buscar por usuario, descripción, tipo comprobante..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 pr-9"
+                                className="pl-9 pr-9 uppercase"
                             />
                             {searchQuery && (
                                 <Button
@@ -287,11 +291,11 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                     'Cantidad Viáticos': u.count,
                                                     'Total (S/)': u.total
                                                 }))
-                                                exportToExcel(data, 'Reporte_Por_Usuarios')
+                                                exportToExcel(data, 'REPORTE_POR_USUARIOS')
                                             }}
                                         >
                                             <FileSpreadsheet className="h-4 w-4 sm:mr-2 text-green-600" />
-                                            <span className="hidden sm:inline">Excel</span>
+                                            <span className="hidden sm:inline">EXCEL</span>
                                         </Button>
                                         <Button
                                             variant="outline"
@@ -302,7 +306,7 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                     u.count,
                                                     `S/ ${u.total.toFixed(2)}`
                                                 ])
-                                                exportToPDF(['Usuario', 'Cant.', 'Total'], data, 'Reporte Por Usuarios')
+                                                exportToPDF(['Usuario', 'Cant.', 'Total'], data, 'REPORTE POR USUARIOS')
                                             }}
                                         >
                                             <FileText className="h-4 w-4 sm:mr-2 text-red-600" />
@@ -385,25 +389,25 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                 const data = selectedUserData.viaticos.map(v => {
                                                     const fecha = parseISO(v.fecha)
                                                     return {
-                                                        DIA: format(fecha, 'd'),
-                                                        MES: format(fecha, 'M'),
-                                                        AÑO: format(fecha, 'yyyy'),
-                                                        FECHA: format(fecha, 'dd/MM/yyyy'),
-                                                        PARA: v.para || '',
-                                                        'QUE SUSTENTA': v.que_sustenta || 'VIATICO',
-                                                        TRABAJADOR: selectedUserData.userName,
-                                                        'TIPO COMPROBANTE': v.tipo_comprobante || '',
-                                                        'NUMERO DE DOCUMENTO': v.numero_documento || '',
-                                                        'N° COMPROBANTE': v.numero_comprobante || '',
-                                                        MONTO: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
-                                                        DESCRIPCION: v.descripcion
+                                                        Día: format(fecha, 'd'),
+                                                        Mes: format(fecha, 'MMMM', { locale: es }).toUpperCase(),
+                                                        Año: format(fecha, 'yyyy'),
+                                                        Fecha: format(fecha, 'dd/MM/yyyy'),
+                                                        Para: (v.para || '').toUpperCase(),
+                                                        'Que Sustenta': (v.que_sustenta || 'VIATICO').toUpperCase(),
+                                                        Trabajador: selectedUserData.userName,
+                                                        'Tipo Comprobante': (v.tipo_comprobante || '').toUpperCase(),
+                                                        'Número de Documento': (v.numero_documento || '').toUpperCase(),
+                                                        'N° Comprobante': (v.numero_comprobante || '').toUpperCase(),
+                                                        Monto: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
+                                                        Descripción: (v.descripcion || '').toUpperCase()
                                                     }
                                                 })
-                                                exportToExcel(data, `Reporte_${selectedUserData.userName.replace(/ /g, '_')}`)
+                                                exportToExcel(data, `REPORTE_${selectedUserData.userName.replace(/ /g, '_')}`)
                                             }}
                                         >
                                             <FileSpreadsheet className="h-4 w-4 sm:mr-2 text-green-600" />
-                                            <span className="hidden sm:inline">Excel</span>
+                                            <span className="hidden sm:inline">EXCEL</span>
                                         </Button>
                                         <Button
                                             variant="outline"
@@ -414,20 +418,20 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                     const fecha = parseISO(v.fecha)
                                                     return [
                                                         format(fecha, 'd'),
-                                                        format(fecha, 'M'),
+                                                        format(fecha, 'MMMM', { locale: es }).toUpperCase(),
                                                         format(fecha, 'yyyy'),
                                                         format(fecha, 'dd/MM/yyyy'),
-                                                        v.para || '',
-                                                        v.que_sustenta || 'VIATICO',
+                                                        (v.para || '').toUpperCase(),
+                                                        (v.que_sustenta || 'VIATICO').toUpperCase(),
                                                         selectedUserData.userName,
-                                                        v.tipo_comprobante || '',
-                                                        v.numero_documento || '',
-                                                        v.numero_comprobante || '',
+                                                        (v.tipo_comprobante || '').toUpperCase(),
+                                                        (v.numero_documento || '').toUpperCase(),
+                                                        (v.numero_comprobante || '').toUpperCase(),
                                                         `S/ ${Number(v.monto).toFixed(2)}`,
-                                                        v.descripcion || '-'
+                                                        (v.descripcion || '-').toUpperCase()
                                                     ]
                                                 })
-                                                exportToPDF(['Dia', 'Mes', 'Año', 'Fecha', 'Para', 'Que Sustenta', 'Trabajador', 'Tipo Comprobante', 'N° Documento', 'N° Comprobante', 'Monto', 'Descripción'], data, `Reporte ${selectedUserData.userName}`)
+                                                exportToPDF(['Día', 'Mes', 'Año', 'Fecha', 'Para', 'Que Sustenta', 'Trabajador', 'Tipo Comprobante', 'N° Documento', 'N° Comprobante', 'Monto', 'Descripción'], data, `REPORTE ${selectedUserData.userName}`)
                                             }}
                                         >
                                             <FileText className="h-4 w-4 sm:mr-2 text-red-600" />
@@ -459,18 +463,18 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                             {selectedUserData?.viaticos.map(viatico => (
                                                 <TableRow key={viatico.id}>
                                                     <TableCell>{format(parseISO(viatico.fecha), 'd')}</TableCell>
-                                                    <TableCell>{format(parseISO(viatico.fecha), 'M')}</TableCell>
+                                                    <TableCell>{format(parseISO(viatico.fecha), 'MMMM', { locale: es }).toUpperCase()}</TableCell>
                                                     <TableCell>{format(parseISO(viatico.fecha), 'yyyy')}</TableCell>
                                                     <TableCell className="whitespace-nowrap">{format(parseISO(viatico.fecha), 'dd/MM/yyyy')}</TableCell>
-                                                    <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.para || '-'}</Badge></TableCell>
-                                                    <TableCell className="whitespace-nowrap">{viatico.que_sustenta || 'VIATICO'}</TableCell>
-                                                    <TableCell><Badge variant="secondary" className="whitespace-nowrap">{viatico.tipo_comprobante || '-'}</Badge></TableCell>
-                                                    <TableCell className="whitespace-nowrap">{viatico.numero_documento || '-'}</TableCell>
-                                                    <TableCell className="whitespace-nowrap">{viatico.numero_comprobante || '-'}</TableCell>
+                                                    <TableCell><Badge variant="outline" className="whitespace-nowrap">{(viatico.para || '-').toUpperCase()}</Badge></TableCell>
+                                                    <TableCell className="whitespace-nowrap">{(viatico.que_sustenta || 'VIATICO').toUpperCase()}</TableCell>
+                                                    <TableCell><Badge variant="secondary" className="whitespace-nowrap">{(viatico.tipo_comprobante || '-').toUpperCase()}</Badge></TableCell>
+                                                    <TableCell className="whitespace-nowrap">{(viatico.numero_documento || '-').toUpperCase()}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">{(viatico.numero_comprobante || '-').toUpperCase()}</TableCell>
                                                     <TableCell className="text-right whitespace-nowrap">
                                                         S/ {Number(viatico.monto).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </TableCell>
-                                                    <TableCell className="hidden md:table-cell max-w-xs truncate">{viatico.descripcion || '-'}</TableCell>
+                                                    <TableCell className="hidden md:table-cell max-w-xs truncate">{(viatico.descripcion || '-').toUpperCase()}</TableCell>
                                                     <TableCell className="text-right">
                                                         <div className="flex justify-end gap-2">
                                                             <Button
@@ -521,33 +525,33 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                 const data = filteredViaticos.map(v => {
                                                     const fecha = parseISO(v.fecha)
                                                     return {
-                                                        DIA: format(fecha, 'd'),
-                                                        MES: format(fecha, 'M'),
-                                                        AÑO: format(fecha, 'yyyy'),
-                                                        FECHA: format(fecha, 'dd/MM/yyyy'),
-                                                        PARA: v.para || '',
-                                                        'QUE SUSTENTA': v.que_sustenta || 'VIATICO',
-                                                        TRABAJADOR: getUserName(v.usuario_id),
-                                                        'TIPO COMPROBANTE': v.tipo_comprobante || '',
-                                                        'NUMERO DE DOCUMENTO': v.numero_documento || '',
-                                                        'N° COMPROBANTE': v.numero_comprobante || '',
-                                                        MONTO: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
-                                                        DESCRIPCION: v.descripcion
+                                                        Día: format(fecha, 'd'),
+                                                        Mes: format(fecha, 'MMMM', { locale: es }).toUpperCase(),
+                                                        Año: format(fecha, 'yyyy'),
+                                                        Fecha: format(fecha, 'dd/MM/yyyy'),
+                                                        Para: (v.para || '').toUpperCase(),
+                                                        'Que Sustenta': (v.que_sustenta || 'VIATICO').toUpperCase(),
+                                                        Trabajador: getUserName(v.usuario_id),
+                                                        'Tipo Comprobante': (v.tipo_comprobante || '').toUpperCase(),
+                                                        'Número de Documento': (v.numero_documento || '').toUpperCase(),
+                                                        'N° Comprobante': (v.numero_comprobante || '').toUpperCase(),
+                                                        Monto: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
+                                                        Descripción: (v.descripcion || '').toUpperCase()
                                                     }
                                                 })
-                                                let filename = 'Reporte_Por_Registro'
+                                                let filename = 'REPORTE_POR_REGISTRO'
                                                 if (startDate && endDate) {
-                                                    filename += `_${format(startDate, 'yyyyMMdd')}_al_${format(endDate, 'yyyyMMdd')}`
+                                                    filename += `_${format(startDate, 'yyyyMMdd')}_AL_${format(endDate, 'yyyyMMdd')}`
                                                 } else if (startDate) {
-                                                    filename += `_desde_${format(startDate, 'yyyyMMdd')}`
+                                                    filename += `_DESDE_${format(startDate, 'yyyyMMdd')}`
                                                 } else if (endDate) {
-                                                    filename += `_hasta_${format(endDate, 'yyyyMMdd')}`
+                                                    filename += `_HASTA_${format(endDate, 'yyyyMMdd')}`
                                                 }
                                                 exportToExcel(data, filename)
                                             }}
                                         >
                                             <FileSpreadsheet className="h-4 w-4 sm:mr-2 text-green-600" />
-                                            <span className="hidden sm:inline">Excel</span>
+                                            <span className="hidden sm:inline">EXCEL</span>
                                         </Button>
                                         <Button
                                             variant="outline"
@@ -557,20 +561,20 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                     const fecha = parseISO(v.fecha)
                                                     return [
                                                         format(fecha, 'd'),
-                                                        format(fecha, 'M'),
+                                                        format(fecha, 'MMMM', { locale: es }).toUpperCase(),
                                                         format(fecha, 'yyyy'),
                                                         format(fecha, 'dd/MM/yyyy'),
-                                                        v.para || '',
-                                                        v.que_sustenta || 'VIATICO',
+                                                        (v.para || '').toUpperCase(),
+                                                        (v.que_sustenta || 'VIATICO').toUpperCase(),
                                                         getUserName(v.usuario_id),
-                                                        v.tipo_comprobante || '',
-                                                        v.numero_documento || '',
-                                                        v.numero_comprobante || '',
+                                                        (v.tipo_comprobante || '').toUpperCase(),
+                                                        (v.numero_documento || '').toUpperCase(),
+                                                        (v.numero_comprobante || '').toUpperCase(),
                                                         `S/ ${Number(v.monto).toFixed(2)}`,
-                                                        v.descripcion || '-'
+                                                        (v.descripcion || '-').toUpperCase()
                                                     ]
                                                 })
-                                                exportToPDF(['Dia', 'Mes', 'Año', 'Fecha', 'Para', 'Que Sustenta', 'Trabajador', 'Tipo Comprobante', 'N° Documento', 'N° Comprobante', 'Monto', 'Descripción'], data, 'Reporte De viaticos')
+                                                exportToPDF(['Día', 'Mes', 'Año', 'Fecha', 'Para', 'Que Sustenta', 'Trabajador', 'Tipo Comprobante', 'N° Documento', 'N° Comprobante', 'Monto', 'Descripción'], data, 'REPORTE DE VIATICOS')
                                             }}
                                         >
                                             <FileText className="h-4 w-4 sm:mr-2 text-red-600" />
@@ -614,16 +618,16 @@ export default function ReportsView({ viaticos, users, onDelete, onUpdate }: Rep
                                                     <TableCell>{format(parseISO(viatico.fecha), 'M')}</TableCell>
                                                     <TableCell>{format(parseISO(viatico.fecha), 'yyyy')}</TableCell>
                                                     <TableCell className="whitespace-nowrap">{format(parseISO(viatico.fecha), 'dd/MM/yyyy')}</TableCell>
-                                                    <TableCell><Badge variant="outline" className="whitespace-nowrap">{viatico.para || '-'}</Badge></TableCell>
-                                                    <TableCell className="whitespace-nowrap">{viatico.que_sustenta || 'VIATICO'}</TableCell>
+                                                    <TableCell><Badge variant="outline" className="whitespace-nowrap">{(viatico.para || '-').toUpperCase()}</Badge></TableCell>
+                                                    <TableCell className="whitespace-nowrap">{(viatico.que_sustenta || 'VIATICO').toUpperCase()}</TableCell>
                                                     <TableCell className="font-medium">{getUserName(viatico.usuario_id)}</TableCell>
-                                                    <TableCell><Badge variant="secondary" className="whitespace-nowrap">{viatico.tipo_comprobante || '-'}</Badge></TableCell>
-                                                    <TableCell className="whitespace-nowrap">{viatico.numero_documento || '-'}</TableCell>
-                                                    <TableCell className="whitespace-nowrap">{viatico.numero_comprobante || '-'}</TableCell>
+                                                    <TableCell><Badge variant="secondary" className="whitespace-nowrap">{(viatico.tipo_comprobante || '-').toUpperCase()}</Badge></TableCell>
+                                                    <TableCell className="whitespace-nowrap">{(viatico.numero_documento || '-').toUpperCase()}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">{(viatico.numero_comprobante || '-').toUpperCase()}</TableCell>
                                                     <TableCell className="text-right whitespace-nowrap">
                                                         S/ {Number(viatico.monto).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </TableCell>
-                                                    <TableCell className="hidden md:table-cell max-w-xs truncate">{viatico.descripcion || '-'}</TableCell>
+                                                    <TableCell className="hidden md:table-cell max-w-xs truncate">{(viatico.descripcion || '-').toUpperCase()}</TableCell>
                                                     <TableCell className="text-right">
                                                         <div className="flex justify-end gap-2">
                                                             <Button

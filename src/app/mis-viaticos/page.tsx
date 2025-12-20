@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { useLoading } from '@/contexts/LoadingContext'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import Link from 'next/link'
@@ -35,6 +36,7 @@ interface Viatico {
 
 export default function MisViaticosPage() {
   const { user, appUser, loading: authLoading } = useAuth()
+  const { setLoading: setGlobalLoading, clearLoading } = useLoading()
   const [viaticos, setViaticos] = useState<Viatico[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -89,10 +91,11 @@ export default function MisViaticosPage() {
 
     if (!result.isConfirmed) return
 
+    setGlobalLoading('Eliminando viático...')
     try {
-      setLoading(true)
       await deleteViatico(id)
       await loadViaticos()
+      clearLoading()
 
       await Swal.fire({
         title: 'Eliminado',
@@ -104,6 +107,7 @@ export default function MisViaticosPage() {
         color: '#fff'
       })
     } catch (err) {
+      clearLoading()
       await Swal.fire({
         title: 'Error',
         text: 'Error al eliminar viático: ' + (err as Error).message,
@@ -112,8 +116,6 @@ export default function MisViaticosPage() {
         background: '#1f2937',
         color: '#fff'
       })
-    } finally {
-      setLoading(false)
     }
   }
 

@@ -63,3 +63,22 @@ CREATE INDEX IF NOT EXISTS idx_user_roles_email ON user_roles(email);
 --   created_at TEXT DEFAULT (datetime('now')),
 --   updated_at TEXT DEFAULT (datetime('now'))
 -- );
+
+CREATE TABLE IF NOT EXISTS gastos (
+  id TEXT PRIMARY KEY,
+  usuario_id TEXT NOT NULL,
+  fecha TEXT NOT NULL,
+  de TEXT DEFAULT 'FAMAVE',
+  motivo TEXT DEFAULT 'VIATICO',
+  para_quien_impuesto TEXT,
+  mes_sueldo TEXT,
+  codigo_devolucion TEXT,
+  medio_pago TEXT,
+  entidad TEXT,
+  numero_operacion TEXT,
+  monto REAL NOT NULL,
+  descripcion TEXT,
+  folder_path TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);

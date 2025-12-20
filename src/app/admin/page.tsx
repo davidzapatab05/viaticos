@@ -5,7 +5,7 @@ import Swal from 'sweetalert2'
 import { useToast } from "@/lib/use-toast"
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getAllViaticos, getAllUsers, setUserRole as apiSetUserRole, getCurrentUser, cleanupAnonymousUsers, setUserStatus, deleteUser, deleteViatico, apiRequest, triggerManualBackup } from '@/services/api'
+import { getAllViaticos, getAllUsers, setUserRole as apiSetUserRole, getCurrentUser, cleanupAnonymousUsers, setUserStatus, deleteUser, deleteViatico, apiRequest, triggerManualBackup, getAllGastos, deleteGasto } from '@/services/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,11 +18,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { DatePicker } from '@/components/ui/date-picker'
 import { format } from 'date-fns'
-import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, Trash2, Ban, CheckCircle2, DatabaseBackup } from 'lucide-react'
+import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, Trash2, Ban, CheckCircle2, DatabaseBackup, Edit } from 'lucide-react'
 import Layout from '@/components/Layout'
 import RoleGuard from '@/components/RoleGuard'
 import ReportsView from '@/components/admin/ReportsView'
 import { useLoading } from '@/contexts/LoadingContext'
+import GastosReportsView from '@/components/admin/GastosReportsView'
+import { EditUserDialog } from '@/components/EditUserDialog'
 
 interface Viatico {
   id: string
@@ -42,10 +44,23 @@ interface User {
   estado?: string
 }
 
+interface Gasto {
+  id: string
+  usuario_id: string
+  fecha: string
+  descripcion: string
+  monto: number | string
+  medio_pago?: string
+  entidad?: string
+  numero_operacion?: string
+  created_at: string
+}
+
 export default function AdminPage() {
   const { user } = useAuth()
   const { toast } = useToast()
   const [viaticos, setViaticos] = useState<Viatico[]>([])
+  const [gastos, setGastos] = useState<Gasto[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -60,6 +75,9 @@ export default function AdminPage() {
   const [isBackupDialogOpen, setIsBackupDialogOpen] = useState(false)
   const [backupStartDate, setBackupStartDate] = useState<Date | undefined>()
   const [backupEndDate, setBackupEndDate] = useState<Date | undefined>()
+  // Edit User Dialog State
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [isEditUserOpen, setIsEditUserOpen] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -72,8 +90,9 @@ export default function AdminPage() {
     setError('')
     try {
       // Cargar todo en paralelo para máxima velocidad
-      const [viaticosData, usersData, userData] = await Promise.all([
+      const [viaticosData, gastosData, usersData, userData] = await Promise.all([
         getAllViaticos(),
+        getAllGastos(),
         getAllUsers(),
         getCurrentUser()
       ])
@@ -82,6 +101,7 @@ export default function AdminPage() {
       setUserRole(userData?.user?.role || null)
 
       setViaticos(viaticosData?.viaticos || [])
+      setGastos(gastosData?.gastos || [])
 
       // Filtrar usuarios válidos (excluyendo anonymous y dev)
       const validUsers = (usersData?.users || []).filter((u: User) =>
@@ -285,6 +305,45 @@ export default function AdminPage() {
     }
   }
 
+  async function handleDeleteGasto(id: string) {
+    const result = await Swal.fire({
+      title: '¿Eliminar gasto?',
+      text: 'Esta acción eliminará el registro y los archivos asociados de OneDrive. No se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      background: '#1f2937',
+      color: '#fff'
+    })
+
+    if (!result.isConfirmed) return
+
+    setGlobalLoading('Eliminando gasto...')
+    try {
+      await deleteGasto(id)
+      clearLoading()
+      await Swal.fire({
+        title: 'Eliminado',
+        text: 'El gasto ha sido eliminado.',
+        icon: 'success',
+        background: '#1f2937',
+        color: '#fff'
+      })
+      await loadData()
+    } catch (e) {
+      clearLoading()
+      await Swal.fire({
+        title: 'Error',
+        text: (e as Error).message || 'Error al eliminar gasto',
+        icon: 'error',
+        background: '#1f2937',
+        color: '#fff'
+      })
+    }
+  }
+
   function handleManualBackup() {
     setIsBackupDialogOpen(true)
   }
@@ -369,6 +428,12 @@ export default function AdminPage() {
     return sum + (isNaN(monto) ? 0 : monto)
   }, 0)
 
+  const totalGastos = gastos.length
+  const totalMontoGastos = gastos.reduce((sum, v) => {
+    const monto = typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto
+    return sum + (isNaN(monto) ? 0 : monto)
+  }, 0)
+
 
 
   return (
@@ -414,7 +479,7 @@ export default function AdminPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Monto</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Monto Viáticos</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -439,12 +504,41 @@ export default function AdminPage() {
                 </p>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Gastos</CardTitle>
+                <Receipt className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalGastos}</div>
+                <p className="text-xs text-muted-foreground">
+                  Registros en el sistema
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Monto Gastos</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  S/ {totalMontoGastos.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Suma de todos los gastos
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
           <Tabs defaultValue="viaticos" className="space-y-4">
             <div className="flex items-center justify-between">
               <TabsList>
                 <TabsTrigger value="viaticos">Viáticos</TabsTrigger>
+                <TabsTrigger value="gastos">Gastos</TabsTrigger>
                 <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
               </TabsList>
               <div className="flex items-center gap-2">
@@ -460,6 +554,15 @@ export default function AdminPage() {
                 viaticos={viaticos}
                 users={users}
                 onDelete={handleDeleteViatico}
+              />
+            </TabsContent>
+
+            <TabsContent value="gastos" className="space-y-4">
+              <GastosReportsView
+                gastos={gastos}
+                users={users}
+                onDelete={handleDeleteGasto}
+                onUpdate={loadData}
               />
             </TabsContent>
 
@@ -506,7 +609,7 @@ export default function AdminPage() {
                           {users.map((u) => (
                             <TableRow key={u.uid}>
                               <TableCell>
-                                {u.displayName || u.email.split('@')[0]}
+                                {(u.displayName || u.email.split('@')[0]).toUpperCase()}
                               </TableCell>
                               <TableCell>{u.email}</TableCell>
                               <TableCell>
@@ -588,15 +691,27 @@ export default function AdminPage() {
                                 </Select>
                               </TableCell>
                               <TableCell className="text-right">
-                                {((userRole === 'super_admin' && u.role !== 'super_admin') || (userRole === 'admin' && u.role !== 'super_admin')) && (
+                                <div className="flex justify-end gap-2">
                                   <Button
-                                    variant="destructive"
+                                    variant="ghost"
                                     size="sm"
-                                    onClick={() => handleDeleteUser(u.uid, u.email)}
+                                    onClick={() => {
+                                      setEditingUser(u)
+                                      setIsEditUserOpen(true)
+                                    }}
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Edit className="h-4 w-4" />
                                   </Button>
-                                )}
+                                  {((userRole === 'super_admin' && u.role !== 'super_admin') || (userRole === 'admin' && u.role !== 'super_admin')) && (
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => handleDeleteUser(u.uid, u.email)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -658,6 +773,12 @@ export default function AdminPage() {
           </Dialog>
         </div>
       </Layout >
+      <EditUserDialog
+        open={isEditUserOpen}
+        onOpenChange={setIsEditUserOpen}
+        user={editingUser}
+        onSuccess={loadData}
+      />
     </RoleGuard >
   )
 }

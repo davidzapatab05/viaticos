@@ -44,7 +44,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   if (appUser) {
     navItems.push(
       { path: '/nuevo-viatico', label: 'Nuevo Viático', icon: Plus },
-      { path: '/mis-viaticos', label: 'Mis Viáticos', icon: List }
+      { path: '/mis-viaticos', label: 'Mis Viáticos', icon: List },
+      { path: '/nuevo-gasto', label: 'Nuevo Gasto', icon: Plus },
+      { path: '/mis-gastos', label: 'Mis Gastos', icon: List }
     )
   }
 

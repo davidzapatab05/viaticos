@@ -212,10 +212,14 @@ __turbopack_context__.s([
     ()=>cleanupAnonymousUsers,
     "closeDay",
     ()=>closeDay,
+    "deleteGasto",
+    ()=>deleteGasto,
     "deleteUser",
     ()=>deleteUser,
     "deleteViatico",
     ()=>deleteViatico,
+    "getAllGastos",
+    ()=>getAllGastos,
     "getAllUsers",
     ()=>getAllUsers,
     "getAllViaticos",
@@ -224,6 +228,8 @@ __turbopack_context__.s([
     ()=>getAuthToken,
     "getCurrentUser",
     ()=>getCurrentUser,
+    "getMisGastos",
+    ()=>getMisGastos,
     "getMisViaticos",
     ()=>getMisViaticos,
     "getMyUser",
@@ -240,8 +246,14 @@ __turbopack_context__.s([
     ()=>triggerManualBackup,
     "unsubscribeFromNotifications",
     ()=>unsubscribeFromNotifications,
+    "updateGasto",
+    ()=>updateGasto,
+    "updateUser",
+    ()=>updateUser,
     "updateViatico",
     ()=>updateViatico,
+    "uploadGasto",
+    ()=>uploadGasto,
     "uploadViatico",
     ()=>uploadViatico
 ]);
@@ -356,8 +368,36 @@ async function uploadViatico(viaticoData) {
     });
     return response.json();
 }
+async function uploadGasto(gastoData) {
+    const token = await getAuthToken();
+    const response = await fetch(`${API_URL}/api/gastos`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
+        body: gastoData
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(()=>({
+                message: 'Error al subir gasto'
+            }));
+        throw new Error(error.message || 'Error al subir gasto');
+    }
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$use$2d$toast$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["toast"])({
+        title: "Éxito",
+        description: "Gasto subido correctamente.",
+        variant: "success"
+    });
+    return response.json();
+}
 async function getMisViaticos() {
     return apiRequest('/api/viaticos/mis-viaticos');
+}
+async function getMisGastos() {
+    return apiRequest('/api/gastos');
+}
+async function getAllGastos() {
+    return apiRequest('/api/gastos/all');
 }
 async function getAllViaticos() {
     return apiRequest('/api/viaticos/all');
@@ -454,6 +494,24 @@ async function deleteUser(uid) {
     });
     return response.json();
 }
+async function updateUser(uid, data) {
+    const token = await getAuthToken();
+    const response = await fetch(`${API_URL}/api/users/${uid}`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(()=>({
+                message: 'Error actualizando usuario'
+            }));
+        throw new Error(error.error || error.message || 'Error actualizando usuario');
+    }
+    return response.json();
+}
 async function updateViatico(id, updates) {
     return apiRequest(`/api/viaticos/${id}`, {
         method: 'PUT',
@@ -462,6 +520,17 @@ async function updateViatico(id, updates) {
 }
 async function deleteViatico(id) {
     return apiRequest(`/api/viaticos/${id}`, {
+        method: 'DELETE'
+    });
+}
+async function updateGasto(id, updates) {
+    return apiRequest(`/api/gastos/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+    });
+}
+async function deleteGasto(id) {
+    return apiRequest(`/api/gastos/${id}`, {
         method: 'DELETE'
     });
 }
@@ -1172,6 +1241,7 @@ function InstallPWA() {
         window.addEventListener('beforeinstallprompt', handler);
         return ()=>window.removeEventListener('beforeinstallprompt', handler);
     }, []);
+    const isStandalone = ("TURBOPACK compile-time value", "undefined") !== 'undefined' && (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone || document.referrer.includes('android-app://'));
     const onClick = (evt)=>{
         evt.preventDefault();
         if (!promptInstall) {
@@ -1179,7 +1249,7 @@ function InstallPWA() {
         }
         promptInstall.prompt();
     };
-    if (!supportsPWA) {
+    if (!supportsPWA || isStandalone) {
         return null;
     }
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -1192,14 +1262,14 @@ function InstallPWA() {
                 className: "h-4 w-4"
             }, void 0, false, {
                 fileName: "[project]/src/components/InstallPWA.tsx",
-                lineNumber: 41,
+                lineNumber: 47,
                 columnNumber: 13
             }, this),
             "Instalar App"
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/InstallPWA.tsx",
-        lineNumber: 35,
+        lineNumber: 41,
         columnNumber: 9
     }, this);
 }
