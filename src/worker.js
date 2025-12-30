@@ -675,23 +675,30 @@ async function executeBackupAndCleanup(env, startDate, endDate, backupName) {
     ).bind(startDate, endDate).all();
     const viaticos = viaticosRes.results || [];
 
-    // B) User Roles (Todos)
+    // B) Gastos (Rango de fechas)
+    await ensureGastosTable(env);
+    const gastosRes = await env.DB.prepare(
+      `SELECT * FROM gastos WHERE fecha >= ? AND fecha <= ?`
+    ).bind(startDate, endDate).all();
+    const gastos = gastosRes.results || [];
+
+    // C) User Roles (Todos)
     await ensureUserRolesTable(env);
     const usersRes = await env.DB.prepare(`SELECT * FROM user_roles`).all();
     const users = usersRes.results || [];
 
-    if (viaticos.length === 0) {
-      console.log(`No hay viaticos para ${backupName}. Saltando backup.`);
-      return { success: true, message: 'No hay viaticos para respaldar', count: 0 };
+    if (viaticos.length === 0 && gastos.length === 0) {
+      console.log(`No hay viaticos ni gastos para ${backupName}. Saltando backup.`);
+      return { success: true, message: 'No hay registros para respaldar', count: 0 };
     }
 
-    console.log(`Encontrados: ${viaticos.length} viaticos, ${users.length} usuarios.`);
+    console.log(`Encontrados: ${viaticos.length} viaticos, ${gastos.length} gastos, ${users.length} usuarios.`);
 
     // 2. Generar SQL
     let sqlContent = `-- Backup Completo: ${backupName}\n`;
     sqlContent += `-- Fecha GeneraciÃ³n: ${getPeruDateTime()}\n`;
-    sqlContent += `-- Rango Viaticos: ${startDate} a ${endDate}\n`;
-    sqlContent += `-- Registros: ${viaticos.length} Viaticos, ${users.length} Usuarios\n\n`;
+    sqlContent += `-- Rango Fechas: ${startDate} a ${endDate}\n`;
+    sqlContent += `-- Registros: ${viaticos.length} Viaticos, ${gastos.length} Gastos, ${users.length} Usuarios\n\n`;
 
     sqlContent += `BEGIN TRANSACTION;\n\n`;
 
@@ -714,6 +721,7 @@ async function executeBackupAndCleanup(env, startDate, endDate, backupName) {
 
     if (users.length > 0) sqlContent += generateInserts('user_roles', users);
     if (viaticos.length > 0) sqlContent += generateInserts('viaticos', viaticos);
+    if (gastos.length > 0) sqlContent += generateInserts('gastos', gastos);
 
     sqlContent += `COMMIT;\n`;
 
@@ -742,29 +750,37 @@ async function executeBackupAndCleanup(env, startDate, endDate, backupName) {
     console.log(`Backup subido exitosamente: ${fileName}`);
 
     // 4. ELIMINAR datos antiguos (PolÃ­tica de RetenciÃ³n)
-    // SOLO VIATICOS
+    let deletedViaticosCount = 0;
+    let deletedGastosCount = 0;
+
+    // ELIMINAR VIATICOS
     if (viaticos.length > 0) {
       console.log(`Eliminando registros antiguos de VIATICOS de la BD...`);
-      const deleteResult = await env.DB.prepare(
+      const deleteViaticos = await env.DB.prepare(
         `DELETE FROM viaticos WHERE fecha >= ? AND fecha <= ?`
       ).bind(startDate, endDate).run();
-
-      console.log(`Eliminados ${deleteResult.meta.changes} registros de viaticos.`);
-
-      return {
-        success: true,
-        message: 'Backup completo subido y viaticos antiguos eliminados',
-        backupFile: fileName,
-        deletedCount: deleteResult.meta.changes
-      };
-    } else {
-      return {
-        success: true,
-        message: 'Backup completo subido (sin viaticos para eliminar)',
-        backupFile: fileName,
-        deletedCount: 0
-      };
+      deletedViaticosCount = deleteViaticos.meta.changes;
+      console.log(`Eliminados ${deletedViaticosCount} registros de viaticos.`);
     }
+
+    // ELIMINAR GASTOS
+    if (gastos.length > 0) {
+      console.log(`Eliminando registros antiguos de GASTOS de la BD...`);
+      const deleteGastos = await env.DB.prepare(
+        `DELETE FROM gastos WHERE fecha >= ? AND fecha <= ?`
+      ).bind(startDate, endDate).run();
+      deletedGastosCount = deleteGastos.meta.changes;
+      console.log(`Eliminados ${deletedGastosCount} registros de gastos.`);
+    }
+
+    return {
+      success: true,
+      message: 'Backup completo subido y registros antiguos eliminados',
+      backupFile: fileName,
+      deletedCount: deletedViaticosCount + deletedGastosCount,
+      deletedViaticos: deletedViaticosCount,
+      deletedGastos: deletedGastosCount
+    };
 
   } catch (error) {
     console.error('Error en proceso de backup:', error);

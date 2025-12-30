@@ -369,7 +369,8 @@ export default function AdminPage() {
         html: `
           <div class="text-left">
             <p>Se ha generado el archivo: <b>${result.backupFile}</b></p>
-            <p>Registros eliminados: <b>${result.deletedCount}</b></p>
+            <p>Viáticos eliminados: <b>${result.deletedViaticos}</b></p>
+            <p>Gastos eliminados: <b>${result.deletedGastos}</b></p>
           </div>
         `,
         icon: 'success',
@@ -729,7 +730,7 @@ export default function AdminPage() {
               <DialogHeader>
                 <DialogTitle>Backup Manual</DialogTitle>
                 <DialogDescription>
-                  Selecciona el rango de fechas para respaldar y <b>ELIMINAR</b> de la base de datos.
+                  Selecciona el rango de fechas para respaldar y <b>ELIMINAR</b> de la base de datos (Viáticos y Gastos).
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -756,7 +757,7 @@ export default function AdminPage() {
                     <Shield className="h-4 w-4 mt-0.5" />
                     <div className="text-sm">
                       <p className="font-bold mb-1">Advertencia</p>
-                      Esta acción generará un archivo SQL en OneDrive y luego <b>ELIMINARÁ</b> los registros de viáticos del rango seleccionado.
+                      Esta acción generará un archivo SQL en OneDrive y luego <b>ELIMINARÁ</b> los registros de viáticos y gastos del rango seleccionado.
                     </div>
                   </div>
                 </Alert>
