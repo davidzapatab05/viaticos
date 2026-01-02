@@ -39,7 +39,7 @@ export function CountdownBanner() {
                         className={`h-5 sm:h-6 text-[10px] sm:text-xs px-2 bg-white border-none ${isLastHour ? 'text-orange-700 hover:bg-orange-50' : 'text-blue-700 hover:bg-blue-50'}`}
                         onClick={() => router.push('/nuevo-gasto')}
                     >
-                        Registrar gasto
+                        Registrar viatico que se entrega
                     </Button>
                 </div>
             </div>

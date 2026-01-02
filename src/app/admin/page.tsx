@@ -307,7 +307,7 @@ export default function AdminPage() {
 
   async function handleDeleteGasto(id: string) {
     const result = await Swal.fire({
-      title: '¿Eliminar gasto?',
+      title: '¿Eliminar viático que se entrega?',
       text: 'Esta acción eliminará el registro y los archivos asociados de OneDrive. No se puede deshacer.',
       icon: 'warning',
       showCancelButton: true,
@@ -326,7 +326,7 @@ export default function AdminPage() {
       clearLoading()
       await Swal.fire({
         title: 'Eliminado',
-        text: 'El gasto ha sido eliminado.',
+        text: 'El viático que se entrega ha sido eliminado.',
         icon: 'success',
         background: '#1f2937',
         color: '#fff'
@@ -508,7 +508,7 @@ export default function AdminPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Gastos</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Viáticos que se entrega</CardTitle>
                 <Receipt className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -521,7 +521,7 @@ export default function AdminPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Monto Gastos</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Monto Viáticos que se entrega</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -539,7 +539,7 @@ export default function AdminPage() {
             <div className="flex items-center justify-between">
               <TabsList>
                 <TabsTrigger value="viaticos">Viáticos</TabsTrigger>
-                <TabsTrigger value="gastos">Gastos</TabsTrigger>
+                <TabsTrigger value="gastos">Viáticos que se entrega</TabsTrigger>
                 <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
               </TabsList>
               <div className="flex items-center gap-2">

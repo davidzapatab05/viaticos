@@ -45,8 +45,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     navItems.push(
       { path: '/nuevo-viatico', label: 'Nuevo Viático', icon: Plus },
       { path: '/mis-viaticos', label: 'Mis Viáticos', icon: List },
-      { path: '/nuevo-gasto', label: 'Nuevo Gasto', icon: Plus },
-      { path: '/mis-gastos', label: 'Mis Gastos', icon: List }
+      { path: '/nuevo-gasto', label: 'Nuevo Viático que se entrega', icon: Plus },
+      { path: '/mis-gastos', label: 'Mis Viáticos que se entrega', icon: List }
     )
   }
 

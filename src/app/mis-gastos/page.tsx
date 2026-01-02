@@ -177,8 +177,8 @@ export default function MisGastosPage() {
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h1 className="text-3xl font-bold tracking-tight">Mis Gastos</h1>
-                                <p className="text-muted-foreground">Consulta y gestiona todos tus gastos</p>
+                                <h1 className="text-3xl font-bold tracking-tight">Mis Viáticos que se entrega</h1>
+                                <p className="text-muted-foreground">Consulta y gestiona todos tus viáticos entregados</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Button variant="outline" size="icon" onClick={loadGastos} disabled={loading}>
@@ -229,7 +229,7 @@ export default function MisGastosPage() {
                                     <h3 className="text-lg font-semibold mb-2">No tienes gastos registrados</h3>
                                     <p className="text-sm text-muted-foreground text-center mb-4">Comienza registrando tu primer gasto</p>
                                     <Button asChild>
-                                        <Link href="/nuevo-gasto">Crear Primer Gasto <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                                        <Link href="/nuevo-gasto">Crear Primer Viático que se entrega <ArrowRight className="ml-2 h-4 w-4" /></Link>
                                     </Button>
                                 </CardContent>
                             </Card>

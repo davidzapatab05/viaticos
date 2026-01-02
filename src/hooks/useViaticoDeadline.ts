@@ -37,27 +37,27 @@ export function useViaticoDeadline() {
 
             const yesterday = subDays(today, 1)
 
-            // Definir el límite de las 10:00 AM de hoy (hora Perú)
-            const cutoffTime = set(today, { hours: 10, minutes: 0, seconds: 0, milliseconds: 0 })
+            // Definir el límite de las 12:00 PM de hoy (hora Perú)
+            const cutoffTime = set(today, { hours: 12, minutes: 0, seconds: 0, milliseconds: 0 })
 
-            // Verificar si estamos antes de las 10 AM
+            // Verificar si estamos antes de las 12 PM
             const isBeforeCutoff = isBefore(now, cutoffTime)
 
             let effectiveDate = today
             let gracePeriodActive = false
 
             if (isBeforeCutoff) {
-                // Estamos antes de las 10 AM.
+                // Estamos antes de las 12 PM.
                 // La fecha activa es AYER (automático).
                 effectiveDate = yesterday
                 gracePeriodActive = true
             } else {
-                // Ya pasaron las 10 AM, la fecha activa es HOY (automático).
+                // Ya pasaron las 12 PM, la fecha activa es HOY (automático).
                 effectiveDate = today
                 gracePeriodActive = false
             }
 
-            // Detectar cambio de estado (cruce de las 10 AM) y recargar
+            // Detectar cambio de estado (cruce de las 12 PM) y recargar
             if (previousGracePeriod.current !== null && previousGracePeriod.current !== gracePeriodActive) {
                 window.location.reload()
                 return // Detener ejecución para evitar actualizaciones de estado en componente desmontado
@@ -84,8 +84,8 @@ export function useViaticoDeadline() {
             })
 
             if (gracePeriodActive) {
-                // Caso 1: Periodo de gracia (antes de las 10 AM, registrando para ayer)
-                // Deadline: Hoy 10:00 AM
+                // Caso 1: Periodo de gracia (antes de las 12 PM, registrando para ayer)
+                // Deadline: Hoy 12:00 PM
                 const diff = differenceInSeconds(cutoffTime, now)
                 if (diff > 0) {
                     const hours = Math.floor(diff / 3600)
@@ -100,7 +100,7 @@ export function useViaticoDeadline() {
                     if (diff <= 3600 && diff > 3590) {
                         triggerNotification(
                             "⏳ Cierre de Viáticos en 1 hora",
-                            "Recuerda registrar tus viáticos pendientes de ayer antes de las 10:00 AM."
+                            "Recuerda registrar tus viáticos pendientes de ayer antes de las 12:00 PM."
                         )
                     }
                 } else {
@@ -108,8 +108,8 @@ export function useViaticoDeadline() {
                     setIsLastHour(false)
                 }
             } else {
-                // Caso 2: Periodo normal (después de las 10 AM)
-                // Deadline: Mañana 10:00 AM
+                // Caso 2: Periodo normal (después de las 12 PM)
+                // Deadline: Mañana 12:00 PM
                 const tomorrowCutoff = addDays(cutoffTime, 1)
                 const diff = differenceInSeconds(tomorrowCutoff, now)
 

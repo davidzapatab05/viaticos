@@ -217,8 +217,8 @@ export default function NuevoGastoPage() {
                 <TooltipProvider>
                     <div className="max-w-5xl mx-auto space-y-6">
                         <div>
-                            <h1 className="text-3xl font-bold tracking-tight">Nuevo Gasto</h1>
-                            <p className="text-muted-foreground">Registra un nuevo gasto con foto o PDF</p>
+                            <h1 className="text-3xl font-bold tracking-tight">Nuevo Viático que se entrega</h1>
+                            <p className="text-muted-foreground">Registra un nuevo viático que se entrega con foto o PDF</p>
                         </div>
 
                         <Card className={`border-2 ${isGracePeriod ? 'border-orange-500 bg-orange-950/40' : 'border-primary/20 bg-primary/5'}`}>
@@ -358,11 +358,11 @@ export default function NuevoGastoPage() {
                                     </div>
 
                                     {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
-                                    {success && <Alert><CheckCircle2 className="h-4 w-4" /><AlertTitle>Éxito</AlertTitle><AlertDescription>Gasto registrado correctamente.</AlertDescription></Alert>}
+                                    {success && <Alert><CheckCircle2 className="h-4 w-4" /><AlertTitle>Éxito</AlertTitle><AlertDescription>Viático que se entrega registrado correctamente.</AlertDescription></Alert>}
                                 </CardContent>
                                 <CardFooter className="flex justify-end">
                                     <Button type="submit" size="lg" disabled={loading} className="min-w-[200px]">
-                                        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Registrando...</> : <><FileCheck className="mr-2 h-4 w-4" />Registrar Gasto</>}
+                                        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Registrando...</> : <><FileCheck className="mr-2 h-4 w-4" />Registrar Viático que se entrega</>}
                                     </Button>
                                 </CardFooter>
                             </Card>

@@ -288,10 +288,10 @@ export default function GastosReportsView({ gastos, users, onDelete, onUpdate }:
                                             onClick={() => {
                                                 const data = userTotals.map(u => ({
                                                     USUARIO: u.userName,
-                                                    'CANTIDAD GASTOS': u.count,
+                                                    'CANTIDAD VIATICOS ENTREGA': u.count,
                                                     'TOTAL (S/)': u.total
                                                 }))
-                                                exportToExcel(data, 'REPORTE_GASTOS_POR_USUARIOS')
+                                                exportToExcel(data, 'REPORTE_VIATICOS_ENTREGA_POR_USUARIOS')
                                             }}
                                         >
                                             <FileSpreadsheet className="h-4 w-4 sm:mr-2 text-green-600" />
@@ -306,7 +306,7 @@ export default function GastosReportsView({ gastos, users, onDelete, onUpdate }:
                                                     u.count,
                                                     `S/ ${u.total.toFixed(2)}`
                                                 ])
-                                                exportToPDF(['Usuario', 'Cant.', 'Total'], data, 'REPORTE GASTOS POR USUARIOS')
+                                                exportToPDF(['Usuario', 'Cant.', 'Total'], data, 'REPORTE VIATICOS ENTREGA POR USUARIOS')
                                             }}
                                         >
                                             <FileText className="h-4 w-4 sm:mr-2 text-red-600" />
@@ -405,7 +405,7 @@ export default function GastosReportsView({ gastos, users, onDelete, onUpdate }:
                                                         DESCRIPCION: (g.descripcion || '').toUpperCase()
                                                     }
                                                 })
-                                                exportToExcel(data, `REPORTE_GASTOS_${selectedUserData.userName.replace(/ /g, '_')}`)
+                                                exportToExcel(data, `REPORTE_VIATICOS_ENTREGA_${selectedUserData.userName.replace(/ /g, '_')}`)
                                             }}
                                         >
                                             <FileSpreadsheet className="h-4 w-4 sm:mr-2 text-green-600" />
@@ -431,7 +431,7 @@ export default function GastosReportsView({ gastos, users, onDelete, onUpdate }:
                                                         (g.descripcion || '-').toUpperCase()
                                                     ]
                                                 })
-                                                exportToPDF(['Día', 'Mes', 'Año', 'Fecha', 'Trabajador', 'Medio Pago', 'Entidad', 'N° Op.', 'Monto', 'Descripción'], data, `REPORTE GASTOS ${selectedUserData.userName}`)
+                                                exportToPDF(['Día', 'Mes', 'Año', 'Fecha', 'Trabajador', 'Medio Pago', 'Entidad', 'N° Op.', 'Monto', 'Descripción'], data, `REPORTE VIATICOS ENTREGA ${selectedUserData.userName}`)
                                             }}
                                         >
                                             <FileText className="h-4 w-4 sm:mr-2 text-red-600" />
@@ -537,7 +537,7 @@ export default function GastosReportsView({ gastos, users, onDelete, onUpdate }:
                                                         DESCRIPCION: (g.descripcion || '').toUpperCase()
                                                     }
                                                 })
-                                                let filename = 'REPORTE_GASTOS_POR_REGISTRO'
+                                                let filename = 'REPORTE_VIATICOS_ENTREGA_POR_REGISTRO'
                                                 if (startDate && endDate) {
                                                     filename += `_${format(startDate, 'yyyyMMdd')}_AL_${format(endDate, 'yyyyMMdd')}`
                                                 } else if (startDate) {
@@ -570,7 +570,7 @@ export default function GastosReportsView({ gastos, users, onDelete, onUpdate }:
                                                         (g.descripcion || '-').toUpperCase()
                                                     ]
                                                 })
-                                                exportToPDF(['Día', 'Mes', 'Año', 'Fecha', 'Trabajador', 'Medio Pago', 'Entidad', 'N° Op.', 'Monto', 'Descripción'], data, 'REPORTE DE GASTOS')
+                                                exportToPDF(['Día', 'Mes', 'Año', 'Fecha', 'Trabajador', 'Medio Pago', 'Entidad', 'N° Op.', 'Monto', 'Descripción'], data, 'REPORTE DE VIATICOS QUE SE ENTREGA')
                                             }}
                                         >
                                             <FileText className="h-4 w-4 sm:mr-2 text-red-600" />

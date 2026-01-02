@@ -45,8 +45,8 @@ function calculateActiveDate() {
   const peruTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Lima" }));
   const hours = peruTime.getHours();
 
-  // Si es antes de las 10 AM, usamos la fecha de ayer
-  if (hours < 10) {
+  // Si es antes de las 12 PM (medio día), usamos la fecha de ayer
+  if (hours < 12) {
     const yesterday = new Date(peruTime);
     yesterday.setDate(yesterday.getDate() - 1);
     const y = yesterday.getFullYear();
@@ -55,7 +55,7 @@ function calculateActiveDate() {
     return `${y}-${m}-${d}`;
   }
 
-  // Si es 10 AM o después, usamos la fecha de hoy
+  // Si es 12 PM o después, usamos la fecha de hoy
   const y = peruTime.getFullYear();
   const m = String(peruTime.getMonth() + 1).padStart(2, '0');
   const d = String(peruTime.getDate()).padStart(2, '0');
@@ -1241,11 +1241,11 @@ export default {
 
         let activeDateString = todayString; // Por defecto hoy
 
-        // Regla: Si es antes de las 10 AM, la fecha activa es AYER (automático)
-        if (hour < 10) {
+        // Regla: Si es antes de las 12 PM, la fecha activa es AYER (automático)
+        if (hour < 12) {
           activeDateString = yesterdayString;
         } else {
-          // Después de las 10 AM, es hoy
+          // Después de las 12 PM, es hoy
           activeDateString = todayString;
         }
 
@@ -1483,7 +1483,7 @@ export default {
         const yesterdayString = `${yesterdayDate.getFullYear()}-${(yesterdayDate.getMonth() + 1).toString().padStart(2, '0')}-${yesterdayDate.getDate().toString().padStart(2, '0')}`;
 
         let activeDateString = todayString;
-        if (hour < 10) {
+        if (hour < 12) {
           activeDateString = yesterdayString;
         } else {
           activeDateString = todayString;

@@ -29,15 +29,15 @@ export default function DashboardPage() {
     })
 
     cards.push({
-      title: 'Nuevo Gasto',
-      description: 'Registra un nuevo gasto con foto o PDF',
+      title: 'Nuevo Viático que se entrega',
+      description: 'Registra un nuevo viático que se entrega con foto o PDF',
       icon: DollarSign,
       link: '/nuevo-gasto',
     })
 
     cards.push({
-      title: 'Mis Gastos',
-      description: 'Consulta y gestiona todos tus gastos',
+      title: 'Mis Viáticos que se entrega',
+      description: 'Consulta y gestiona todos tus viáticos entregados',
       icon: FileText,
       link: '/mis-gastos',
     })
