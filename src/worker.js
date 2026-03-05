@@ -489,6 +489,55 @@ async function createOneDriveFolder(accessToken, folderPath) {
     return null
   }
 }
+
+function getMonthNameEs(dateValue) {
+  const months = [
+    'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+    'JULIO', 'AGOSTO', 'SETIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+  ]
+  const dateObj = new Date(`${String(dateValue).slice(0, 10)}T12:00:00`)
+  if (Number.isNaN(dateObj.getTime())) return ''
+  return months[dateObj.getMonth()] || ''
+}
+
+function formatDateDDMMYYYY(dateValue) {
+  const dateObj = new Date(`${String(dateValue).slice(0, 10)}T12:00:00`)
+  if (Number.isNaN(dateObj.getTime())) return ''
+  const d = String(dateObj.getDate()).padStart(2, '0')
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0')
+  const y = String(dateObj.getFullYear())
+  return `${d}/${m}/${y}`
+}
+
+function sanitizeFileToken(value) {
+  return String(value || '')
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+}
+
+function toUpperSafe(value) {
+  if (value === null || value === undefined) return ''
+  return String(value).toUpperCase()
+}
+
+async function generateExcelBuffer(sheetName, rows) {
+  const ExcelJS = await import('exceljs')
+  const workbook = new ExcelJS.Workbook()
+  const worksheet = workbook.addWorksheet(sheetName)
+
+  if (rows.length > 0) {
+    worksheet.columns = Object.keys(rows[0]).map((key) => ({
+      header: key,
+      key,
+      width: 24
+    }))
+    worksheet.addRows(rows)
+  }
+
+  return workbook.xlsx.writeBuffer()
+}
+
 async function deleteOneDriveFolder(accessToken, userId, userDisplayName = null, userEmail = null) {
   try {
     // Construir el nombre de la carpeta usando la misma lÃ³gica que ensureUserOneDriveFolder
@@ -663,7 +712,7 @@ async function uploadToOneDrive(imageBuffer, fileName, contentType, userId, fech
 }
 
 // ===================== Backup Logic =====================
-async function executeBackupAndCleanup(env, startDate, endDate, backupName) {
+async function executeBackupExportOnly(env, startDate, endDate, backupName) {
   try {
     console.log(`Iniciando backup para: ${backupName} (${startDate} - ${endDate})`);
 
@@ -694,89 +743,133 @@ async function executeBackupAndCleanup(env, startDate, endDate, backupName) {
 
     console.log(`Encontrados: ${viaticos.length} viaticos, ${gastos.length} gastos, ${users.length} usuarios.`);
 
-    // 2. Generar SQL
-    let sqlContent = `-- Backup Completo: ${backupName}\n`;
-    sqlContent += `-- Fecha GeneraciÃ³n: ${getPeruDateTime()}\n`;
-    sqlContent += `-- Rango Fechas: ${startDate} a ${endDate}\n`;
-    sqlContent += `-- Registros: ${viaticos.length} Viaticos, ${gastos.length} Gastos, ${users.length} Usuarios\n\n`;
+    // 2. Mapa de usuarios para columna TRABAJADOR
+    const userMap = new Map()
+    for (const u of users) {
+      userMap.set(u.user_id, { displayName: u.displayName, email: u.email })
+    }
+    const getUserName = (uid) => {
+      const u = userMap.get(uid)
+      if (!u) return toUpperSafe(uid)
+      return toUpperSafe(u.displayName || (u.email ? String(u.email).split('@')[0] : uid))
+    }
 
-    sqlContent += `BEGIN TRANSACTION;\n\n`;
+    // 3. Filas Excel (mismo formato de exportación Por Registro)
+    const viaticosRows = [...viaticos]
+      .sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')))
+      .map((v) => {
+        const fechaIso = String(v.fecha || '').slice(0, 10)
+        const dateObj = new Date(`${fechaIso}T12:00:00`)
+        const day = Number.isNaN(dateObj.getTime()) ? '' : String(dateObj.getDate())
+        const year = Number.isNaN(dateObj.getTime()) ? '' : String(dateObj.getFullYear())
+        return {
+          DIA: day,
+          MES: getMonthNameEs(fechaIso),
+          ANIO: year,
+          FECHA: formatDateDDMMYYYY(fechaIso),
+          PARA: toUpperSafe(v.para || ''),
+          'QUE SUSTENTA': toUpperSafe(v.que_sustenta || 'VIATICO'),
+          TRABAJADOR: getUserName(v.usuario_id),
+          'TIPO COMPROBANTE': toUpperSafe(v.tipo_comprobante || ''),
+          'NUMERO DE DOCUMENTO': toUpperSafe(v.numero_documento || ''),
+          'NRO COMPROBANTE': toUpperSafe(v.numero_comprobante || ''),
+          MONTO: typeof v.monto === 'string' ? parseFloat(v.monto) : v.monto,
+          DESCRIPCION: toUpperSafe(v.descripcion || '')
+        }
+      })
 
-    // Helper para generar INSERTs
-    const generateInserts = (tableName, rows) => {
-      let sql = `-- Table: ${tableName}\n`;
-      for (const row of rows) {
-        const columns = Object.keys(row).join(', ');
-        const values = Object.values(row).map(val => {
-          if (val === null) return 'NULL';
-          if (typeof val === 'number') return val;
-          // Escapar comillas simples
-          return `'${String(val).replace(/'/g, "''")}'`;
-        }).join(', ');
-        sql += `INSERT OR REPLACE INTO ${tableName} (${columns}) VALUES (${values});\n`;
-      }
-      sql += `\n`;
-      return sql;
-    };
+    const gastosRows = [...gastos]
+      .sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')))
+      .map((g) => {
+        const fechaIso = String(g.fecha || '').slice(0, 10)
+        const dateObj = new Date(`${fechaIso}T12:00:00`)
+        const day = Number.isNaN(dateObj.getTime()) ? '' : String(dateObj.getDate())
+        const year = Number.isNaN(dateObj.getTime()) ? '' : String(dateObj.getFullYear())
+        return {
+          DIA: day,
+          MES: getMonthNameEs(fechaIso),
+          ANIO: year,
+          FECHA: formatDateDDMMYYYY(fechaIso),
+          DE: toUpperSafe(g.de || ''),
+          MOTIVO: toUpperSafe(g.motivo || ''),
+          'PARA | QUIEN IMPUESTO': getUserName(g.usuario_id),
+          'MES SUELDO': toUpperSafe(g.mes_sueldo || ''),
+          'CODIGO PARA DEVOLUCION': toUpperSafe(g.codigo_devolucion || ''),
+          'MEDIO DE PAGO': toUpperSafe(g.medio_pago || ''),
+          ENTIDAD: toUpperSafe(g.entidad || ''),
+          'NRO DE OPERACION': toUpperSafe(g.numero_operacion || ''),
+          MONTO: typeof g.monto === 'string' ? parseFloat(g.monto) : g.monto,
+          DESCRIPCION: toUpperSafe(g.descripcion || '')
+        }
+      })
 
-    if (users.length > 0) sqlContent += generateInserts('user_roles', users);
-    if (viaticos.length > 0) sqlContent += generateInserts('viaticos', viaticos);
-    if (gastos.length > 0) sqlContent += generateInserts('gastos', gastos);
+    // 4. Generar archivos Excel
+    const viaticosBuffer = await generateExcelBuffer('Viaticos', viaticosRows)
+    const gastosBuffer = await generateExcelBuffer('Gastos', gastosRows)
 
-    sqlContent += `COMMIT;\n`;
+    // 5. Subir a OneDrive
+    const accessToken = await getOneDriveAccessToken(env)
+    const rangeToken = `${sanitizeFileToken(startDate)}_${sanitizeFileToken(endDate)}`
+    const backupBaseName = sanitizeFileToken(backupName || `backup_${rangeToken}`) || `backup_${rangeToken}`
+    const viaticosFileName = `${backupBaseName}_viaticos.xlsx`
+    const gastosFileName = `${backupBaseName}_gastos.xlsx`
 
-    // 3. Subir a OneDrive
-    const accessToken = await getOneDriveAccessToken(env);
-    const fileName = `${backupName}.sql`;
-    const folderPath = `viaticos/backups`;
+    // 5.1 Backup de viaticos en viaticos/backups
+    const viaticosBackupPath = `viaticos/backups`
+    await createOneDriveFolder(accessToken, viaticosBackupPath)
 
-    const uploadResp = await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(folderPath)}/${fileName}:/content`,
+    const viaticosUploadResp = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(viaticosBackupPath)}/${encodeURIComponent(viaticosFileName)}:/content`,
       {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/sql'
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         },
-        body: sqlContent
+        body: viaticosBuffer
       }
-    );
+    )
 
-    if (!uploadResp.ok) {
-      const err = await uploadResp.json().catch(() => ({}));
-      throw new Error(`Error subiendo backup a OneDrive: ${JSON.stringify(err)}`);
+    if (!viaticosUploadResp.ok) {
+      const err = await viaticosUploadResp.json().catch(() => ({}))
+      throw new Error(`Error subiendo backup Excel de viaticos: ${JSON.stringify(err)}`)
     }
 
-    console.log(`Backup subido exitosamente: ${fileName}`);
+    // 5.2 Backup de gastos en gastos/backups
+    const gastosBackupPath = `gastos/backups`
+    await createOneDriveFolder(accessToken, gastosBackupPath)
 
-    // 4. ELIMINAR datos antiguos (PolÃ­tica de RetenciÃ³n)
-    let deletedViaticosCount = 0;
-    let deletedGastosCount = 0;
+    const gastosUploadResp = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(gastosBackupPath)}/${encodeURIComponent(gastosFileName)}:/content`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        },
+        body: gastosBuffer
+      }
+    )
 
-    // ELIMINAR VIATICOS
-    if (viaticos.length > 0) {
-      console.log(`Eliminando registros antiguos de VIATICOS de la BD...`);
-      const deleteViaticos = await env.DB.prepare(
-        `DELETE FROM viaticos WHERE fecha >= ? AND fecha <= ?`
-      ).bind(startDate, endDate).run();
-      deletedViaticosCount = deleteViaticos.meta.changes;
-      console.log(`Eliminados ${deletedViaticosCount} registros de viaticos.`);
+    if (!gastosUploadResp.ok) {
+      const err = await gastosUploadResp.json().catch(() => ({}))
+      throw new Error(`Error subiendo backup Excel de gastos: ${JSON.stringify(err)}`)
     }
 
-    // ELIMINAR GASTOS
-    if (gastos.length > 0) {
-      console.log(`Eliminando registros antiguos de GASTOS de la BD...`);
-      const deleteGastos = await env.DB.prepare(
-        `DELETE FROM gastos WHERE fecha >= ? AND fecha <= ?`
-      ).bind(startDate, endDate).run();
-      deletedGastosCount = deleteGastos.meta.changes;
-      console.log(`Eliminados ${deletedGastosCount} registros de gastos.`);
-    }
+    console.log(`Backups Excel subidos: ${viaticosFileName}, ${gastosFileName}`)
+
+    // 4. Mantener datos en base (sin limpieza)
+    const deletedViaticosCount = 0;
+    const deletedGastosCount = 0;
 
     return {
       success: true,
-      message: 'Backup completo subido y registros antiguos eliminados',
-      backupFile: fileName,
+      message: 'Backups Excel subidos sin eliminar registros',
+      backupFile: `${viaticosFileName}, ${gastosFileName}`,
+      backupFiles: {
+        viaticos: viaticosFileName,
+        gastos: gastosFileName
+      },
       deletedCount: deletedViaticosCount + deletedGastosCount,
       deletedViaticos: deletedViaticosCount,
       deletedGastos: deletedGastosCount
@@ -789,29 +882,24 @@ async function executeBackupAndCleanup(env, startDate, endDate, backupName) {
 }
 
 async function processMonthlyBackup(env) {
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Lima" }));
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Lima" }))
 
-  // Ir 2 meses atrÃ¡s
-  let targetYear = now.getFullYear();
-  let targetMonth = now.getMonth() - 2;
+  // Exportar el mes anterior inmediato
+  let targetYear = now.getFullYear()
+  let targetMonth = now.getMonth() - 1
 
   if (targetMonth < 0) {
-    targetMonth += 12;
-    targetYear -= 1;
+    targetMonth += 12
+    targetYear -= 1
   }
 
-  const monthStr = String(targetMonth + 1).padStart(2, '0');
-  const backupName = `backup_${targetYear}-${monthStr}`;
+  const monthStr = String(targetMonth + 1).padStart(2, '0')
+  const backupName = `backup_${targetYear}-${monthStr}`
+  const startDate = `${targetYear}-${monthStr}-01`
+  const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate()
+  const endDate = `${targetYear}-${monthStr}-${String(lastDay).padStart(2, '0')}`
 
-  // Calcular rango de fechas para el query
-  // Inicio: 1er dÃ­a del mes (YYYY-MM-DD) - SIN HORA para que la comparaciÃ³n de strings funcione con fechas sin hora
-  const startDate = `${targetYear}-${monthStr}-01`;
-
-  // Fin: Ãšltimo dÃ­a del mes 23:59:59 (para incluir cualquier registro con hora si existiera)
-  const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
-  const endDate = `${targetYear}-${monthStr}-${lastDay} 23:59:59`;
-
-  return executeBackupAndCleanup(env, startDate, endDate, backupName);
+  return executeBackupExportOnly(env, startDate, endDate, backupName)
 }
 
 // ===================== Handler Principal =====================
@@ -825,13 +913,13 @@ export default {
       await cleanupAnonymousUsers(env);
     }
 
-    // Cron mensual: Backup (02:00 AM Peru del dÃ­a 1)
+    // Cron mensual: export automatico en Excel (sin borrar data)
     if (cron === "0 7 1 * *") {
-      ctx.waitUntil(processMonthlyBackup(env));
+      ctx.waitUntil(processMonthlyBackup(env))
     }
   },
 
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     if (request.method === 'OPTIONS') return handleCORS(request, env)
     const url = new URL(request.url), path = url.pathname
 
@@ -865,7 +953,7 @@ export default {
         }
       }
 
-      // POST /api/backup/manual (Trigger manual de backup - solo super_admin)
+      // POST /api/backup/manual (Backup manual sin eliminar data - solo super_admin)
       if (path === '/api/backup/manual' && request.method === 'POST') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         if (!(await isSuperAdmin(env, user.uid, user.email))) {
@@ -881,7 +969,7 @@ export default {
           }
 
           const backupName = `backup_${startDate}_${endDate}`;
-          const result = await executeBackupAndCleanup(env, startDate, endDate, backupName);
+          const result = await executeBackupExportOnly(env, startDate, endDate, backupName);
 
           return new Response(JSON.stringify(result), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         } catch (error) {

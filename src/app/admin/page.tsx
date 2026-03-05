@@ -5,7 +5,7 @@ import Swal from 'sweetalert2'
 import { useToast } from "@/lib/use-toast"
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getAllViaticos, getAllUsers, setUserRole as apiSetUserRole, getCurrentUser, cleanupAnonymousUsers, setUserStatus, deleteUser, deleteViatico, apiRequest, triggerManualBackup, getAllGastos, deleteGasto } from '@/services/api'
+import { getAllViaticos, getAllUsers, setUserRole as apiSetUserRole, getCurrentUser, cleanupAnonymousUsers, setUserStatus, deleteUser, deleteViatico, apiRequest, getAllGastos, deleteGasto } from '@/services/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,12 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { DatePicker } from '@/components/ui/date-picker'
-import { format } from 'date-fns'
-import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, Trash2, Ban, CheckCircle2, DatabaseBackup, Edit } from 'lucide-react'
+import { Loader2, Users, Receipt, Shield, Crown, RefreshCw, DollarSign, Trash2, Ban, CheckCircle2, Edit } from 'lucide-react'
 import Layout from '@/components/Layout'
 import RoleGuard from '@/components/RoleGuard'
 import ReportsView from '@/components/admin/ReportsView'
@@ -71,10 +66,6 @@ export default function AdminPage() {
   const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
   const isSuperAdmin = user?.email?.toLowerCase() === superAdminEmail?.toLowerCase() || userRole === 'super_admin';
 
-  // Backup Dialog State
-  const [isBackupDialogOpen, setIsBackupDialogOpen] = useState(false)
-  const [backupStartDate, setBackupStartDate] = useState<Date | undefined>()
-  const [backupEndDate, setBackupEndDate] = useState<Date | undefined>()
   // Edit User Dialog State
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [isEditUserOpen, setIsEditUserOpen] = useState(false)
@@ -344,56 +335,6 @@ export default function AdminPage() {
     }
   }
 
-  function handleManualBackup() {
-    setIsBackupDialogOpen(true)
-  }
-
-  async function executeManualBackup() {
-    if (!backupStartDate || !backupEndDate) {
-      toast({ title: "Error", description: "Ambas fechas son requeridas", variant: "destructive" })
-      return
-    }
-
-    setGlobalLoading('Generando backup y limpiando BD...')
-    setIsBackupDialogOpen(false)
-
-    try {
-      const startStr = format(backupStartDate, 'yyyy-MM-dd')
-      const endStr = format(backupEndDate, 'yyyy-MM-dd')
-
-      const result = await triggerManualBackup(startStr, endStr)
-      clearLoading()
-
-      await Swal.fire({
-        title: 'Backup Completado',
-        html: `
-          <div class="text-left">
-            <p>Se ha generado el archivo: <b>${result.backupFile}</b></p>
-            <p>Viáticos eliminados: <b>${result.deletedViaticos}</b></p>
-            <p>Gastos eliminados: <b>${result.deletedGastos}</b></p>
-          </div>
-        `,
-        icon: 'success',
-        background: '#1f2937',
-        color: '#fff'
-      })
-
-      setBackupStartDate(undefined)
-      setBackupEndDate(undefined)
-
-      await loadData()
-    } catch (e) {
-      clearLoading()
-      await Swal.fire({
-        title: 'Error',
-        text: (e as Error).message || 'Error al generar backup',
-        icon: 'error',
-        background: '#1f2937',
-        color: '#fff'
-      })
-    }
-  }
-
   async function handleTestNotification() {
     if (!("Notification" in window)) {
       Swal.fire({
@@ -574,10 +515,6 @@ export default function AdminPage() {
                   <div className="flex flex-wrap gap-2">
                     {isSuperAdmin && (
                       <>
-                        <Button onClick={handleManualBackup} variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
-                          <DatabaseBackup className="h-4 w-4 mr-2" />
-                          Backup Manual
-                        </Button>
                         <Button onClick={handleTestNotification} variant="outline" size="sm">
                           Probar Notificación
                         </Button>
@@ -724,54 +661,6 @@ export default function AdminPage() {
               </Card>
             </TabsContent>
           </Tabs>
-
-          <Dialog open={isBackupDialogOpen} onOpenChange={setIsBackupDialogOpen}>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Backup Manual</DialogTitle>
-                <DialogDescription>
-                  Selecciona el rango de fechas para respaldar y <b>ELIMINAR</b> de la base de datos (Viáticos y Gastos).
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label>Fecha Inicio</Label>
-                  <DatePicker
-                    date={backupStartDate}
-                    onSelect={setBackupStartDate}
-                    placeholder="Selecciona fecha inicio"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Fecha Fin</Label>
-                  <DatePicker
-                    date={backupEndDate}
-                    onSelect={setBackupEndDate}
-                    placeholder="Selecciona fecha fin"
-                    disabled={(date) => backupStartDate ? date < backupStartDate : false}
-                  />
-                </div>
-
-                <Alert variant="destructive" className="bg-yellow-900/20 border-yellow-600/50 text-yellow-500">
-                  <div className="flex items-start gap-2">
-                    <Shield className="h-4 w-4 mt-0.5" />
-                    <div className="text-sm">
-                      <p className="font-bold mb-1">Advertencia</p>
-                      Esta acción generará un archivo SQL en OneDrive y luego <b>ELIMINARÁ</b> los registros de viáticos y gastos del rango seleccionado.
-                    </div>
-                  </div>
-                </Alert>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsBackupDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={executeManualBackup}>
-                  Iniciar Backup
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
       </Layout >
       <EditUserDialog
