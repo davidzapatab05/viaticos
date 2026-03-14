@@ -19,6 +19,7 @@ import Swal from 'sweetalert2'
 import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
 import { EditGastoDialog } from '@/components/EditGastoDialog'
+import { createPeruDateFromYmd, getPeruNow } from '@/lib/peru-time'
 
 interface Gasto {
     id: string
@@ -62,8 +63,8 @@ export default function MisGastosPage() {
             setGastos(data.gastos || [])
         } catch (err) {
             const errorMessage = (err as Error).message || 'Error al cargar los gastos'
-            if (errorMessage.includes('no autenticado') || errorMessage.includes('No autorizado') || errorMessage.includes('Sesión expirada')) {
-                setError('Sesión expirada. Por favor, inicia sesión nuevamente.')
+            if (errorMessage.includes('no autenticado') || errorMessage.includes('No autorizado') || errorMessage.includes('Sesi?n expirada')) {
+                setError('Sesi?n expirada. Por favor, inicia sesi?n nuevamente.')
             } else {
                 setError(errorMessage)
             }
@@ -74,13 +75,13 @@ export default function MisGastosPage() {
 
     const handleDelete = async (id: string) => {
         const result = await Swal.fire({
-            title: '¿Eliminar gasto?',
-            text: 'Esta acción no se puede deshacer',
+            title: '?Eliminar gasto?',
+            text: 'Esta acci?n no se puede deshacer',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
             cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Sí, eliminar',
+            confirmButtonText: 'S?, eliminar',
             cancelButtonText: 'Cancelar',
             background: '#1f2937',
             color: '#fff'
@@ -124,11 +125,11 @@ export default function MisGastosPage() {
     // Helper para verificar si se puede editar/eliminar (Regla de las 10 AM)
     const canEditOrDelete = (fechaGasto: string, role?: string) => {
         if (role === 'admin' || role === 'super_admin') return true
-        const gastoDate = new Date(fechaGasto + 'T00:00:00')
+        const gastoDate = createPeruDateFromYmd(fechaGasto)
         const cutoffDate = new Date(gastoDate)
         cutoffDate.setDate(cutoffDate.getDate() + 1)
         cutoffDate.setHours(10, 0, 0, 0)
-        const now = new Date()
+        const now = getPeruNow()
         return now <= cutoffDate
     }
 
@@ -150,7 +151,7 @@ export default function MisGastosPage() {
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="text-center space-y-4">
                         <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                        <p className="text-muted-foreground">Verificando autenticación...</p>
+                        <p className="text-muted-foreground">Verificando autenticaci?n...</p>
                     </div>
                 </div>
             </Layout>
@@ -178,7 +179,7 @@ export default function MisGastosPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h1 className="text-3xl font-bold tracking-tight">Mis Viáticos que se entrega</h1>
-                                <p className="text-muted-foreground">Consulta y gestiona todos tus viáticos entregados</p>
+                                <p className="text-muted-foreground">Consulta y gestiona todos tus Viáticos entregados</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Button variant="outline" size="icon" onClick={loadGastos} disabled={loading}>
@@ -248,7 +249,7 @@ export default function MisGastosPage() {
                                                         <TableHead>Fecha</TableHead>
                                                         <TableHead>Medio Pago</TableHead>
                                                         <TableHead>Entidad</TableHead>
-                                                        <TableHead>N° Op.</TableHead>
+                                                        <TableHead>N&deg; Op.</TableHead>
                                                         <TableHead className="text-right">Monto</TableHead>
                                                         <TableHead>Descripción</TableHead>
                                                         <TableHead className="text-right">Acciones</TableHead>
@@ -304,7 +305,7 @@ export default function MisGastosPage() {
                                                                 <CardContent className="p-4">
                                                                     <div className="flex justify-between items-start mb-2">
                                                                         <div className="space-y-1">
-                                                                            <p className="font-medium line-clamp-2">{gasto.descripcion || 'Sin descripción'}</p>
+                                                                            <p className="font-medium line-clamp-2">{gasto.descripcion || 'Sin descripci\u00f3n'}</p>
                                                                             <div className="flex items-center text-xs text-muted-foreground">
                                                                                 <Badge variant="outline" className="mr-2 text-[10px] px-1 py-0 h-5">{gasto.medio_pago || 'otro'}</Badge>
                                                                                 {format(new Date(gasto.fecha + 'T12:00:00'), 'dd MMM', { locale: es })}

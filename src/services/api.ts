@@ -1,7 +1,7 @@
 import { initializeFirebase } from '../config/firebase'
 import { toast } from '@/lib/use-toast'
 
-// API URL constante para producción
+// API URL constante para producci?f?n
 const API_URL = 'https://viaticos.davidzapata-dz051099.workers.dev'
 
 export async function getAuthToken() {
@@ -13,7 +13,7 @@ export async function getAuthToken() {
   const { auth: currentAuth } = await import('../config/firebase')
 
   if (!currentAuth) {
-    throw new Error('Firebase Auth no está disponible. Verifica las variables de entorno NEXT_PUBLIC_FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN y FIREBASE_PROJECT_ID')
+    throw new Error('Firebase Auth no est? disponible. Verifica las variables de entorno NEXT_PUBLIC_FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN y FIREBASE_PROJECT_ID')
   }
   const user = currentAuth.currentUser
   if (!user) {
@@ -26,9 +26,11 @@ export async function getAuthToken() {
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   try {
     const token = await getAuthToken()
+    const method = (options.method || 'GET').toUpperCase()
+    const maxAttempts = method === 'GET' ? 3 : 1
+    let lastError: unknown = null
 
-    let lastError;
-    for (let i = 0; i < 3; i++) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         const response = await fetch(`${API_URL}${endpoint}`, {
           ...options,
@@ -39,21 +41,9 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
           },
         })
 
-        // Si la respuesta es exitosa, salir del bucle
-        // Nota: fetch no lanza error en 4xx/5xx, solo en error de red
-        // Así que si llegamos aquí, la conexión fue exitosa
+        const data = await response.json().catch(() => ({}))
 
-        // Leer la respuesta primero
-        const data = await response.json()
-
-        // Si la respuesta no es OK, verificar si tiene success: true (puede ser lista vacía)
         if (!response.ok) {
-          // Si tiene success: true, retornarla (puede tener lista vacía por error de BD)
-          if (data.success === true) {
-            return data
-          }
-
-          // Mejorar mensajes de error
           if (response.status === 401) {
             if (typeof window !== 'undefined') {
               window.location.href = '/login'
@@ -61,39 +51,39 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
             throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.')
           }
 
-          throw new Error(data.message || data.error || 'Error en la solicitud')
+          throw new Error((data as any).message || (data as any).error || 'Error en la solicitud')
         }
 
-        if (data.success === false && data.error) {
-          throw new Error(data.error || data.message || 'Error en la solicitud')
+        if ((data as any).success === false && (data as any).error) {
+          throw new Error((data as any).error || (data as any).message || 'Error en la solicitud')
         }
-
-        // Toast eliminado para evitar redundancia con SweetAlert
-        // const method = options.method?.toUpperCase()
-        // if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
-        //   toast({
-        //     title: "Éxito",
-        //     description: "Datos actualizados correctamente.",
-        //     variant: "success",
-        //   })
-        // }
 
         return data
-
       } catch (error) {
-        console.warn(`Intento ${i + 1} fallido para ${endpoint}:`, error)
         lastError = error
-        // Si es el último intento, no esperar
-        if (i === 2) break
-        // Esperar un poco antes de reintentar (backoff exponencial: 500ms, 1000ms)
-        await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)))
+
+        if (attempt >= maxAttempts) {
+          break
+        }
+
+        console.warn(`Intento ${attempt} fallido para ${endpoint}:`, error)
+        await new Promise(resolve => setTimeout(resolve, 400 * attempt))
       }
     }
 
-    console.error('Network error in apiRequest after 3 attempts:', lastError, 'URL:', `${API_URL}${endpoint}`)
-    throw new Error(`Error de conexión: ${(lastError as Error).message || 'No se pudo conectar con el servidor'}`)
+    if (maxAttempts > 1) {
+      console.error(`Network error in apiRequest after ${maxAttempts} attempts:`, lastError, 'URL:', `${API_URL}${endpoint}`)
+    }
+
+    if (lastError instanceof Error) {
+      if (maxAttempts > 1) {
+        throw new Error(`Error de conexión: ${lastError.message || 'No se pudo conectar con el servidor'}`)
+      }
+      throw lastError
+    }
+
+    throw new Error('Error de conexión con el servidor')
   } catch (error) {
-    // Si el error es de autenticación, propagarlo con mensaje claro y redirigir
     if (error instanceof Error && (error.message.includes('Usuario no autenticado') || error.message.includes('Sesión expirada'))) {
       if (typeof window !== 'undefined') {
         window.location.href = '/login'
@@ -104,57 +94,40 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   }
 }
 
-export async function uploadViatico(viaticoData: FormData) {
+async function submitMultipart(endpoint: string, data: FormData, fallbackMessage: string, successDescription: string) {
   const token = await getAuthToken()
 
-  const response = await fetch(`${API_URL}/api/viaticos`, {
+  const response = await fetch(`${API_URL}${endpoint}`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
     },
-    body: viaticoData,
+    body: data,
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Error al subir viático' }))
-    throw new Error(error.message || 'Error al subir viático')
+    const error = await response.json().catch(() => ({ message: fallbackMessage }))
+    throw new Error(error.error || error.message || fallbackMessage)
   }
 
+  const result = await response.json()
+
   toast({
-    title: "Éxito",
-    description: "Viático subido correctamente.",
-    variant: "success",
+    title: '\u00c9xito',
+    description: successDescription,
+    variant: 'success',
   })
 
-  return response.json()
+  return result
+}
+
+export async function uploadViatico(viaticoData: FormData) {
+  return submitMultipart('/api/viaticos', viaticoData, 'Error al subir vi\u00e1tico', 'Vi\u00e1tico subido correctamente.')
 }
 
 export async function uploadGasto(gastoData: FormData) {
-  const token = await getAuthToken()
-
-  const response = await fetch(`${API_URL}/api/gastos`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-    body: gastoData,
-  })
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Error al subir gasto' }))
-    throw new Error(error.message || 'Error al subir gasto')
-  }
-
-  toast({
-    title: "Éxito",
-    description: "Gasto subido correctamente.",
-    variant: "success",
-  })
-
-  return response.json()
+  return submitMultipart('/api/gastos', gastoData, 'Error al subir gasto', 'Gasto subido correctamente.')
 }
-
-
 
 export async function getMisViaticos() {
   return apiRequest('/api/viaticos/mis-viaticos')
@@ -234,8 +207,8 @@ export async function cleanupAnonymousUsers() {
   }
 
   toast({
-    title: "Éxito",
-    description: "Limpieza de usuarios anónimos ejecutada correctamente.",
+    title: "\u00c9xito",
+    description: "Limpieza de usuarios an\u00f3nimos ejecutada correctamente.",
     variant: "success",
   })
 
@@ -276,7 +249,7 @@ export async function deleteUser(uid: string) {
   }
 
   toast({
-    title: "Éxito",
+    title: "\u00c9xito",
     description: "Usuario eliminado correctamente.",
     variant: "success",
   })

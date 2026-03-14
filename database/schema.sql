@@ -1,14 +1,19 @@
--- Migración inicial completa para base de datos de viáticos
+-- Migraci?n inicial completa para base de datos de Viáticos
 -- Incluye todas las tablas necesarias para el sistema
 
 -- =====================================================
 -- Tabla: viaticos
--- Almacena los registros de viáticos de los usuarios
+-- Almacena los registros de Viáticos de los usuarios
 -- =====================================================
 CREATE TABLE IF NOT EXISTS viaticos (
   id TEXT PRIMARY KEY,
   usuario_id TEXT NOT NULL,
   fecha TEXT NOT NULL,
+  para TEXT,
+  que_sustenta TEXT,
+  tipo_comprobante TEXT,
+  numero_documento TEXT,
+  numero_comprobante TEXT,
   monto REAL NOT NULL,
   descripcion TEXT,
   folder_path TEXT,
@@ -16,7 +21,7 @@ CREATE TABLE IF NOT EXISTS viaticos (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
--- Índices para mejorar rendimiento de consultas
+-- ?ndices para mejorar rendimiento de consultas
 CREATE INDEX IF NOT EXISTS idx_viaticos_usuario ON viaticos(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_viaticos_fecha ON viaticos(fecha);
 
@@ -35,7 +40,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
--- Índice para búsquedas por email
+-- ?ndice para b?squedas por email
 -- =====================================================
 -- Tabla: config (opcional)
 -- Para almacenar configuraciones del sistema

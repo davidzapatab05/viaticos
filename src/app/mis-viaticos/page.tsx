@@ -19,6 +19,7 @@ import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
 import { EditViaticoDialog } from '@/components/EditViaticoDialog'
 import Swal from 'sweetalert2'
+import { createPeruDateFromYmd, getPeruNow } from '@/lib/peru-time'
 
 interface Viatico {
   id: string
@@ -64,9 +65,9 @@ export default function MisViaticosPage() {
       const data = await getMisViaticos()
       setViaticos(data.viaticos || [])
     } catch (err) {
-      const errorMessage = (err as Error).message || 'Error al cargar los viáticos'
-      if (errorMessage.includes('no autenticado') || errorMessage.includes('No autorizado') || errorMessage.includes('Sesión expirada')) {
-        setError('Sesión expirada. Por favor, inicia sesión nuevamente.')
+      const errorMessage = (err as Error).message || 'Error al cargar los Viáticos'
+      if (errorMessage.includes('no autenticado') || errorMessage.includes('No autorizado') || errorMessage.includes('Sesi?n expirada')) {
+        setError('Sesi?n expirada. Por favor, inicia sesi?n nuevamente.')
       } else {
         setError(errorMessage)
       }
@@ -77,13 +78,13 @@ export default function MisViaticosPage() {
 
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
-      title: '¿Eliminar viático?',
-      text: 'Esta acción no se puede deshacer',
+      title: '?Eliminar Viático?',
+      text: 'Esta acci?n no se puede deshacer',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Sí, eliminar',
+      confirmButtonText: 'S?, eliminar',
       cancelButtonText: 'Cancelar',
       background: '#1f2937',
       color: '#fff'
@@ -91,7 +92,7 @@ export default function MisViaticosPage() {
 
     if (!result.isConfirmed) return
 
-    setGlobalLoading('Eliminando viático...')
+    setGlobalLoading('Eliminando Viático...')
     try {
       await deleteViatico(id)
       await loadViaticos()
@@ -99,7 +100,7 @@ export default function MisViaticosPage() {
 
       await Swal.fire({
         title: 'Eliminado',
-        text: 'El viático ha sido eliminado correctamente',
+        text: 'El Viático ha sido eliminado correctamente',
         icon: 'success',
         timer: 1500,
         showConfirmButton: false,
@@ -110,7 +111,7 @@ export default function MisViaticosPage() {
       clearLoading()
       await Swal.fire({
         title: 'Error',
-        text: 'Error al eliminar viático: ' + (err as Error).message,
+        text: 'Error al eliminar Viático: ' + (err as Error).message,
         icon: 'error',
         confirmButtonColor: '#ef4444',
         background: '#1f2937',
@@ -140,19 +141,19 @@ export default function MisViaticosPage() {
   const canEditOrDelete = (fechaViatico: string, role?: string) => {
     if (role === 'admin' || role === 'super_admin') return true
 
-    // Fecha del viático (YYYY-MM-DD)
+    // Fecha del Viático (YYYY-MM-DD)
     // Agregar hora para evitar problemas de timezone al convertir
-    const viaticoDate = new Date(fechaViatico + 'T00:00:00')
+    const viaticoDate = createPeruDateFromYmd(fechaViatico)
 
-    // Fecha límite: Día siguiente a las 10:00 AM
+    // Fecha l?mite: D?a siguiente a las 10:00 AM
     const cutoffDate = new Date(viaticoDate)
     cutoffDate.setDate(cutoffDate.getDate() + 1)
     cutoffDate.setHours(10, 0, 0, 0)
 
-    // Hora actual (simulada en cliente, idealmente usar hora del servidor o timezone explícito)
-    // Para consistencia con el usuario en Perú, usamos la hora local del navegador
-    // asumiendo que el usuario está en Perú.
-    const now = new Date()
+    // Hora actual (simulada en cliente, idealmente usar hora del servidor o timezone expl?cito)
+    // Para consistencia con el usuario en Per?, usamos la hora local del navegador
+    // asumiendo que el usuario est? en Per?.
+    const now = getPeruNow()
 
     return now <= cutoffDate
   }
@@ -163,7 +164,7 @@ export default function MisViaticosPage() {
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-            <p className="text-muted-foreground">Verificando autenticación...</p>
+            <p className="text-muted-foreground">Verificando autenticaci?n...</p>
           </div>
         </div>
       </Layout>
@@ -176,7 +177,7 @@ export default function MisViaticosPage() {
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-            <p className="text-muted-foreground">Cargando tus viáticos...</p>
+            <p className="text-muted-foreground">Cargando tus Viáticos...</p>
           </div>
         </div>
       </Layout>
@@ -245,7 +246,7 @@ export default function MisViaticosPage() {
                   <div className="text-2xl font-bold">
                     {totalCount > 0 ? `S/ ${(total / totalCount).toFixed(2)}` : 'S/ 0.00'}
                   </div>
-                  <p className="text-xs text-muted-foreground">Por viático</p>
+                  <p className="text-xs text-muted-foreground">Por Viático</p>
                 </CardContent>
               </Card>
             </div>
@@ -254,9 +255,9 @@ export default function MisViaticosPage() {
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No tienes viáticos registrados</h3>
+                  <h3 className="text-lg font-semibold mb-2">No tienes Viáticos registrados</h3>
                   <p className="text-sm text-muted-foreground text-center mb-4">
-                    Comienza registrando tu primer viático
+                    Comienza registrando tu primer Viático
                   </p>
                   <Button asChild>
                     <Link href="/nuevo-viatico">
@@ -273,7 +274,7 @@ export default function MisViaticosPage() {
                   <Card>
                     <CardHeader>
                       <CardTitle>Lista de Viáticos</CardTitle>
-                      <CardDescription>Vista detallada de todos tus viáticos</CardDescription>
+                      <CardDescription>Vista detallada de todos tus Viáticos</CardDescription>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
                       <Table>
@@ -283,8 +284,8 @@ export default function MisViaticosPage() {
                             <TableHead>Para</TableHead>
                             <TableHead>Que Sustenta</TableHead>
                             <TableHead>Tipo Comp.</TableHead>
-                            <TableHead>N° Doc.</TableHead>
-                            <TableHead>N° Comp.</TableHead>
+                            <TableHead>N&deg; Doc.</TableHead>
+                            <TableHead>N&deg; Comp.</TableHead>
                             <TableHead className="text-right">Monto</TableHead>
                             <TableHead>Descripción</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
@@ -355,7 +356,7 @@ export default function MisViaticosPage() {
                                 <CardContent className="p-4">
                                   <div className="flex justify-between items-start mb-2">
                                     <div className="space-y-1">
-                                      <p className="font-medium line-clamp-2">{viatico.descripcion || 'Sin descripción'}</p>
+                                      <p className="font-medium line-clamp-2">{viatico.descripcion || 'Sin descripci\u00f3n'}</p>
                                       <div className="flex items-center text-xs text-muted-foreground">
                                         <Badge variant="outline" className="mr-2 text-[10px] px-1 py-0 h-5">{viatico.tipo || 'otro'}</Badge>
                                         {format(new Date(viatico.fecha + 'T12:00:00'), 'dd MMM', { locale: es })}

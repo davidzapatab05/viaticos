@@ -16,25 +16,26 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { FileCheck, Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, Info, FileText, RefreshCcw, Clock, CalendarDays, Lock } from 'lucide-react'
+import { FileCheck, Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, Info, FileText, RefreshCcw, Clock, CalendarDays, Lock, Building2, User, Ban } from 'lucide-react'
 import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
 
 import { DatePicker } from '@/components/ui/date-picker'
 import { useViaticoDeadline } from '@/hooks/useViaticoDeadline'
+import { createPeruDateFromYmd } from '@/lib/peru-time'
 
 export default function NuevoViaticoPage() {
   const { appUser, loading: authLoading } = useAuth()
   const router = useRouter()
 
-  // Usar el hook global para la lógica de fechas y deadline
+  // Usar el hook global para la l?gica de fechas y deadline
   const { activeDate: activeDateObj, activeDateDisplay, timeLeft, isGracePeriod } = useViaticoDeadline()
   // Convertir activeDateObj a string YYYY-MM-DD para uso interno
-  const [activeDate, setActiveDate] = useState(activeDateObj ? activeDateObj.toISOString().split('T')[0] : '')
+  const [activeDate, setActiveDate] = useState(activeDateObj ? format(activeDateObj, 'yyyy-MM-dd') : '')
 
   useEffect(() => {
     if (activeDateObj) {
-      // Usar format de date-fns para mantener la fecha local (Perú) y evitar conversión a UTC
+      // Usar format de date-fns para mantener la fecha local (Per?) y evitar conversi?n a UTC
       const newDateStr = format(activeDateObj, 'yyyy-MM-dd')
 
       // Siempre sincronizar la fecha activa calculada por el hook
@@ -54,7 +55,7 @@ export default function NuevoViaticoPage() {
   const [numeroComprobante, setNumeroComprobante] = useState('')
   const queSustenta = 'VIATICO' // Siempre VIATICO (constante)
 
-  // Mantener tipo por compatibilidad con backend (puede ser removido después)
+  // Mantener tipo por compatibilidad con backend (puede ser removido despu?s)
   const [tipo, setTipo] = useState('otro')
 
   const [loading, setLoading] = useState(false)
@@ -65,13 +66,15 @@ export default function NuevoViaticoPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const createDraftRequestId = () => `v_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+  const pendingRequestIdRef = useRef(createDraftRequestId())
 
   const [viaticosCount, setViaticosCount] = useState(0)
 
-  // Efecto para contar viáticos del día activo
+  // Efecto para contar Viáticos del d?a activo
   useEffect(() => {
     if (activeDate) {
-      // Usar la función del servicio que ya maneja la URL base y el token
+      // Usar la funci?n del servicio que ya maneja la URL base y el token
       import('@/services/api').then(({ getMisViaticos }) => {
         getMisViaticos()
           .then(data => {
@@ -86,8 +89,6 @@ export default function NuevoViaticoPage() {
     }
   }, [activeDate, success])
 
-
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files
     if (!selectedFiles) return
@@ -99,7 +100,7 @@ export default function NuevoViaticoPage() {
 
     for (const file of newFiles) {
       if (file.size > 10 * 1024 * 1024) {
-        setError(`El archivo ${file.name} es demasiado grande. Máximo 10MB.`)
+        setError(`El archivo ${file.name} es demasiado grande. M\u00e1ximo 10MB.`)
         continue;
       }
       currentFiles.push(file);
@@ -164,8 +165,8 @@ export default function NuevoViaticoPage() {
           }
         })
         .catch((err) => {
-          console.error('Error accediendo a la cámara:', err)
-          setError('No se pudo acceder a la cámara. Asegúrate de dar permisos.')
+          console.error('Error accediendo a la c\u00e1mara:', err)
+          setError('No se pudo acceder a la c\u00e1mara. Aseg\u00farate de dar permisos.')
 
           // Fallback if specific facingMode fails
           if (err.name === 'OverconstrainedError') {
@@ -222,9 +223,9 @@ export default function NuevoViaticoPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validación: descripcion es obligatorio
-    if (files.length === 0 || !monto || !descripcion || descripcion.trim() === '') {
-      setError('Por favor completa todos los campos obligatorios: foto, monto y descripción.')
+    // Validaci?n: descripcion es obligatorio
+    if (files.length === 0 || !monto || !descripcion || descripcion.trim() === '' || !para || !tipoComprobante) {
+      setError('Por favor completa todos los campos obligatorios: comprobante, monto, descripci\u00f3n, para y tipo de comprobante.')
       return
     }
 
@@ -247,11 +248,10 @@ export default function NuevoViaticoPage() {
       if (numeroDocumento) formData.append('numero_documento', numeroDocumento)
       if (numeroComprobante) formData.append('numero_comprobante', numeroComprobante)
 
-      if (numeroComprobante) formData.append('numero_comprobante', numeroComprobante)
-
       // Enviar SIEMPRE la fecha activa calculada (regla de las 10 AM)
-      // Esto asegura que el backend reciba la fecha correcta según la lógica del cliente (Perú)
+      // Esto asegura que el backend reciba la fecha correcta seg?n la l?gica del cliente (Per?)
       formData.append('fecha_manual', activeDate)
+      formData.append('request_id', pendingRequestIdRef.current)
 
       formData.append('createTxt', '1')
 
@@ -262,13 +262,14 @@ export default function NuevoViaticoPage() {
         setSuccess(false)
       }, 3000)
     } catch (err) {
-      setError((err as Error).message || 'Error al subir el viático')
+      setError((err as Error).message || 'Error al subir el Viático')
     } finally {
       setLoading(false)
     }
   }
 
   const resetForm = () => {
+    pendingRequestIdRef.current = createDraftRequestId()
     setFiles([])
     setPreviews([])
     setMonto('')
@@ -328,10 +329,10 @@ export default function NuevoViaticoPage() {
                     {appUser?.role === 'admin' || appUser?.role === 'super_admin' ? (
                       <div className="flex items-center gap-2">
                         <DatePicker
-                          date={activeDate ? new Date(activeDate + 'T12:00:00') : undefined} // Adding time to avoid timezone issues
+                          date={activeDate ? createPeruDateFromYmd(activeDate) : undefined}
                           onSelect={(date) => {
                             if (date) {
-                              setActiveDate(date.toISOString().split('T')[0])
+                              setActiveDate(format(date, 'yyyy-MM-dd'))
                             }
                           }}
                         />
@@ -349,7 +350,7 @@ export default function NuevoViaticoPage() {
                 <div className="flex flex-col items-center sm:items-end gap-2 w-full sm:w-auto">
                   {isGracePeriod && (
                     <p className="text-xs text-orange-600 font-medium text-center sm:text-right max-w-[250px]">
-                      Tienes hasta las 10:00 AM para registrar viáticos de ayer.
+                      Tienes hasta las 10:00 AM para registrar Viáticos de ayer.
                     </p>
                   )}
                 </div>
@@ -374,7 +375,7 @@ export default function NuevoViaticoPage() {
                           </Badge>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>El tamaño máximo es de 10MB por archivo</p>
+                          <p>El tama&ntilde;o m&aacute;ximo es de 10MB por archivo</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -425,7 +426,7 @@ export default function NuevoViaticoPage() {
                           className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors aspect-square"
                           onClick={() => fileInputRef.current?.click()}>
                           <Upload className="w-8 h-8 text-primary" />
-                          <p className="mt-2 text-sm font-semibold">Añadir más</p>
+                          <p className="mt-2 text-sm font-semibold">A&ntilde;adir m&aacute;s</p>
                         </div>
                       </div>
                     ) : (
@@ -436,14 +437,14 @@ export default function NuevoViaticoPage() {
                           <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
                         </div>
                         <p className="mt-2 sm:mt-4 font-semibold text-sm sm:text-base">Seleccionar Archivos</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">o arrastra y suelta aquí</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">o arrastra y suelta aqu&iacute;</p>
                         <div className="mt-4 sm:mt-6 flex items-center justify-center gap-2 flex-wrap">
                           <Badge variant="outline" className="text-[10px] sm:text-xs">JPG</Badge>
                           <Badge variant="outline" className="text-[10px] sm:text-xs">PNG</Badge>
                           <Badge variant="outline" className="text-[10px] sm:text-xs">WEBP</Badge>
                           <Badge variant="outline" className="text-[10px] sm:text-xs">PDF</Badge>
                         </div>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-4">Máximo 10MB por archivo</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-4">M&aacute;ximo 10MB por archivo</p>
                       </div>
                     )}
                     <Button
@@ -452,7 +453,7 @@ export default function NuevoViaticoPage() {
                       className="w-full"
                       onClick={startCamera}>
                       <Camera className="h-4 w-4 mr-2" />
-                      Tomar y Añadir Foto
+                      Tomar y A&ntilde;adir Foto
                     </Button>
                   </div>
 
@@ -462,11 +463,11 @@ export default function NuevoViaticoPage() {
                         <Label htmlFor="para">Para *</Label>
                         <Select value={para} onValueChange={setPara} required>
                           <SelectTrigger id="para">
-                            <SelectValue placeholder="Selecciona una opción" />
+                            <SelectValue placeholder={'Selecciona una opci\u00f3n'} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="EMPRESA">🏢 Empresa</SelectItem>
-                            <SelectItem value="PERSONAL">👤 Personal</SelectItem>
+                            <SelectItem value="EMPRESA" icon={Building2}>Empresa</SelectItem>
+                            <SelectItem value="PERSONAL" icon={User}>Personal</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -478,10 +479,10 @@ export default function NuevoViaticoPage() {
                             <SelectValue placeholder="Selecciona un tipo" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="FACTURA">🧾 Factura</SelectItem>
-                            <SelectItem value="BOLETA">🧾 Boleta</SelectItem>
-                            <SelectItem value="RECIBO POR HONORARIO">📄 Recibo por Honorario</SelectItem>
-                            <SelectItem value="SIN COMPROBANTE">❌ Sin Comprobante</SelectItem>
+                            <SelectItem value="FACTURA" icon={FileText}>Factura</SelectItem>
+                            <SelectItem value="BOLETA" icon={FileText}>Boleta</SelectItem>
+                            <SelectItem value="RECIBO POR HONORARIO" icon={FileText}>Recibo por Honorario</SelectItem>
+                            <SelectItem value="SIN COMPROBANTE" icon={Ban}>Sin Comprobante</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -491,7 +492,7 @@ export default function NuevoViaticoPage() {
                     {tipoComprobante && tipoComprobante !== 'SIN COMPROBANTE' && (
                       <div className="space-y-2">
                         <Label htmlFor="numero_documento">
-                          {tipoComprobante === 'BOLETA' ? 'Número de DNI' : 'Número de RUC'}
+                          {tipoComprobante === 'BOLETA' ? 'N\u00famero de DNI' : 'N\u00famero de RUC'}
                         </Label>
                         <Input
                           id="numero_documento"
@@ -571,7 +572,7 @@ export default function NuevoViaticoPage() {
                   {success && (
                     <Alert>
                       <CheckCircle2 className="h-4 w-4" />
-                      <AlertTitle>Éxito</AlertTitle>
+                      <AlertTitle>?xito</AlertTitle>
                       <AlertDescription>
                         Viático registrado correctamente. Puedes registrar otro.
                       </AlertDescription>
@@ -605,7 +606,7 @@ export default function NuevoViaticoPage() {
                 <DialogHeader>
                   <DialogTitle>Tomar Foto</DialogTitle>
                   <DialogDescription>
-                    Captura una foto de tu comprobante usando la cámara
+                    Captura una foto de tu comprobante usando la c&aacute;mara
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -647,7 +648,7 @@ export default function NuevoViaticoPage() {
           <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="text-lg font-medium text-foreground">Registrando viático...</p>
+              <p className="text-lg font-medium text-foreground">Registrando Viático...</p>
             </div>
           </div>
         )}

@@ -21,13 +21,14 @@ import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
 import { DatePicker } from '@/components/ui/date-picker'
 import { useViaticoDeadline } from '@/hooks/useViaticoDeadline'
+import { createPeruDateFromYmd } from '@/lib/peru-time'
 
 export default function NuevoGastoPage() {
     const { appUser, loading: authLoading } = useAuth()
     const router = useRouter()
 
     const { activeDate: activeDateObj, activeDateDisplay, isGracePeriod } = useViaticoDeadline()
-    const [activeDate, setActiveDate] = useState(activeDateObj ? activeDateObj.toISOString().split('T')[0] : '')
+    const [activeDate, setActiveDate] = useState(activeDateObj ? format(activeDateObj, 'yyyy-MM-dd') : '')
 
     useEffect(() => {
         if (activeDateObj) {
@@ -52,6 +53,8 @@ export default function NuevoGastoPage() {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const videoRef = useRef<HTMLVideoElement>(null)
     const streamRef = useRef<MediaStream | null>(null)
+    const createDraftRequestId = () => `g_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+    const pendingRequestIdRef = useRef(createDraftRequestId())
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = e.target.files
@@ -63,7 +66,7 @@ export default function NuevoGastoPage() {
 
         for (const file of newFiles) {
             if (file.size > 10 * 1024 * 1024) {
-                setError(`El archivo ${file.name} es demasiado grande. Máximo 10MB.`)
+                setError(`El archivo ${file.name} es demasiado grande. M\u00e1ximo 10MB.`)
                 continue;
             }
             currentFiles.push(file);
@@ -120,8 +123,8 @@ export default function NuevoGastoPage() {
                     if (videoRef.current) videoRef.current.srcObject = stream
                 })
                 .catch((err) => {
-                    console.error('Error accediendo a la cámara:', err)
-                    setError('No se pudo acceder a la cámara.')
+                    console.error('Error accediendo a la c\u00e1mara:', err)
+                    setError('No se pudo acceder a la c\u00e1mara.')
                     setShowCamera(false)
                 })
         } else {
@@ -152,7 +155,7 @@ export default function NuevoGastoPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (files.length === 0 || !monto || !descripcion || descripcion.trim() === '') {
-            setError('Por favor completa todos los campos obligatorios: foto, monto y descripción.')
+            setError('Por favor completa todos los campos obligatorios: foto, monto y descripci\u00f3n.')
             return
         }
 
@@ -169,6 +172,7 @@ export default function NuevoGastoPage() {
             formData.append('entidad', entidad)
             formData.append('numero_operacion', numeroOperacion)
             formData.append('fecha_manual', activeDate)
+            formData.append('request_id', pendingRequestIdRef.current)
 
             await uploadGasto(formData)
             setSuccess(true)
@@ -182,6 +186,7 @@ export default function NuevoGastoPage() {
     }
 
     const resetForm = () => {
+        pendingRequestIdRef.current = createDraftRequestId()
         setFiles([])
         setPreviews([])
         setMonto('')
@@ -218,7 +223,7 @@ export default function NuevoGastoPage() {
                     <div className="max-w-5xl mx-auto space-y-6">
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">Nuevo Viático que se entrega</h1>
-                            <p className="text-muted-foreground">Registra un nuevo viático que se entrega con foto o PDF</p>
+                            <p className="text-muted-foreground">Registra un nuevo Viático que se entrega con foto o PDF</p>
                         </div>
 
                         <Card className={`border-2 ${isGracePeriod ? 'border-orange-500 bg-orange-950/40' : 'border-primary/20 bg-primary/5'}`}>
@@ -232,9 +237,9 @@ export default function NuevoGastoPage() {
                                         {appUser?.role === 'admin' || appUser?.role === 'super_admin' ? (
                                             <div className="flex items-center gap-2">
                                                 <DatePicker
-                                                    date={activeDate ? new Date(activeDate + 'T12:00:00') : undefined}
+                                                    date={activeDate ? createPeruDateFromYmd(activeDate) : undefined}
                                                     onSelect={(date) => {
-                                                        if (date) setActiveDate(date.toISOString().split('T')[0])
+                                                        if (date) setActiveDate(format(date, 'yyyy-MM-dd'))
                                                     }}
                                                 />
                                             </div>
@@ -271,7 +276,7 @@ export default function NuevoGastoPage() {
                                                 <TooltipTrigger asChild>
                                                     <Badge variant="outline" className="text-xs"><Info className="h-3 w-3 mr-1" />Formatos: JPG, PNG, WEBP, PDF</Badge>
                                                 </TooltipTrigger>
-                                                <TooltipContent><p>El tamaño máximo es de 10MB por archivo</p></TooltipContent>
+                                                <TooltipContent><p>El tama&ntilde;o m&aacute;ximo es de 10MB por archivo</p></TooltipContent>
                                             </Tooltip>
                                         </div>
                                         <input ref={fileInputRef} type="file" accept="image/*,application/pdf" onChange={handleFileChange} className="hidden" multiple />
@@ -297,24 +302,24 @@ export default function NuevoGastoPage() {
                                                 ))}
                                                 <div className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors aspect-square" onClick={() => fileInputRef.current?.click()}>
                                                     <Upload className="w-8 h-8 text-primary" />
-                                                    <p className="mt-2 text-sm font-semibold">Añadir más</p>
+                                                    <p className="mt-2 text-sm font-semibold">A&ntilde;adir m&aacute;s</p>
                                                 </div>
                                             </div>
                                         ) : (
                                             <div className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-6 sm:p-10 text-center cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => fileInputRef.current?.click()}>
                                                 <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-primary/10 flex items-center justify-center mb-4"><Upload className="w-6 h-6 sm:w-8 sm:h-8 text-primary" /></div>
                                                 <p className="mt-2 sm:mt-4 font-semibold text-sm sm:text-base">Seleccionar Archivos</p>
-                                                <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">o arrastra y suelta aquí</p>
+                                                <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">o arrastra y suelta aqu&iacute;</p>
                                                 <div className="mt-4 sm:mt-6 flex items-center justify-center gap-2 flex-wrap">
                                                     <Badge variant="outline" className="text-[10px] sm:text-xs">JPG</Badge>
                                                     <Badge variant="outline" className="text-[10px] sm:text-xs">PNG</Badge>
                                                     <Badge variant="outline" className="text-[10px] sm:text-xs">WEBP</Badge>
                                                     <Badge variant="outline" className="text-[10px] sm:text-xs">PDF</Badge>
                                                 </div>
-                                                <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-4">Máximo 10MB por archivo</p>
+                                                <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-4">M&aacute;ximo 10MB por archivo</p>
                                             </div>
                                         )}
-                                        <Button type="button" variant="outline" className="w-full" onClick={startCamera}><Camera className="h-4 w-4 mr-2" />Tomar y Añadir Foto</Button>
+                                        <Button type="button" variant="outline" className="w-full" onClick={startCamera}><Camera className="h-4 w-4 mr-2" />Tomar y A&ntilde;adir Foto</Button>
                                     </div>
 
                                     <div className="space-y-6 pt-6 border-t">
@@ -329,7 +334,7 @@ export default function NuevoGastoPage() {
                                                         <SelectItem value="YAPE">Yape</SelectItem>
                                                         <SelectItem value="PLIN">Plin</SelectItem>
                                                         <SelectItem value="TARJETA">Tarjeta</SelectItem>
-                                                        <SelectItem value="DEPOSITO">Depósito</SelectItem>
+                                                        <SelectItem value="DEPOSITO">Dep&oacute;sito</SelectItem>
                                                         <SelectItem value="DESCUENTO TARJETA">Descuento Tarjeta</SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -342,7 +347,7 @@ export default function NuevoGastoPage() {
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                             <div className="space-y-2">
-                                                <Label htmlFor="numero_operacion">Número de Operación</Label>
+                                                <Label htmlFor="numero_operacion">N&uacute;mero de Operaci&oacute;n</Label>
                                                 <Input id="numero_operacion" value={numeroOperacion} onChange={(e) => setNumeroOperacion(e.target.value)} placeholder="Ej: 123456" />
                                             </div>
                                             <div className="space-y-2">
@@ -358,7 +363,7 @@ export default function NuevoGastoPage() {
                                     </div>
 
                                     {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
-                                    {success && <Alert><CheckCircle2 className="h-4 w-4" /><AlertTitle>Éxito</AlertTitle><AlertDescription>Viático que se entrega registrado correctamente.</AlertDescription></Alert>}
+                                    {success && <Alert><CheckCircle2 className="h-4 w-4" /><AlertTitle>?xito</AlertTitle><AlertDescription>Viático que se entrega registrado correctamente.</AlertDescription></Alert>}
                                 </CardContent>
                                 <CardFooter className="flex justify-end">
                                     <Button type="submit" size="lg" disabled={loading} className="min-w-[200px]">

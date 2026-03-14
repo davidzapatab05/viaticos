@@ -59,6 +59,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [error, setError] = useState('')
   const [updating, setUpdating] = useState<string | null>(null)
   const { setLoading: setGlobalLoading, clearLoading } = useLoading()
@@ -124,6 +125,7 @@ export default function AdminPage() {
     } catch (e) {
       setError('Error al cargar datos: ' + (e as Error).message)
     } finally {
+      setHasLoadedOnce(true)
       setLoading(false)
     }
   }
@@ -377,6 +379,47 @@ export default function AdminPage() {
   }, 0)
 
 
+
+  if (loading && !hasLoadedOnce) {
+    return (
+      <RoleGuard allowedRoles={['admin', 'super_admin']}>
+        <Layout>
+          <div className="space-y-8">
+            <div>
+              <div className="mb-2 h-10 w-80 animate-pulse rounded bg-muted" />
+              <div className="h-5 w-72 animate-pulse rounded bg-muted" />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Card key={index}>
+                  <CardHeader className="space-y-3">
+                    <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="h-8 w-24 animate-pulse rounded bg-muted" />
+                    <div className="h-3 w-40 animate-pulse rounded bg-muted" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <Card>
+              <CardContent className="flex min-h-[260px] flex-col items-center justify-center gap-4 p-10 text-center">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <div className="space-y-2">
+                  <p className="text-lg font-medium">Cargando panel de administraci&oacute;n...</p>
+                  <p className="text-sm text-muted-foreground">
+                    Estamos obteniendo vi&aacute;ticos, vi&aacute;ticos que se entregan y usuarios.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </Layout>
+      </RoleGuard>
+    )
+  }
 
   return (
     <RoleGuard allowedRoles={['admin', 'super_admin']}>
