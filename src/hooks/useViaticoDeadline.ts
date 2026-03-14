@@ -31,14 +31,12 @@ export function useViaticoDeadline() {
 
     useEffect(() => {
         const calculateActiveDate = () => {
-            // Obtener hora actual en Per? expl?citamente
             const now = getPeruNow()
             const today = new Date(now)
             today.setHours(0, 0, 0, 0)
 
             const yesterday = subDays(today, 1)
 
-            // Definir el l?mite de las 12:00 PM de hoy (hora Per?)
             const cutoffTime = set(today, { hours: 10, minutes: 0, seconds: 0, milliseconds: 0 })
 
             // Verificar si estamos antes de las 12 PM
@@ -49,11 +47,9 @@ export function useViaticoDeadline() {
 
             if (isBeforeCutoff) {
                 // Estamos antes de las 12 PM.
-                // La fecha activa es AYER (autom?tico).
                 effectiveDate = yesterday
                 gracePeriodActive = true
             } else {
-                // Ya pasaron las 12 PM, la fecha activa es HOY (autom?tico).
                 effectiveDate = today
                 gracePeriodActive = false
             }
@@ -61,7 +57,7 @@ export function useViaticoDeadline() {
             // Detectar cambio de estado (cruce de las 12 PM) y recargar
             if (previousGracePeriod.current !== null && previousGracePeriod.current !== gracePeriodActive) {
                 window.location.reload()
-                return // Detener ejecuci?n para evitar actualizaciones de estado en componente desmontado
+                return
             }
             previousGracePeriod.current = gracePeriodActive
 
@@ -94,13 +90,11 @@ export function useViaticoDeadline() {
                     const seconds = diff % 60
                     setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
 
-                    // Activar estado de ?ltima hora
                     setIsLastHour(diff <= 3600)
 
-                    // Notificaci?n cuando falte 1 hora (3600 segundos) o menos
                     if (diff <= 3600 && diff > 3590) {
                         triggerNotification(
-                            "? Cierre de Viáticos en 1 hora",
+                            "Cierre de Viáticos en 1 hora",
                             "Recuerda registrar tus Viáticos pendientes de ayer antes de las 10:00 AM."
                         )
                     }
@@ -109,8 +103,6 @@ export function useViaticoDeadline() {
                     setIsLastHour(false)
                 }
             } else {
-                // Caso 2: Periodo normal (despu?s de las 12 PM)
-                // Deadline: Ma?ana 12:00 PM
                 const tomorrowCutoff = addDays(cutoffTime, 1)
                 const diff = differenceInSeconds(tomorrowCutoff, now)
 
@@ -119,8 +111,6 @@ export function useViaticoDeadline() {
                     const minutes = Math.floor((diff % 3600) / 60)
                     const seconds = diff % 60
                     setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
-
-                    // Tambi?n activar ?ltima hora si estamos cerca del deadline de ma?ana (aunque es raro estar conectado 24h)
                     setIsLastHour(diff <= 3600)
                 } else {
                     setTimeLeft('00:00:00')
@@ -133,7 +123,6 @@ export function useViaticoDeadline() {
         calculateActiveDate()
         const interval = setInterval(calculateActiveDate, 1000)
 
-        // Solicitar permisos de notificaci?n al montar
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission()
         }

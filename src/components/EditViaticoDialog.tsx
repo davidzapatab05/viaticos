@@ -28,7 +28,7 @@ interface EditViaticoDialogProps {
     viatico: Viatico | null
     open: boolean
     onOpenChange: (open: boolean) => void
-    onSuccess: () => void
+    onSuccess: () => void | Promise<void>
 }
 
 export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: EditViaticoDialogProps) {
@@ -65,7 +65,7 @@ export function EditViaticoDialog({ viatico, open, onOpenChange, onSuccess }: Ed
 
             // Close modal immediately
             onOpenChange(false)
-            onSuccess()
+            await Promise.resolve(onSuccess())
             clearLoading()
 
             // Show auto-closing success message

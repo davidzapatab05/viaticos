@@ -1,7 +1,7 @@
 import { initializeFirebase } from '../config/firebase'
 import { toast } from '@/lib/use-toast'
 
-// API URL constante para producci?f?n
+// API URL constante para producción
 const API_URL = 'https://viaticos.davidzapata-dz051099.workers.dev'
 
 export async function getAuthToken() {
@@ -13,7 +13,7 @@ export async function getAuthToken() {
   const { auth: currentAuth } = await import('../config/firebase')
 
   if (!currentAuth) {
-    throw new Error('Firebase Auth no est? disponible. Verifica las variables de entorno NEXT_PUBLIC_FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN y FIREBASE_PROJECT_ID')
+    throw new Error('Firebase Auth no está disponible. Verifica las variables de entorno NEXT_PUBLIC_FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN y FIREBASE_PROJECT_ID')
   }
   const user = currentAuth.currentUser
   if (!user) {

@@ -19,6 +19,7 @@ import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
 import { EditViaticoDialog } from '@/components/EditViaticoDialog'
 import Swal from 'sweetalert2'
+import { useToast } from '@/lib/use-toast'
 import { createPeruDateFromYmd, getPeruNow } from '@/lib/peru-time'
 
 interface Viatico {
@@ -37,6 +38,7 @@ interface Viatico {
 
 export default function MisViaticosPage() {
   const { user, appUser, loading: authLoading } = useAuth()
+  const { toast } = useToast()
   const { setLoading: setGlobalLoading, clearLoading } = useLoading()
   const [viaticos, setViaticos] = useState<Viatico[]>([])
   const [loading, setLoading] = useState(true)
@@ -66,8 +68,8 @@ export default function MisViaticosPage() {
       setViaticos(data.viaticos || [])
     } catch (err) {
       const errorMessage = (err as Error).message || 'Error al cargar los Viáticos'
-      if (errorMessage.includes('no autenticado') || errorMessage.includes('No autorizado') || errorMessage.includes('Sesi?n expirada')) {
-        setError('Sesi?n expirada. Por favor, inicia sesi?n nuevamente.')
+      if (errorMessage.includes('no autenticado') || errorMessage.includes('No autorizado') || errorMessage.includes('sesión expirada')) {
+        setError('sesión expirada. Por favor, inicia sesión nuevamente.')
       } else {
         setError(errorMessage)
       }
@@ -78,13 +80,13 @@ export default function MisViaticosPage() {
 
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
-      title: '?Eliminar Viático?',
-      text: 'Esta acci?n no se puede deshacer',
+      title: '¿Eliminar Viático?',
+      text: 'Esta acción no se puede deshacer',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
-      confirmButtonText: 'S?, eliminar',
+      confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
       background: '#1f2937',
       color: '#fff'
@@ -92,26 +94,21 @@ export default function MisViaticosPage() {
 
     if (!result.isConfirmed) return
 
-    setGlobalLoading('Eliminando Viático...')
+    const previousViaticos = viaticos
+    setViaticos((current) => current.filter((viatico) => viatico.id !== id))
+    setGlobalLoading('Eliminando viático...')
+
     try {
       await deleteViatico(id)
-      await loadViaticos()
       clearLoading()
-
-      await Swal.fire({
-        title: 'Eliminado',
-        text: 'El Viático ha sido eliminado correctamente',
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false,
-        background: '#1f2937',
-        color: '#fff'
-      })
+      toast({ title: 'Viático eliminado', description: 'La lista se actualizó correctamente.', variant: 'success' })
+      void loadViaticos()
     } catch (err) {
+      setViaticos(previousViaticos)
       clearLoading()
       await Swal.fire({
         title: 'Error',
-        text: 'Error al eliminar Viático: ' + (err as Error).message,
+        text: 'Error al eliminar viático: ' + (err as Error).message,
         icon: 'error',
         confirmButtonColor: '#ef4444',
         background: '#1f2937',
@@ -152,7 +149,7 @@ export default function MisViaticosPage() {
 
     // Hora actual (simulada en cliente, idealmente usar hora del servidor o timezone expl?cito)
     // Para consistencia con el usuario en Per?, usamos la hora local del navegador
-    // asumiendo que el usuario est? en Per?.
+    // asumiendo que el usuario está en Per?.
     const now = getPeruNow()
 
     return now <= cutoffDate

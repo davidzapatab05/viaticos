@@ -26,7 +26,7 @@ interface EditGastoDialogProps {
     gasto: Gasto | null
     open: boolean
     onOpenChange: (open: boolean) => void
-    onSuccess: () => void
+    onSuccess: () => void | Promise<void>
 }
 
 export function EditGastoDialog({ gasto, open, onOpenChange, onSuccess }: EditGastoDialogProps) {
@@ -61,7 +61,7 @@ export function EditGastoDialog({ gasto, open, onOpenChange, onSuccess }: EditGa
 
             // Close modal immediately
             onOpenChange(false)
-            onSuccess()
+            await Promise.resolve(onSuccess())
             clearLoading()
 
             // Show auto-closing success message

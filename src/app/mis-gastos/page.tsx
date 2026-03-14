@@ -19,6 +19,7 @@ import Swal from 'sweetalert2'
 import Layout from '@/components/Layout'
 import AuthGuard from '@/components/AuthGuard'
 import { EditGastoDialog } from '@/components/EditGastoDialog'
+import { useToast } from '@/lib/use-toast'
 import { createPeruDateFromYmd, getPeruNow } from '@/lib/peru-time'
 
 interface Gasto {
@@ -34,6 +35,7 @@ interface Gasto {
 
 export default function MisGastosPage() {
     const { user, appUser, loading: authLoading } = useAuth()
+    const { toast } = useToast()
     const { setLoading: setGlobalLoading, clearLoading } = useLoading()
     const [gastos, setGastos] = useState<Gasto[]>([])
     const [loading, setLoading] = useState(true)
@@ -63,8 +65,8 @@ export default function MisGastosPage() {
             setGastos(data.gastos || [])
         } catch (err) {
             const errorMessage = (err as Error).message || 'Error al cargar los gastos'
-            if (errorMessage.includes('no autenticado') || errorMessage.includes('No autorizado') || errorMessage.includes('Sesi?n expirada')) {
-                setError('Sesi?n expirada. Por favor, inicia sesi?n nuevamente.')
+            if (errorMessage.includes('no autenticado') || errorMessage.includes('No autorizado') || errorMessage.includes('sesión expirada')) {
+                setError('sesión expirada. Por favor, inicia sesión nuevamente.')
             } else {
                 setError(errorMessage)
             }
@@ -75,13 +77,13 @@ export default function MisGastosPage() {
 
     const handleDelete = async (id: string) => {
         const result = await Swal.fire({
-            title: '?Eliminar gasto?',
-            text: 'Esta acci?n no se puede deshacer',
+            title: '¿Eliminar gasto?',
+            text: 'Esta acción no se puede deshacer',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
             cancelButtonColor: '#6b7280',
-            confirmButtonText: 'S?, eliminar',
+            confirmButtonText: 'Sí, eliminar',
             cancelButtonText: 'Cancelar',
             background: '#1f2937',
             color: '#fff'
@@ -89,22 +91,17 @@ export default function MisGastosPage() {
 
         if (!result.isConfirmed) return
 
+        const previousGastos = gastos
+        setGastos((current) => current.filter((gasto) => gasto.id !== id))
         setGlobalLoading('Eliminando gasto...')
+
         try {
             await deleteGasto(id)
-            await loadGastos()
             clearLoading()
-
-            await Swal.fire({
-                title: 'Eliminado',
-                text: 'El gasto ha sido eliminado correctamente',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false,
-                background: '#1f2937',
-                color: '#fff'
-            })
+            toast({ title: 'Gasto eliminado', description: 'La lista se actualizó correctamente.', variant: 'success' })
+            void loadGastos()
         } catch (err) {
+            setGastos(previousGastos)
             clearLoading()
             await Swal.fire({
                 title: 'Error',

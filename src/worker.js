@@ -41,8 +41,7 @@ function getPeruDateTime() {
 }
 
 function calculateActiveDate() {
-  const now = new Date();
-  const peruTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Lima" }));
+  const peruTime = getPeruNow();
   const hours = peruTime.getHours();
 
   // Si es antes de las 10 AM, usamos la fecha de ayer
@@ -55,13 +54,26 @@ function calculateActiveDate() {
     return `${y}-${m}-${d}`;
   }
 
-  // Si es 10 AM o despu?s, usamos la fecha de hoy
   const y = peruTime.getFullYear();
   const m = String(peruTime.getMonth() + 1).padStart(2, '0');
   const d = String(peruTime.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
 
+function getPeruNow() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Lima' }));
+}
+
+function buildPeruCutoffDate(ymd, cutoffHour = 10) {
+  const [year, month, day] = String(ymd || '').split('-').map(Number);
+  const cutoff = new Date(year || 1970, (month || 1) - 1, day || 1, cutoffHour, 0, 0, 0);
+  cutoff.setDate(cutoff.getDate() + 1);
+  return cutoff;
+}
+
+function isPastPeruCutoff(ymd, cutoffHour = 10) {
+  return getPeruNow() > buildPeruCutoffDate(ymd, cutoffHour);
+}
 // ===================== Firebase =====================
 async function verifyFirebaseToken(token, env) {
   try {
@@ -142,15 +154,15 @@ async function isAdmin(env, uid, email = '') {
   } catch (e) { console.warn('Error verificando admin:', e); return false }
 }
 
-// Verificar si el usuario est? activo
+// Verificar si el usuario est√° activo
 async function isUserActive(env, uid, email = '') {
   try {
     const superAdminEmail = (env.SUPER_ADMIN_EMAIL || '').toLowerCase()
-    // Super admin siempre est? activo
+    // Super admin siempre est√° activo
     if (superAdminEmail && email.toLowerCase() === superAdminEmail) return true
 
     const res = await env.DB.prepare('SELECT estado FROM user_roles WHERE user_id = ?').bind(uid).first()
-    // Si no existe en la tabla, est? activo por defecto
+    // Si no existe en la tabla, est√° activo por defecto
     if (!res) return true
     return res.estado === 'activo' || res.estado === null
   } catch (e) {
@@ -177,8 +189,6 @@ async function setUserRole(env, uid, role, estado = 'activo', crearCarpeta = 1, 
     const existing = await env.DB.prepare('SELECT user_id, displayName FROM user_roles WHERE user_id = ?').bind(uid).first()
 
     if (existing) {
-      // Usuario existente: SOLO actualizar email y displayName si no son gen?ricos
-      // NO tocar rol ni estado - mantener los datos existentes
       const updateFields = []
       const updateValues = []
 
@@ -187,8 +197,6 @@ async function setUserRole(env, uid, role, estado = 'activo', crearCarpeta = 1, 
         updateValues.push(email)
       }
 
-      // SOLO actualizar displayName si en la BD es inv?lido (null, vac?o, Anonimo)
-      // Esto previene que el login sobrescriba un nombre validado manualmente
       const currentDbName = existing.displayName;
       const isCurrentNameValid = currentDbName && currentDbName !== 'Anonimo' && currentDbName !== 'UsuarioDev';
 
@@ -343,7 +351,6 @@ async function ensureUserRolesTable(env) {
        )`
     ).run()
 
-    // Agregar columnas si no existen (para migraci?n gradual)
     try {
       await env.DB.prepare(`ALTER TABLE user_roles ADD COLUMN estado TEXT DEFAULT 'activo'`).run()
     } catch (e) { /* Columna ya existe */ }
@@ -369,7 +376,6 @@ async function cleanupAnonymousUsers(env) {
       `DELETE FROM user_roles WHERE user_id = 'anonymous' OR user_id LIKE 'dev-%' OR email = 'unknown@example.com'`
     ).run()
 
-    // Tambi?n eliminar Vi√°ticos asociados a usuarios anonymous
     await ensureViaticosTable(env)
     const deleteViaticos = await env.DB.prepare(
       `DELETE FROM viaticos WHERE usuario_id = 'anonymous' OR usuario_id LIKE 'dev-%'`
@@ -386,10 +392,7 @@ async function cleanupAnonymousUsers(env) {
 }
 
 // ===================== OneDrive Helpers (Personal Account) =====================
-/**
- * Verificar si una carpeta existe (solo verificaci?n, NO creaci?n)
- * Para OneDrive personal, NO creamos carpetas previamente - se crean autom?ticamente al subir archivos
- */
+
 async function checkOneDriveFolder(accessToken, folderPath) {
   try {
     const checkResp = await fetch(
@@ -402,17 +405,13 @@ async function checkOneDriveFolder(accessToken, folderPath) {
       return folderData.id // La carpeta existe
     }
 
-    return null // La carpeta no existe (pero se crear? autom?ticamente al subir archivo)
+    return null 
   } catch (error) {
     console.warn(`Error verificando carpeta ${folderPath}:`, error.message)
     return null
   }
 }
 
-/**
- * Crear carpeta en OneDrive personal usando m?todo de archivo temporal
- * CORREGIDO: Solo usar m?todo de archivo temporal, NO usar APIs de SharePoint
- */
 async function createOneDriveFolder(accessToken, folderPath) {
   try {
     // Verificar si la carpeta ya existe
@@ -426,12 +425,9 @@ async function createOneDriveFolder(accessToken, folderPath) {
       return folderData.id // La carpeta ya existe
     }
 
-    // Si no existe, crear usando archivo temporal
-    // Este m?todo funciona con OneDrive personal sin requerir SharePoint Online
     const tempFileName = `.temp_${Date.now()}.tmp`
     const tempPath = `${folderPath}/${tempFileName}`
 
-    // Crear archivo temporal (esto crea la carpeta autom?ticamente si no existe)
     const createTempResp = await fetch(
       `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(tempPath)}:/content`,
       {
@@ -476,7 +472,6 @@ async function createOneDriveFolder(accessToken, folderPath) {
         errorData = { error: errorText }
       }
 
-      // Si el error es de SPO license, ignorarlo y retornar null (la carpeta se crear? al subir archivo)
       if (errorData.error?.code === 'BadRequest' && errorData.error?.message?.includes('SPO license')) {
         console.warn(`OneDrive personal: La carpeta ${folderPath} se crear? autom?ticamente al subir el primer archivo`)
         return null
@@ -488,7 +483,6 @@ async function createOneDriveFolder(accessToken, folderPath) {
     return null
   } catch (error) {
     console.error(`Error creando carpeta ${folderPath}:`, error)
-    // NO lanzar error - solo retornar null para que el sistema contin?e
     return null
   }
 }
@@ -543,7 +537,6 @@ async function generateExcelBuffer(sheetName, rows) {
 
 async function deleteOneDriveFolder(accessToken, userId, userDisplayName = null, userEmail = null) {
   try {
-    // Construir el nombre de la carpeta usando la misma l?gica que ensureUserOneDriveFolder
     let userFolderName = ''
 
     if (userDisplayName && userDisplayName.trim() && userDisplayName !== 'Anonimo' && userDisplayName !== 'UsuarioDev') {
@@ -610,7 +603,6 @@ async function uploadToOneDrive(imageBuffer, fileName, contentType, userId, fech
   try {
     const accessToken = await getOneDriveAccessToken(env)
 
-    // Usar la misma l?gica que ensureUserOneDriveFolder para obtener el nombre
     let userFolderName = ''
 
     if (displayName && displayName.trim() && displayName !== 'Anonimo' && displayName !== 'UsuarioDev') {
@@ -634,27 +626,12 @@ async function uploadToOneDrive(imageBuffer, fileName, contentType, userId, fech
       userFolderName = `usuario`
     }
 
-    // AGREGAR UID al final del nombre (mismo formato que ensureUserOneDriveFolder)
     const uidShort = userId.substring(0, 8)
     userFolderName = `${userFolderName}_${uidShort}`
 
-    // Nueva estructura: viaticos/{YYYY-MM-DD}/{UserFolder}
-    // Si dateTimeFolder se pasa (que es la fecha activa), usarla. Si no, calcularla.
     const activeDate = dateTimeFolder || calculateActiveDate();
 
-    // La ruta completa ser?: viaticos/{activeDate}/{userFolderName}
-    // ensureUserOneDriveFolder espera el path relativo dentro de viaticos/
-    // Pero ensureUserOneDriveFolder est? dise?ado para crear la carpeta del usuario directamente en viaticos/
-    // Necesitamos ajustar la l?gica o simplemente construir el path aQu√©.
-
-    // Como el usuario pidi? "viaticos/{YYYY-MM-DD}/{UserFolder}", construimos el path completo
     const fullPath = `viaticos/${activeDate}/${userFolderName}`;
-
-    // Asegurar que la carpeta existe antes de subir (incluyendo la subcarpeta de fecha/hora)
-    // OneDrive API crea carpetas padres autom?ticamente al subir, as? que no es estrictamente necesario llamar a ensureUserOneDriveFolder
-    // para la estructura din?mica.
-
-    // Subir archivo directamente
     const uploadPath = `${fullPath}/${fileName}`
     const uploadResp = await fetch(
       `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(uploadPath)}:/content`,
@@ -757,7 +734,6 @@ async function executeBackupExportOnly(env, startDate, endDate, backupName) {
       return toUpperSafe(u.displayName || (u.email ? String(u.email).split('@')[0] : uid))
     }
 
-    // 3. Filas Excel (mismo formato de exportaci?n Por Registro)
     const viaticosRows = [...viaticos]
       .sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')))
       .map((v) => {
@@ -911,12 +887,10 @@ export default {
     const cron = event.cron;
     console.log(`Ejecutando Cron: ${cron}`);
 
-    // Cron diario: Limpieza de usuarios an?nimos
     if (cron === "0 0 * * *") {
       await cleanupAnonymousUsers(env);
     }
 
-    // Cron mensual: export automatico en Excel (sin borrar data)
     if (cron === "0 7 1 * *") {
       ctx.waitUntil(processMonthlyBackup(env))
     }
@@ -937,7 +911,7 @@ export default {
       if (path === '/api/cleanup/anonymous' && request.method === 'POST') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         if (!(await isSuperAdmin(env, user.uid, user.email))) {
-          return new Response(JSON.stringify({ error: 'Solo super_admin puede ejecutar esta acci?n' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          return new Response(JSON.stringify({ error: 'Solo super_admin puede ejecutar esta acci√≥n' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
 
         try {
@@ -960,7 +934,7 @@ export default {
       if (path === '/api/backup/manual' && request.method === 'POST') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         if (!(await isSuperAdmin(env, user.uid, user.email))) {
-          return new Response(JSON.stringify({ error: 'Solo super_admin puede ejecutar esta acci?n' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          return new Response(JSON.stringify({ error: 'Solo super_admin puede ejecutar esta acci√≥n' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
 
         try {
@@ -988,7 +962,7 @@ export default {
         if (user.uid === 'anonymous' || user.uid === 'dev-user' || user.email === 'unknown@example.com') {
           return new Response(JSON.stringify({
             success: false,
-            error: 'No se puede registrar un usuario anonymous. Por favor, inicia sesi?n correctamente.'
+            error: 'No se puede registrar un usuario anonymous. Por favor, inicia sesi√≥n correctamente.'
           }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
 
@@ -1012,13 +986,6 @@ export default {
 
           const savedUser = await env.DB.prepare('SELECT email, displayName FROM user_roles WHERE user_id = ?').bind(user.uid).first()
 
-          // Intentar crear la carpeta (ahora bajo la fecha actual, pero ensureUserOneDriveFolder no maneja fechas din?micas bien por defecto,
-          // as? que mejor dejamos que se cree al subir el primer archivo, o actualizamos ensureUserOneDriveFolder.
-          // Por simplicidad y robustez, dejamos que uploadToOneDrive maneje la creaci?n recursiva impl?cita de OneDrive)
-          // Opcional: Podr?amos intentar crear la estructura base, pero OneDrive API crea carpetas padres autom?ticamente al subir.
-
-
-          // Construir nombre de carpeta para respuesta
           const uidShort = user.uid.substring(0, 8)
           let userFolderName = (user.displayName || user.email?.split('@')[0] || 'usuario')
             .replace(/[^a-zA-Z0-9\s._-]/g, '')
@@ -1116,7 +1083,6 @@ export default {
             await deleteOneDriveFolder(accessToken, targetUid, targetUser.displayName, targetUser.email)
           } catch (e) {
             console.warn('No se pudo eliminar carpeta de OneDrive:', e.message)
-            // Continuar con la eliminaci?n del usuario aunque falle la eliminaci?n de carpeta
           }
 
           // Eliminar Vi√°ticos del usuario
@@ -1144,12 +1110,12 @@ export default {
           return new Response(JSON.stringify({
             success: true,
             folderId: folderId || 'no-existe-aun',
-            message: folderId ? 'Carpeta existe' : 'Carpeta se crear? autom?ticamente al subir archivo'
+            message: folderId ? 'Carpeta existe' : 'Carpeta se crear√° autom√°ticamente al subir archivo'
           }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         } catch (error) {
           return new Response(JSON.stringify({
             success: true,
-            message: 'Carpeta se crear? autom?ticamente al subir archivo',
+            message: 'Carpeta se crear√° autom√°ticamente al subir archivo',
             error: error.message
           }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
@@ -1218,13 +1184,13 @@ export default {
           return new Response(JSON.stringify({
             success: true,
             id: folderId || 'no-existe-aun',
-            message: folderId ? 'Carpeta existe' : 'Carpeta se crear? autom?ticamente al subir archivo'
+            message: folderId ? 'Carpeta existe' : 'Carpeta se crear√° autom√°ticamente al subir archivo'
           }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         } catch (error) {
           return new Response(JSON.stringify({
             success: true,
             id: 'no-existe-aun',
-            message: 'Carpeta se crear? autom?ticamente al subir archivo'
+            message: 'Carpeta se crear√° autom√°ticamente al subir archivo'
           }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
       }
@@ -1234,7 +1200,6 @@ export default {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
         try {
-          // await ensureUserRolesTable(env) // Eliminado por redundancia, solo si falla el SELECT podr?amos intentar crearla
 
           // 1. Obtener datos actuales del usuario de la BD
           let userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
@@ -1250,7 +1215,6 @@ export default {
             // Recargar datos despu?s de insertar
             userData = await env.DB.prepare('SELECT * FROM user_roles WHERE user_id = ?').bind(user.uid).first()
           } else {
-            // Si existe, solo actualizar email/displayName si han cambiado y no son gen?ricos
             const newEmail = (user.email && user.email !== 'unknown@example.com') ? user.email : userData.email
             const newDisplayName = (user.displayName && user.displayName !== 'Anonimo') ? user.displayName : userData.displayName
 
@@ -1286,14 +1250,11 @@ export default {
       if (path === '/api/viaticos' && request.method === 'POST') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-        // Verificar si el usuario est? activo
+        // Verificar si el usuario est√° activo
         const isActive = await isUserActive(env, user.uid, user.email)
         if (!isActive) {
           return new Response(JSON.stringify({ error: 'Tu cuenta ha sido desactivada. No puedes subir Vi√°ticos.' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
-
-        // Verificaci?n de crear_carpeta eliminada
-
 
         const formData = await request.formData()
         const foto = formData.get('foto')
@@ -1308,7 +1269,6 @@ export default {
         // Por defecto, createTxt es true si no se especifica, o si el valor es '1'
         const createTxt = formData.get('createTxt') === null || formData.get('createTxt') === '1'
 
-        // L?gica de FECHA ACTIVA (Cierre autom?tico a las 10 AM)
         const now = new Date();
         const dateOptions = { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' };
         const timeOptions = { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
@@ -1323,20 +1283,16 @@ export default {
         const day = parseInt(getPart(peruDateParts, 'day'));
         const hour = parseInt(getPart(peruTimeParts, 'hour'));
 
-        // Fecha actual en Per? (YYYY-MM-DD)
         const todayString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 
-        // Fecha de ayer en Per?
         const yesterdayDate = new Date(year, month - 1, day - 1);
         const yesterdayString = `${yesterdayDate.getFullYear()}-${(yesterdayDate.getMonth() + 1).toString().padStart(2, '0')}-${yesterdayDate.getDate().toString().padStart(2, '0')}`;
 
         let activeDateString = todayString; // Por defecto hoy
 
-        // Regla: Si es antes de las 10 AM, la fecha activa es AYER (autom?tico)
         if (hour < 10) {
           activeDateString = yesterdayString;
         } else {
-          // Despu?s de las 10 AM, es hoy
           activeDateString = todayString;
         }
 
@@ -1447,9 +1403,9 @@ export default {
           DETALLE DE VIATICO
           ==================
           ID: ${viaticoId}
-          D?a: ${viaticoData.dia}
+          Da: ${viaticoData.dia}
           Mes: ${viaticoData.mes}
-          A?o: ${viaticoData.a?o}
+          A√±o: ${viaticoData.anio}
           Fecha: ${viaticoData.fecha}
           Para: ${viaticoData.para || 'N/A'}
           Que Sustenta: ${viaticoData.queSustenta}
@@ -1498,7 +1454,7 @@ export default {
               id: viaticoId,
               dia: formattedDate.split('/')[0],
               mes: formattedDate.split('/')[1],
-              a?o: formattedDate.split('/')[2],
+              anio: formattedDate.split('/')[2],
               fecha: formattedDate,
               para: formData.get('para'),
               queSustenta: 'VIATICO',
@@ -1808,43 +1764,60 @@ export default {
           }
 
           if (!isUserAdmin) {
-            const gastoDate = new Date(gasto.fecha + 'T00:00:00-05:00');
-            const cutoffDate = new Date(gastoDate);
-            cutoffDate.setDate(cutoffDate.getDate() + 1);
-            cutoffDate.setHours(10, 0, 0, 0);
-
-            const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Lima" }));
-
-            if (now > cutoffDate) {
+            if (isPastPeruCutoff(gasto.fecha)) {
               return new Response(JSON.stringify({ error: 'El tiempo l\u00edmite para eliminar este gasto ha expirado (10:00 AM del d\u00eda siguiente).' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
             }
           }
 
-          try {
+          if (gasto.folder_path) {
             const accessToken = await getOneDriveAccessToken(env);
-            if (gasto.folder_path) {
-              const isDedicatedSubfolder = gasto.folder_path.split('/').pop().includes(gastoId);
+            const isDedicatedSubfolder = gasto.folder_path.split('/').pop().includes(gastoId);
 
-              let deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${gasto.folder_path}`;
-              if (env.ONEDRIVE_GASTOS_FOLFER_ID) {
-                deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/items/${env.ONEDRIVE_GASTOS_FOLFER_ID}:/${gasto.folder_path}`;
+            let deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${gasto.folder_path}`;
+            let listUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${gasto.folder_path}:/children`;
+            if (env.ONEDRIVE_GASTOS_FOLFER_ID) {
+              deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/items/${env.ONEDRIVE_GASTOS_FOLFER_ID}:/${gasto.folder_path}`;
+              listUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/items/${env.ONEDRIVE_GASTOS_FOLFER_ID}:/${gasto.folder_path}:/children`;
+            }
+
+            if (isDedicatedSubfolder) {
+              const deleteResponse = await fetch(deleteUrl, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+              });
+
+              if (!deleteResponse.ok && deleteResponse.status !== 404) {
+                const oneDriveError = await deleteResponse.text();
+                console.error('Error borrando carpeta de gasto:', oneDriveError);
+                throw new Error('No se pudo eliminar la evidencia en OneDrive para este gasto.');
+              }
+            } else {
+              const listResponse = await fetch(listUrl, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+              });
+
+              if (!listResponse.ok) {
+                const oneDriveError = await listResponse.text();
+                console.error('Error listando archivos del gasto:', oneDriveError);
+                throw new Error('No se pudo validar la evidencia en OneDrive para este gasto.');
               }
 
-              if (isDedicatedSubfolder) {
-                const deleteResponse = await fetch(deleteUrl, {
+              const data = await listResponse.json();
+              const itemsToDelete = (data.value || []).filter(item => String(item.name || '').includes(gastoId));
+
+              for (const item of itemsToDelete) {
+                const itemDeleteResponse = await fetch(`https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/items/${item.id}`, {
                   method: 'DELETE',
                   headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
 
-                if (deleteResponse.ok || deleteResponse.status === 404) {
-                  // Check parent folder logic if needed, but for now just deleting the dedicated folder is enough
-                } else {
-                  console.error('Error borrando carpeta de gasto:', await deleteResponse.text());
+                if (!itemDeleteResponse.ok && itemDeleteResponse.status !== 404) {
+                  const oneDriveError = await itemDeleteResponse.text();
+                  console.error('Error borrando evidencia del gasto:', oneDriveError);
+                  throw new Error('No se pudo eliminar la evidencia en OneDrive para este gasto.');
                 }
               }
             }
-          } catch (onedriveError) {
-            console.error('Error eliminando de OneDrive (continuando con DB):', onedriveError);
           }
 
           await env.DB.prepare('DELETE FROM gastos WHERE id = ?').bind(gastoId).run();
@@ -1861,7 +1834,6 @@ export default {
           });
         }
       }
-
       // PUT /api/gastos/:id (actualizar gasto - admin o propio usuario)
       if (path.startsWith('/api/gastos/') && request.method === 'PUT') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -1884,42 +1856,137 @@ export default {
           }
 
           if (!isUserAdmin) {
-            const gastoDate = new Date(gasto.fecha + 'T00:00:00-05:00');
-            const cutoffDate = new Date(gastoDate);
-            cutoffDate.setDate(cutoffDate.getDate() + 1);
-            cutoffDate.setHours(10, 0, 0, 0);
-
-            const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Lima" }));
-
-            if (now > cutoffDate) {
+            if (isPastPeruCutoff(gasto.fecha)) {
               return new Response(JSON.stringify({ error: 'El tiempo l\u00edmite para editar este gasto ha expirado (10:00 AM del d\u00eda siguiente).' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
             }
           }
 
-          const updates = [];
-          const values = [];
+          const normalizeNullable = (value) => {
+            if (value === undefined || value === null) return null;
+            const normalized = String(value).trim();
+            return normalized === '' ? null : normalized;
+          };
 
-          if (formData.fecha !== undefined) { updates.push('fecha = ?'); values.push(formData.fecha); }
-          if (formData.monto !== undefined) { updates.push('monto = ?'); values.push(parseFloat(formData.monto)); }
-          if (formData.descripcion !== undefined) { updates.push('descripcion = ?'); values.push(formData.descripcion); }
-          if (formData.medio_pago !== undefined) { updates.push('medio_pago = ?'); values.push(formData.medio_pago); }
-          if (formData.entidad !== undefined) { updates.push('entidad = ?'); values.push(formData.entidad); }
-          if (formData.numero_operacion !== undefined) { updates.push('numero_operacion = ?'); values.push(formData.numero_operacion); }
+          const nextFecha = formData.fecha !== undefined ? formData.fecha : gasto.fecha;
+          const nextMonto = formData.monto !== undefined ? parseFloat(formData.monto) : parseFloat(gasto.monto);
+          const nextDescripcion = formData.descripcion !== undefined ? String(formData.descripcion) : (gasto.descripcion || '');
+          const nextMedioPago = formData.medio_pago !== undefined ? normalizeNullable(formData.medio_pago) : gasto.medio_pago;
+          const nextEntidad = formData.entidad !== undefined ? normalizeNullable(formData.entidad) : gasto.entidad;
+          const nextNumeroOperacion = formData.numero_operacion !== undefined ? normalizeNullable(formData.numero_operacion) : gasto.numero_operacion;
 
-          updates.push('updated_at = ?');
-          values.push(getPeruDateTime());
-
-          if (updates.length > 1) { // At least one field + updated_at
-            values.push(gastoId);
-            await env.DB.prepare(`UPDATE gastos SET ${updates.join(', ')} WHERE id = ?`)
-              .bind(...values)
-              .run();
+          if (Number.isNaN(nextMonto)) {
+            return new Response(JSON.stringify({ error: 'Monto inv·lido' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
           }
 
-          return new Response(JSON.stringify({ success: true, message: 'Gasto actualizado correctamente' }), {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          if (nextFecha !== gasto.fecha && gasto.folder_path) {
+            return new Response(JSON.stringify({
+              error: 'No se puede cambiar la fecha de un gasto con evidencia en OneDrive. ElimÌnalo y regÌstralo nuevamente.'
+            }), {
+              status: 409,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+
+          const hasDataChanges = (
+            nextFecha !== gasto.fecha ||
+            nextMonto !== parseFloat(gasto.monto) ||
+            nextDescripcion !== (gasto.descripcion || '') ||
+            (nextMedioPago || null) !== (gasto.medio_pago || null) ||
+            (nextEntidad || null) !== (gasto.entidad || null) ||
+            (nextNumeroOperacion || null) !== (gasto.numero_operacion || null)
+          );
+
+          const buildGastoTxtContent = (record) => {
+            const [anio, mes, dia] = String(record.fecha || '').split('-');
+            const formattedDate = dia && mes && anio ? `${dia}/${mes}/${anio}` : String(record.fecha || '');
+            return [
+              'DETALLE DE GASTO',
+              '================',
+              `ID: ${gastoId}`,
+              `Fecha: ${formattedDate}`,
+              `De: ${record.de || 'FAMAVE'}`,
+              `Motivo: ${record.motivo || 'VIATICO'}`,
+              `Para (Impuesto): ${record.para_quien_impuesto || 'N/A'}`,
+              `Medio Pago: ${record.medio_pago || 'N/A'}`,
+              `Entidad: ${record.entidad || 'N/A'}`,
+              `N∞ OperaciÛn: ${record.numero_operacion || 'N/A'}`,
+              `Monto: S/ ${parseFloat(record.monto).toFixed(2)}`,
+              `DescripciÛn: ${record.descripcion || '(Sin DescripciÛn)'}`
+            ].join('\n');
+          };
+
+          const writeGastoTxtFile = async (targetFolderPath, txtContent) => {
+            const accessToken = await getOneDriveAccessToken(env);
+            const txtFileName = `${gastoId}_detalle.txt`;
+            let txtUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${targetFolderPath}/${txtFileName}:/content`;
+            if (env.ONEDRIVE_GASTOS_FOLFER_ID) {
+              txtUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/items/${env.ONEDRIVE_GASTOS_FOLFER_ID}:/${targetFolderPath}/${txtFileName}:/content`;
+            }
+
+            const response = await fetch(txtUrl, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'text/plain'
+              },
+              body: txtContent
+            });
+
+            if (!response.ok) {
+              const oneDriveError = await response.text();
+              console.error('Error actualizando TXT del gasto:', oneDriveError);
+              throw new Error('No se pudo actualizar la evidencia del gasto en OneDrive.');
+            }
+          };
+
+          const previousRecord = {
+            ...gasto,
+            monto: parseFloat(gasto.monto)
+          };
+          const nextRecord = {
+            ...gasto,
+            fecha: nextFecha,
+            monto: nextMonto,
+            descripcion: nextDescripcion,
+            medio_pago: nextMedioPago,
+            entidad: nextEntidad,
+            numero_operacion: nextNumeroOperacion
+          };
+
+          let txtUpdated = false;
+          try {
+            if (gasto.folder_path && hasDataChanges) {
+              await writeGastoTxtFile(gasto.folder_path, buildGastoTxtContent(nextRecord));
+              txtUpdated = true;
+            }
+
+            if (hasDataChanges) {
+              await env.DB.prepare(`
+                UPDATE gastos
+                SET fecha = ?, monto = ?, descripcion = ?, medio_pago = ?, entidad = ?, numero_operacion = ?, updated_at = ?
+                WHERE id = ?
+              `)
+                .bind(nextFecha, nextMonto, nextDescripcion, nextMedioPago, nextEntidad, nextNumeroOperacion, getPeruDateTime(), gastoId)
+                .run();
+            }
+
+            return new Response(JSON.stringify({ success: true, message: 'Gasto actualizado correctamente' }), {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          } catch (error) {
+            if (txtUpdated && gasto.folder_path) {
+              try {
+                await writeGastoTxtFile(gasto.folder_path, buildGastoTxtContent(previousRecord));
+              } catch (rollbackError) {
+                console.error('Error revirtiendo TXT del gasto:', rollbackError);
+              }
+            }
+            throw error;
+          }
 
         } catch (error) {
           return new Response(JSON.stringify({ success: false, error: error.message || 'Error actualizando gasto' }), {
@@ -1928,7 +1995,6 @@ export default {
           });
         }
       }
-
       // DELETE /api/viaticos/:id (eliminar Vi√°tico y archivos - admin o propio usuario)
       if (path.startsWith('/api/viaticos/') && request.method === 'DELETE') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -1936,14 +2002,12 @@ export default {
         const viaticoId = path.split('/').pop();
 
         try {
-          // Obtener info del Vi√°tico para saber Qu√© borrar y verificar propiedad
           const viatico = await env.DB.prepare('SELECT * FROM viaticos WHERE id = ?').bind(viaticoId).first();
 
           if (!viatico) {
-            return new Response(JSON.stringify({ error: 'Vi√°tico no encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return new Response(JSON.stringify({ error: 'Vi·tico no encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
 
-          // Verificar permisos: admin o due?o del Vi√°tico
           const isOwner = viatico.usuario_id === user.uid;
           const isUserAdmin = await isAdmin(env, user.uid, user.email);
 
@@ -1951,110 +2015,93 @@ export default {
             return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
           }
 
-          // Enforce 10 AM cutoff for non-admins
           if (!isUserAdmin) {
-            const viaticoDate = new Date(viatico.fecha + 'T00:00:00-05:00'); // Assuming stored as YYYY-MM-DD
-            const cutoffDate = new Date(viaticoDate);
-            cutoffDate.setDate(cutoffDate.getDate() + 1); // Next day
-            cutoffDate.setHours(10, 0, 0, 0); // 10:00 AM
-
-            const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Lima" }));
-
-            if (now > cutoffDate) {
-              return new Response(JSON.stringify({ error: 'El tiempo l?mite para eliminar este Vi√°tico ha expirado (10:00 AM del d?a siguiente).' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            if (isPastPeruCutoff(viatico.fecha)) {
+              return new Response(JSON.stringify({ error: 'El tiempo lÌmite para eliminar este Vi·tico ha expirado (10:00 AM del dÌa siguiente).' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
             }
           }
 
-          // Intentar borrar de OneDrive
-          try {
+          if (viatico.folder_path) {
             const accessToken = await getOneDriveAccessToken(env);
+            const isDedicatedSubfolder = viatico.folder_path.split('/').pop().includes(viaticoId);
 
-            if (viatico.folder_path) {
-              // folder_path ahora es la carpeta compartida del usuario en esa fecha: viaticos/YYYY-MM-DD/User
-              // NO podemos borrar la carpeta entera porque puede tener otros Vi√°ticos.
-              // Debemos buscar archivos que contengan el viaticoId y borrarlos.
+            if (isDedicatedSubfolder) {
+              const deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${viatico.folder_path}`;
+              const deleteResponse = await fetch(deleteUrl, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+              });
 
-              // NUEVA L?GICA: Verificar si es una subcarpeta dedicada
-              // Si el folder_path termina con el viaticoId (o contiene el timestamp_id), es una subcarpeta dedicada
-              const isDedicatedSubfolder = viatico.folder_path.split('/').pop().includes(viaticoId);
+              if (!deleteResponse.ok && deleteResponse.status !== 404) {
+                const oneDriveError = await deleteResponse.text();
+                console.error('Error borrando carpeta de Vi·tico:', oneDriveError);
+                throw new Error('No se pudo eliminar la evidencia en OneDrive para este vi·tico.');
+              }
 
-              if (isDedicatedSubfolder) {
-                // Borrar la carpeta entera del Vi√°tico
-                const deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${viatico.folder_path}`;
+              if (deleteResponse.ok) {
+                const parentPath = viatico.folder_path.split('/').slice(0, -1).join('/');
+                const listParentUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${parentPath}:/children`;
+                const listParentResponse = await fetch(listParentUrl, {
+                  headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+
+                if (listParentResponse.ok) {
+                  const parentData = await listParentResponse.json();
+                  if (parentData.value && parentData.value.length === 0) {
+                    const deleteParentUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${parentPath}`;
+                    await fetch(deleteParentUrl, {
+                      method: 'DELETE',
+                      headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                  }
+                }
+              }
+            } else {
+              const listUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${viatico.folder_path}:/children`;
+              const listResponse = await fetch(listUrl, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+              });
+
+              if (!listResponse.ok) {
+                const oneDriveError = await listResponse.text();
+                console.error('Error listando archivos del Vi·tico:', oneDriveError);
+                throw new Error('No se pudo validar la evidencia en OneDrive para este vi·tico.');
+              }
+
+              const data = await listResponse.json();
+              const files = data.value || [];
+              const filesToDelete = files.filter(f => f.name.includes(viaticoId));
+
+              for (const file of filesToDelete) {
+                const deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/items/${file.id}`;
                 const deleteResponse = await fetch(deleteUrl, {
                   method: 'DELETE',
                   headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
 
-                if (deleteResponse.ok || deleteResponse.status === 404) {
-                  // Si se borr? correctamente, verificar si la carpeta padre (Usuario) qued? vac?a
-                  const parentPath = viatico.folder_path.split('/').slice(0, -1).join('/');
-
-                  const listParentUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${parentPath}:/children`;
-                  const listParentResponse = await fetch(listParentUrl, {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                  });
-
-                  if (listParentResponse.ok) {
-                    const parentData = await listParentResponse.json();
-                    if (parentData.value && parentData.value.length === 0) {
-                      // Carpeta padre vac?a, borrarla tambi?n
-                      const deleteParentUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${parentPath}`;
-                      await fetch(deleteParentUrl, {
-                        method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${accessToken}` }
-                      });
-                    }
-                  }
-                } else {
-                  console.error('Error borrando carpeta de Vi√°tico:', await deleteResponse.text());
-                }
-
-              } else {
-                // L?GICA ANTIGUA (Retrocompatibilidad): Borrar archivos individuales por ID
-                const listUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${viatico.folder_path}:/children`;
-                const listResponse = await fetch(listUrl, {
-                  headers: { 'Authorization': `Bearer ${accessToken}` }
-                });
-
-                if (listResponse.ok) {
-                  const data = await listResponse.json();
-                  const files = data.value || [];
-
-                  // Filtrar archivos que pertenecen a este Vi√°tico
-                  const filesToDelete = files.filter(f => f.name.includes(viaticoId));
-
-                  // Borrar cada archivo encontrado
-                  await Promise.all(filesToDelete.map(async (file) => {
-                    const deleteUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/items/${file.id}`;
-                    await fetch(deleteUrl, {
-                      method: 'DELETE',
-                      headers: { 'Authorization': `Bearer ${accessToken}` }
-                    });
-                  }));
+                if (!deleteResponse.ok && deleteResponse.status !== 404) {
+                  const oneDriveError = await deleteResponse.text();
+                  console.error('Error borrando archivo del Vi·tico:', oneDriveError);
+                  throw new Error('No se pudo eliminar la evidencia en OneDrive para este vi·tico.');
                 }
               }
             }
-          } catch (onedriveError) {
-            console.error('Error eliminando de OneDrive (continuando con DB):', onedriveError);
           }
 
-          // Borrar de la base de datos
           await env.DB.prepare('DELETE FROM viaticos WHERE id = ?').bind(viaticoId).run();
 
-          return new Response(JSON.stringify({ success: true, message: 'Vi√°tico eliminado correctamente' }), {
+          return new Response(JSON.stringify({ success: true, message: 'Vi·tico eliminado correctamente' }), {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
 
         } catch (error) {
-          return new Response(JSON.stringify({ success: false, error: error.message || 'Error eliminando Vi√°tico' }), {
+          return new Response(JSON.stringify({ success: false, error: error.message || 'Error eliminando Vi·tico' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
       }
-
       // PUT /api/viaticos/:id (actualizar Vi√°tico - admin o propio usuario)
       if (path.startsWith('/api/viaticos/') && request.method === 'PUT') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -2062,16 +2109,13 @@ export default {
         const viaticoId = path.split('/').pop();
 
         try {
-          const formData = await request.json(); // Esperamos JSON para actualizaciones simples
-
-          // Obtener Vi√°tico existente
+          const formData = await request.json();
           const viatico = await env.DB.prepare('SELECT * FROM viaticos WHERE id = ?').bind(viaticoId).first();
 
           if (!viatico) {
-            return new Response(JSON.stringify({ error: 'Vi√°tico no encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return new Response(JSON.stringify({ error: 'Vi·tico no encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
 
-          // Verificar permisos
           const isOwner = viatico.usuario_id === user.uid;
           const isUserAdmin = await isAdmin(env, user.uid, user.email);
 
@@ -2079,56 +2123,158 @@ export default {
             return new Response(JSON.stringify({ error: 'Acceso denegado' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
           }
 
-          // Enforce 10 AM cutoff for non-admins
           if (!isUserAdmin) {
-            const viaticoDate = new Date(viatico.fecha + 'T00:00:00-05:00');
-            const cutoffDate = new Date(viaticoDate);
-            cutoffDate.setDate(cutoffDate.getDate() + 1); // Next day
-            cutoffDate.setHours(10, 0, 0, 0); // 10:00 AM
-
-            const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Lima" }));
-
-            if (now > cutoffDate) {
-              return new Response(JSON.stringify({ error: 'El tiempo l?mite para editar este Vi√°tico ha expirado (10:00 AM del d?a siguiente).' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            if (isPastPeruCutoff(viatico.fecha)) {
+              return new Response(JSON.stringify({ error: 'El tiempo lÌmite para editar este Vi·tico ha expirado (10:00 AM del dÌa siguiente).' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
             }
           }
 
-          // Campos actualizables
-          const updates = [];
-          const values = [];
+          const normalizeNullable = (value) => {
+            if (value === undefined || value === null) return null;
+            const normalized = String(value).trim();
+            return normalized === '' ? null : normalized;
+          };
 
-          if (formData.fecha !== undefined) { updates.push('fecha = ?'); values.push(formData.fecha); }
-          if (formData.monto !== undefined) { updates.push('monto = ?'); values.push(parseFloat(formData.monto)); }
-          if (formData.descripcion !== undefined) { updates.push('descripcion = ?'); values.push(formData.descripcion); }
-          if (formData.para !== undefined) { updates.push('para = ?'); values.push(formData.para); }
-          if (formData.que_sustenta !== undefined) { updates.push('que_sustenta = ?'); values.push(formData.que_sustenta); }
-          if (formData.tipo_comprobante !== undefined) { updates.push('tipo_comprobante = ?'); values.push(formData.tipo_comprobante); }
-          if (formData.numero_documento !== undefined) { updates.push('numero_documento = ?'); values.push(formData.numero_documento); }
-          if (formData.numero_comprobante !== undefined) { updates.push('numero_comprobante = ?'); values.push(formData.numero_comprobante); }
+          const nextFecha = formData.fecha !== undefined ? formData.fecha : viatico.fecha;
+          const nextMonto = formData.monto !== undefined ? parseFloat(formData.monto) : parseFloat(viatico.monto);
+          const nextDescripcion = formData.descripcion !== undefined ? String(formData.descripcion) : (viatico.descripcion || '');
+          const nextPara = formData.para !== undefined ? normalizeNullable(formData.para) : viatico.para;
+          const nextQueSustenta = formData.que_sustenta !== undefined ? normalizeNullable(formData.que_sustenta) : (viatico.que_sustenta || 'VIATICO');
+          const nextTipoComprobante = formData.tipo_comprobante !== undefined ? normalizeNullable(formData.tipo_comprobante) : viatico.tipo_comprobante;
+          const nextNumeroDocumento = formData.numero_documento !== undefined ? normalizeNullable(formData.numero_documento) : viatico.numero_documento;
+          const nextNumeroComprobante = formData.numero_comprobante !== undefined ? normalizeNullable(formData.numero_comprobante) : viatico.numero_comprobante;
 
-          updates.push('updated_at = ?');
-          values.push(getPeruDateTime());
-
-          if (updates.length > 1) { // Al menos updated_at siempre est?
-            const query = `UPDATE viaticos SET ${updates.join(', ')} WHERE id = ?`;
-            values.push(viaticoId);
-            await env.DB.prepare(query).bind(...values).run();
+          if (Number.isNaN(nextMonto)) {
+            return new Response(JSON.stringify({ error: 'Monto inv·lido' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
           }
 
-          return new Response(JSON.stringify({ success: true, message: 'Vi√°tico actualizado correctamente' }), {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          if (nextFecha !== viatico.fecha && viatico.folder_path) {
+            return new Response(JSON.stringify({
+              error: 'No se puede cambiar la fecha de un vi·tico con evidencia en OneDrive. ElimÌnalo y regÌstralo nuevamente.'
+            }), {
+              status: 409,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+
+          const hasDataChanges = (
+            nextFecha !== viatico.fecha ||
+            nextMonto !== parseFloat(viatico.monto) ||
+            nextDescripcion !== (viatico.descripcion || '') ||
+            (nextPara || null) !== (viatico.para || null) ||
+            (nextQueSustenta || 'VIATICO') !== (viatico.que_sustenta || 'VIATICO') ||
+            (nextTipoComprobante || null) !== (viatico.tipo_comprobante || null) ||
+            (nextNumeroDocumento || null) !== (viatico.numero_documento || null) ||
+            (nextNumeroComprobante || null) !== (viatico.numero_comprobante || null)
+          );
+
+          const ownerRecord = await env.DB.prepare('SELECT displayName, email FROM user_roles WHERE user_id = ?').bind(viatico.usuario_id).first();
+          const trabajador = (ownerRecord?.displayName || ownerRecord?.email || user.displayName || user.email || 'usuario').toUpperCase();
+
+          const buildViaticoTxtContent = (record) => {
+            const [anio, mes, dia] = String(record.fecha || '').split('-');
+            const formattedDate = dia && mes && anio ? `${dia}/${mes}/${anio}` : String(record.fecha || '');
+            return [
+              'DETALLE DE VIATICO',
+              '==================',
+              `ID: ${viaticoId}`,
+              `Dia: ${dia || 'N/A'}`,
+              `Mes: ${mes || 'N/A'}`,
+              `AÒo: ${anio || 'N/A'}`,
+              `Fecha: ${formattedDate}`,
+              `Para: ${record.para || 'N/A'}`,
+              `Que Sustenta: ${record.que_sustenta || 'VIATICO'}`,
+              `Trabajador: ${trabajador}`,
+              `Tipo Comp.: ${record.tipo_comprobante || 'N/A'}`,
+              `N∞ Doc.: ${record.numero_documento || 'N/A'}`,
+              `N∞ Comp.: ${record.numero_comprobante || 'N/A'}`,
+              `Monto: S/ ${parseFloat(record.monto).toFixed(2)}`,
+              `DescripciÛn: ${record.descripcion || '(Sin DescripciÛn)'}`
+            ].join('\n');
+          };
+
+          const writeViaticoTxtFile = async (targetFolderPath, txtContent) => {
+            const accessToken = await getOneDriveAccessToken(env);
+            const txtFileName = `${viaticoId}_detalle.txt`;
+            const txtUrl = `https://graph.microsoft.com/v1.0/users/${env.ONEDRIVE_USER_ID}/drive/root:/${targetFolderPath}/${txtFileName}:/content`;
+
+            const response = await fetch(txtUrl, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'text/plain'
+              },
+              body: txtContent
+            });
+
+            if (!response.ok) {
+              const oneDriveError = await response.text();
+              console.error('Error actualizando TXT del vi·tico:', oneDriveError);
+              throw new Error('No se pudo actualizar la evidencia del vi·tico en OneDrive.');
+            }
+          };
+
+          const previousRecord = {
+            ...viatico,
+            monto: parseFloat(viatico.monto),
+            descripcion: viatico.descripcion || '',
+            que_sustenta: viatico.que_sustenta || 'VIATICO'
+          };
+          const nextRecord = {
+            ...viatico,
+            fecha: nextFecha,
+            monto: nextMonto,
+            descripcion: nextDescripcion,
+            para: nextPara,
+            que_sustenta: nextQueSustenta,
+            tipo_comprobante: nextTipoComprobante,
+            numero_documento: nextNumeroDocumento,
+            numero_comprobante: nextNumeroComprobante
+          };
+
+          let txtUpdated = false;
+          try {
+            if (viatico.folder_path && hasDataChanges) {
+              await writeViaticoTxtFile(viatico.folder_path, buildViaticoTxtContent(nextRecord));
+              txtUpdated = true;
+            }
+
+            if (hasDataChanges) {
+              await env.DB.prepare(`
+                UPDATE viaticos
+                SET fecha = ?, para = ?, que_sustenta = ?, tipo_comprobante = ?, numero_documento = ?, numero_comprobante = ?, monto = ?, descripcion = ?, updated_at = ?
+                WHERE id = ?
+              `)
+                .bind(nextFecha, nextPara, nextQueSustenta, nextTipoComprobante, nextNumeroDocumento, nextNumeroComprobante, nextMonto, nextDescripcion, getPeruDateTime(), viaticoId)
+                .run();
+            }
+
+            return new Response(JSON.stringify({ success: true, message: 'Vi·tico actualizado correctamente' }), {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          } catch (error) {
+            if (txtUpdated && viatico.folder_path) {
+              try {
+                await writeViaticoTxtFile(viatico.folder_path, buildViaticoTxtContent(previousRecord));
+              } catch (rollbackError) {
+                console.error('Error revirtiendo TXT del vi·tico:', rollbackError);
+              }
+            }
+            throw error;
+          }
 
         } catch (error) {
-          console.error('Error actualizando Vi√°tico:', error);
-          return new Response(JSON.stringify({ success: false, error: error.message || 'Error actualizando Vi√°tico' }), {
+          console.error('Error actualizando Vi·tico:', error);
+          return new Response(JSON.stringify({ success: false, error: error.message || 'Error actualizando Vi·tico' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
       }
-
       // GET /api/viaticos/all (todos los Vi√°ticos - solo admin)
       if (path === '/api/viaticos/all' && request.method === 'GET') {
         if (!token) {
@@ -2263,7 +2409,7 @@ export default {
       if (path === '/api/users/me' && request.method === 'GET') {
         if (!token) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-        // Verificar si el usuario est? activo
+        // Verificar si el usuario est√° activo
         const isActive = await isUserActive(env, user.uid, user.email)
         if (!isActive) {
           return new Response(JSON.stringify({
@@ -2281,14 +2427,10 @@ export default {
         if (!userData) {
           await setUserRole(env, user.uid, role, 'activo', 1, user.email, user.displayName)
         } else {
-          // No sobrescribir email/displayName si ya existen en BD (prioridad a lo manual)
-          // Solo actualizar si en BD es nulo/gen?rico y el token trae algo mejor
+
           const dbNameValid = userData.displayName && userData.displayName !== 'Anonimo';
           const tokenNameValid = user.displayName && user.displayName !== 'Anonimo';
-          // Si ya es v?lido en BD, pasamos null para NO actualizar (y evitar sobrescribir con data stale)
-          // Si no es v?lido en BD, usamos el del token o 'Anonimo'
           const newDisplayName = dbNameValid ? null : (tokenNameValid ? user.displayName : 'Anonimo');
-
           const dbEmailValid = userData.email && userData.email !== 'unknown@example.com';
           const tokenEmailValid = user.email && user.email !== 'unknown@example.com';
           const newEmail = dbEmailValid ? null : (tokenEmailValid ? user.email : 'unknown@example.com');
@@ -2319,7 +2461,6 @@ export default {
 
         // ensureUserRolesTable(env) - Eliminado por redundancia, se asume creado al inicio o en login
 
-        // CORREGIDO: Usar SELECT expl?cito en lugar de SELECT * para evitar problemas
         const rows = await env.DB.prepare(`
           SELECT 
             user_id, 
@@ -2389,11 +2530,6 @@ export default {
           const { role } = body
 
           if (!role) return new Response(JSON.stringify({ error: 'Rol requerido' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-          // Usar la funci?n helper setUserRole (que ya existe)
-          // Nota: setUserRole requiere (env, uid, role, estado, crearCarpeta, email, displayName)
-          // Pero aQu√© solo queremos actualizar el rol.
-          // Mejor hacemos un UPDATE directo para no sobrescribir otros campos accidentalmente
 
           await env.DB.prepare('UPDATE user_roles SET role = ?, updated_at = ? WHERE user_id = ?')
             .bind(role, getPeruDateTime(), targetUid)
@@ -2542,6 +2678,9 @@ export default {
     }
   },
 }
+
+
+
 
 
 

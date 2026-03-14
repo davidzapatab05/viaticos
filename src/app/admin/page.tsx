@@ -274,19 +274,17 @@ export default function AdminPage() {
 
     if (!result.isConfirmed) return
 
+    const previousViaticos = viaticos
+    setViaticos((current) => current.filter((viatico) => viatico.id !== id))
     setGlobalLoading('Eliminando viático...')
+
     try {
       await deleteViatico(id)
       clearLoading()
-      await Swal.fire({
-        title: 'Eliminado',
-        text: 'El viático ha sido eliminado.',
-        icon: 'success',
-        background: '#1f2937',
-        color: '#fff'
-      })
-      await loadData()
+      toast({ title: 'Viático eliminado', description: 'La tabla se actualizó correctamente.' })
+      void loadData()
     } catch (e) {
+      setViaticos(previousViaticos)
       clearLoading()
       await Swal.fire({
         title: 'Error',
@@ -313,19 +311,17 @@ export default function AdminPage() {
 
     if (!result.isConfirmed) return
 
+    const previousGastos = gastos
+    setGastos((current) => current.filter((gasto) => gasto.id !== id))
     setGlobalLoading('Eliminando gasto...')
+
     try {
       await deleteGasto(id)
       clearLoading()
-      await Swal.fire({
-        title: 'Eliminado',
-        text: 'El viático que se entrega ha sido eliminado.',
-        icon: 'success',
-        background: '#1f2937',
-        color: '#fff'
-      })
-      await loadData()
+      toast({ title: 'Viático que se entrega eliminado', description: 'La tabla se actualizó correctamente.' })
+      void loadData()
     } catch (e) {
+      setGastos(previousGastos)
       clearLoading()
       await Swal.fire({
         title: 'Error',
